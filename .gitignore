@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.env.*
+
+# Runtime/generated workspace data
+workspace/data/
+workspace/imports/
+workspace/input/
+workspace/test_inputs/*.png
+workspace/test_inputs/*.jpg
+workspace/test_inputs/*.jpeg
+
+# Logs/temp/cache
+*.log
+tmp/
+.cache/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+*~

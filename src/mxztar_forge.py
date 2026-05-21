@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+"""
+MXZTAR-forge v2c0 launcher entry point.
+
+Local creative-concept engineering forge.
+Default AI resource policy:
+- OLLAMA_NUM_THREAD=2
+- OLLAMA_NUM_PARALLEL=1
+"""
+
+import os
+import sys
+from pathlib import Path
+
+os.environ.setdefault("OLLAMA_NUM_THREAD", "2")
+os.environ.setdefault("OLLAMA_NUM_PARALLEL", "1")
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = PROJECT_ROOT / "src"
+
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from qt_app import main
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
