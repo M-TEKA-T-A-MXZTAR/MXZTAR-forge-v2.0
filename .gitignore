@@ -22,3 +22,6 @@ tmp/
 .DS_Store
 Thumbs.db
 *~
+
+# Local restore backups
+backups/
