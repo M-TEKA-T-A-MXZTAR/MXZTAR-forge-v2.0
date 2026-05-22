@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd "$HOME/MXZTAR-forge-v2c0"
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 echo "=== MXZTAR-FORGE SOURCE TRUTH VERIFY ==="
 

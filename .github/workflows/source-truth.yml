@@ -1,5 +1,9 @@
 name: Source Truth Check
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   push:
     branches:
