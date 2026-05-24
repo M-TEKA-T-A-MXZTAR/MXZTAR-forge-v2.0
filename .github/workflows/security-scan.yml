@@ -66,7 +66,6 @@ jobs:
           pip-audit \
             -r requirements.txt \
             -r requirements_qt.txt \
-            --output json \
             --format json > audit-results.json || true
           pip-audit \
             -r requirements.txt \
