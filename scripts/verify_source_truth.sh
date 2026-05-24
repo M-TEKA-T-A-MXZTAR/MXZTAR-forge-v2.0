@@ -13,8 +13,12 @@ for f in \
   docs/NZ_COMPLIANCE_AND_SUBSCRIPTION_NOTES.md \
   docs/CODING_PRACTICE_PRINCIPLES.md
 do
-  test -f "$f"
-  echo "PASS FILE: $f"
+  if [ -f "$f" ]; then
+    echo "PASS FILE: $f"
+  else
+    echo "FAIL FILE: $f (missing)" >&2
+    exit 1
+  fi
 done
 
 echo
