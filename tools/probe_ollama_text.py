@@ -11,8 +11,8 @@ Purpose:
 
 import json
 import os
-import urllib.request
-import urllib.error
+
+import requests
 
 
 MODEL = "qwen2.5vl:3b"
@@ -37,25 +37,21 @@ def main() -> int:
         },
     }
 
-    data = json.dumps(payload).encode("utf-8")
-
     print("MXZTAR-forge Ollama HTTP Probe")
     print(f"Model: {MODEL}")
     print("Policy: OLLAMA_NUM_THREAD=2, OLLAMA_NUM_PARALLEL=1")
     print(f"URL: {OLLAMA_URL}")
     print()
 
-    request = urllib.request.Request(
-        OLLAMA_URL,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
-            body = response.read().decode("utf-8")
-    except urllib.error.URLError as exc:
+        resp = requests.post(
+            OLLAMA_URL,
+            json=payload,
+            timeout=180,
+        )
+        resp.raise_for_status()
+        body = resp.text
+    except requests.exceptions.ConnectionError as exc:
         print("FAIL: could not reach Ollama HTTP API.")
         print(exc)
         print()
