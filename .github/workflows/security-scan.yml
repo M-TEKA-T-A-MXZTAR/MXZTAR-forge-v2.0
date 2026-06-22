@@ -37,7 +37,7 @@ jobs:
           SEMGREP_SEND_METRICS: "off"
 
       - name: Upload Semgrep SARIF results
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
