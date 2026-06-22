@@ -87,7 +87,7 @@ def run_vision_workflow(
         )
         response.raise_for_status()
         body = response.text
-    except requests.exceptions.ConnectionError as exc:
+    except requests.exceptions.RequestException as exc:
         return AgentResult(
             ok=False,
             model=model,

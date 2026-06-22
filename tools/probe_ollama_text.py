@@ -51,7 +51,7 @@ def main() -> int:
         )
         resp.raise_for_status()
         body = resp.text
-    except requests.exceptions.ConnectionError as exc:
+    except requests.exceptions.RequestException as exc:
         print("FAIL: could not reach Ollama HTTP API.")
         print(exc)
         print()
