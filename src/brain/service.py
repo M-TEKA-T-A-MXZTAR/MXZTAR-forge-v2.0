@@ -13,10 +13,10 @@ Hardware-kind defaults:
 import base64
 import json
 import os
-import urllib.error
-import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+
+import requests
 
 from brain.prompts import build_prompt
 
@@ -79,17 +79,15 @@ def run_vision_workflow(
         },
     }
 
-    request = urllib.request.Request(
-        OLLAMA_GENERATE_URL,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-
     try:
-        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-            body = response.read().decode("utf-8")
-    except urllib.error.URLError as exc:
+        response = requests.post(
+            OLLAMA_GENERATE_URL,
+            json=payload,
+            timeout=timeout_seconds,
+        )
+        response.raise_for_status()
+        body = response.text
+    except requests.exceptions.RequestException as exc:
         return AgentResult(
             ok=False,
             model=model,
