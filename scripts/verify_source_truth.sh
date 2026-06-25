@@ -11,7 +11,13 @@ for f in \
   README.md \
   docs/SOURCE_OF_TRUTH.md \
   docs/NZ_COMPLIANCE_AND_SUBSCRIPTION_NOTES.md \
-  docs/CODING_PRACTICE_PRINCIPLES.md
+  docs/CODING_PRACTICE_PRINCIPLES.md \
+  docs/product/FIRST_RENTABLE_RELEASE.md \
+  docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md \
+  docs/product/OUTPUT_ARTIFACT_CONTRACTS.md \
+  docs/product/MASTER_BUILD_PLAN.md \
+  docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
+  docs/PROGRESS_LEDGER.md
 do
   if [ -f "$f" ]; then
     echo "PASS FILE: $f"
