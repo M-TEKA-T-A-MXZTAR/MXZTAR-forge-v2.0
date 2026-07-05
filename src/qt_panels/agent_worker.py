@@ -11,7 +11,8 @@ class AgentWorker(QObject):
 
     This worker exists to protect the UI from freezing while a local Ollama
     vision workflow is running. It performs exactly one job, emits progress,
-    then reports either the saved output path or an error message.
+    then reports the saved output/diagnostic path and the true AgentResult
+    success state.
     """
 
     progress = Signal(str)
@@ -37,17 +38,24 @@ class AgentWorker(QObject):
 
         try:
             self.progress.emit("Calling local agent runner.")
-            output_path = run_agent_job(
+            result, output_path = run_agent_job(
                 workflow_key=self.workflow_key,
                 source_path=self.source_path,
                 user_notes=self.user_notes,
             )
 
-            self.progress.emit("Agent workflow completed.")
-            self.progress.emit(f"Saved output: {output_path}")
-            self.finished.emit(True, str(output_path), "")
+            self.progress.emit(f"Saved output record: {output_path}")
+
+            if result.ok:
+                self.progress.emit("Agent workflow completed successfully.")
+                self.finished.emit(True, str(output_path), "")
+                return
+
+            message = result.error or "Agent workflow returned an unsuccessful result."
+            self.progress.emit(f"Agent workflow returned failure: {message}")
+            self.finished.emit(False, str(output_path), message)
 
         except Exception as exc:
             message = f"{type(exc).__name__}: {exc}"
-            self.progress.emit(f"Agent workflow failed: {message}")
+            self.progress.emit(f"Agent workflow failed before saving a result: {message}")
             self.finished.emit(False, "", message)
