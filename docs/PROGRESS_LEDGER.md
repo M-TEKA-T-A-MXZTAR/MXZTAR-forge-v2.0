@@ -38,12 +38,12 @@ Status values:
 | Default local vision model | VERIFIED historically | `qwen2.5vl:3b` passed simple-image vision probe | Reconfirm model availability and current digest/version |
 | Seven prompt contracts | VERIFIED historically | `source_art_intelligence`, `modular_set_perspective`, `prototype_imagination`, `shape_structure_harvest`, `concept_brief`, `render_prompt_pack`, `recommend_next_step` | Re-run verifier on current `main` |
 | Agent runner JSON save path | VERIFIED historically | Simple-image source-art intelligence probe saved JSON output | Validate against new artifact-contract expectations |
-| Agent worker / QThread path | PARTIAL | Worker implementation exists and now has a contract verifier on the worker-only path; panel wiring remains absent | Wire only after execution baseline and final-state UI contract are verified |
+| Agent worker / QThread path | IMPLEMENTED IN PR | Worker is wired to `AgentPanel` through a dedicated `QThread`; deterministic panel verifier covers lifecycle and final-state behaviour | Run verifier and manual Ollama smoke test locally before merge |
 | Agent Workflows source selector | VERIFIED manually | User selected an image and workflow | Reproduce in controlled compatibility test |
-| UI run control | PARTIAL | Historical run existed, but current `AgentPanel` has no live run button or worker connection | Restore only after worker and UI final-state contract are proven |
+| UI run control | IMPLEMENTED IN PR | Selected source/workflow can launch one background job with locked controls, elapsed time, heartbeat, progress, and saved path feedback | Verify against a known-compatible local source/model pair |
 | Random workflow run | OBSERVED | A saved output was shown alongside an `AgentResult(ok=False)` / Ollama HTTP 400; later audit confirmed saved-failure records are valid and worker success semantics were defective | Keep OBS-001 open until UI final-state wiring is verified |
-| Workflow success semantics | PENDING PR | Worker fix branch unpacks `(AgentResult, Path)` and emits success only when `AgentResult.ok` is true; verifier covers success, saved failure, and exception paths | Merge PR and run verifier locally |
-| Cancellation | PLANNED | Required by build plan | Define contract and tests before adding visible control |
+| Workflow success semantics | MERGED | `AgentWorker` unpacks `(AgentResult, Path)` and emits success only when `AgentResult.ok` is true; worker verifier covers success, saved failure, and exception paths | Preserve distinction in panel and artifact contracts |
+| Cancellation | PLANNED | No misleading cancel control is exposed; active jobs prevent unsafe window close and retain the service timeout boundary | Define cooperative request/model cancellation contract before adding a button |
 | Timeout handling | PARTIAL | Service has timeout concepts; complete UI/artifact behaviour not proven | Add deterministic timeout fixture and final-state test |
 | Failure diagnostics | PARTIAL | Runner can save JSON; durable schema and UI truth not proven | Implement shared failure artifact after baseline audit |
 | First rentable release definition | MERGED | `docs/product/FIRST_RENTABLE_RELEASE.md`, PR #14 | Maintain scope discipline |
@@ -226,6 +226,50 @@ Remaining blockers:
 - `AgentPanel` still has no live run button, QThread lifecycle, elapsed timer, cancellation, or completion handler;
 - the large JPEG source still triggers Ollama HTTP 400 and needs image-size/preflight handling before repeated full-resolution vision requests;
 - swap configuration has been observed at 4 GiB and should be handled in a separate system-maintenance side quest after this PR.
+
+## 2026-07-19 — Safe AgentPanel execution branch
+
+Branch: `agent/restore-safe-ai-runner`.
+
+Purpose:
+
+- restore one honest, user-visible source-art workflow without placing AI work on the Qt main thread;
+- enforce one active heavy job through the only execution panel;
+- show elapsed time, heartbeat, progress, final result, and saved output/diagnostic path;
+- prevent unsafe application close while the worker is active.
+
+Files changed:
+
+- `src/qt_panels/agent_panel.py`;
+- `src/qt_app.py`;
+- `tools/verify_agent_panel_execution_contract.py`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+PYTHONPATH=src .venv/bin/python tools/verify_agent_worker_contract.py
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src .venv/bin/python tools/verify_agent_panel_execution_contract.py
+PYTHONPATH=src .venv/bin/python -m py_compile \
+  src/qt_panels/agent_panel.py \
+  src/qt_app.py \
+  tools/verify_agent_panel_execution_contract.py
+```
+
+Expected evidence:
+
+- worker runs outside the Qt main thread;
+- a second launch is rejected while active;
+- success, saved failure, and unsaved failure remain distinct;
+- timer and controls return to idle after every final state;
+- application close is rejected while a job is active.
+
+Remaining boundary:
+
+- this PR does not claim cooperative cancellation;
+- the existing 600-second service timeout remains the hard request boundary;
+- the former large-JPEG HTTP 400 still requires a separate source-image preflight milestone;
+- a known-compatible manual Ollama run remains required before marking the end-to-end path VERIFIED.
 
 ## Immediate next milestone after this ledger merges
 
