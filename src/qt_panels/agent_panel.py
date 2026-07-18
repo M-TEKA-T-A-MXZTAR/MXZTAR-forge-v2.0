@@ -322,6 +322,31 @@ class AgentPanel(QWidget):
         self.update_source_details()
         self.set_status(f"Found {len(self.source_items)} supported source file(s).")
 
+    def select_source_item(self, item: SourceArtItem) -> bool:
+        """Select an exact library item without copying or changing its source file."""
+        if self._job_active:
+            self.set_status("Cannot change source while a local AI job is running.")
+            return False
+
+        if not isinstance(item, SourceArtItem) or not item.path.exists():
+            self.set_status("The selected library source is unavailable.")
+            return False
+
+        for index in range(self.source_combo.count()):
+            candidate = self.source_combo.itemData(index)
+            if isinstance(candidate, SourceArtItem) and candidate.path == item.path:
+                self.source_combo.setCurrentIndex(index)
+                self.update_source_details()
+                self.set_status(f"Selected library source: {item.path.name}")
+                return True
+
+        self.source_items.append(item)
+        self.source_combo.addItem(item.label, item)
+        self.source_combo.setCurrentIndex(self.source_combo.count() - 1)
+        self.update_source_details()
+        self.set_status(f"Selected library source: {item.path.name}")
+        return True
+
     def update_source_details(self):
         item = self.source_combo.currentData()
 
