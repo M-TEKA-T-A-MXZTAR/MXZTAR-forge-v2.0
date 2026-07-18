@@ -32,6 +32,7 @@ Status values:
 | Area | Status | Evidence / present state | Next gate |
 |---|---|---|---|
 | Repository source-of-truth policy | VERIFIED | `docs/SOURCE_OF_TRUTH.md`; Git history leads, terminal scrollback does not | Keep verifier aligned with new required documents |
+| Relocatable repository launcher | PARTIAL | Branch launcher derives its checkout path from `BASH_SOURCE`, uses checkout-local `.venv` when present, and has a relocation verifier | Run verifier locally and update external desktop launchers after merge |
 | Coding-practice principles | VERIFIED | Existing source-truth document and controlled-change rules | Apply to every runtime milestone |
 | CPU-safe local policy | VERIFIED | Two-thread, one-parallel-job policy documented; CPU-only target established | Confirm runtime uses policy in every execution path |
 | Ollama HTTP service path | VERIFIED | Prior text and vision probes passed through `http://127.0.0.1:11434/api/generate` | Re-run against current installation and record exact versions |
@@ -318,6 +319,37 @@ Remaining boundary:
 - My Library currently represents the Source Art stage only;
 - durable workflow-output browsing, approvals, prompts, and concept folders depend on later project and artifact contracts;
 - no ownership or licence verification is inferred from file discovery.
+
+## 2026-07-19 — Relocatable launcher branch
+
+Branch: `agent/make-launcher-relocatable`.
+
+Purpose:
+
+- remove the hard-coded checkout directory from `run_mxztar_forge.sh`;
+- make the launcher derive the repository directory from its own file location;
+- prefer the checkout-local virtual-environment interpreter;
+- keep execution correct after an intentional directory rename;
+- verify relocation without starting the Qt application.
+
+Files changed:
+
+- `run_mxztar_forge.sh`;
+- `tools/verify_relocatable_launcher.py`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+python3 tools/verify_relocatable_launcher.py
+bash -n run_mxztar_forge.sh
+```
+
+Remaining local installation step after merge:
+
+- rename `$HOME/MXZTAR-forge-v2c0` to `$HOME/MXZTAR-forge-v2.0` only after checking the destination does not already exist;
+- back up and update the external application-menu and Desktop `.desktop` files;
+- confirm both launchers resolve to the canonical checkout and repository launcher.
 
 ## Immediate next milestone after this ledger merges
 
