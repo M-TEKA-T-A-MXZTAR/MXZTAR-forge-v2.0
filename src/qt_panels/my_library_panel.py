@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.source_preview_cache import source_preview_cache_path
 from core.source_library import (
     SourceArtItem,
     format_size,
@@ -183,6 +184,19 @@ class MyLibraryPanel(QWidget):
         self.load_preview(item)
 
     def load_preview(self, item: SourceArtItem):
+        try:
+            cache_path = source_preview_cache_path(item.path)
+        except OSError as exc:
+            self.show_preview_error(f"Could not inspect source metadata: {exc}")
+            return
+
+        cached_image = QImage(str(cache_path))
+        if not cached_image.isNull():
+            self._preview_image = cached_image
+            self._preview_source_path = item.path
+            self.render_cached_preview()
+            return
+
         reader = QImageReader(str(item.path))
         reader.setAutoTransform(True)
         source_size = reader.size()
@@ -197,18 +211,32 @@ class MyLibraryPanel(QWidget):
         image = reader.read()
 
         if image.isNull():
-            self._preview_image = QImage()
-            self._preview_source_path = None
-            self.preview_label.setPixmap(QPixmap())
             detail = reader.errorString() or "Qt could not decode this format."
-            self.preview_label.setText(
-                f"Preview unavailable.\n{detail}\nThe source remains selectable."
-            )
+            self.show_preview_error(detail)
             return
 
         self._preview_image = image
         self._preview_source_path = item.path
+        self.save_preview_cache(image, cache_path)
         self.render_cached_preview()
+
+    def save_preview_cache(self, image: QImage, cache_path):
+        temporary_path = cache_path.with_name(f"{cache_path.name}.tmp")
+
+        try:
+            if image.save(str(temporary_path), "PNG"):
+                temporary_path.replace(cache_path)
+        except OSError:
+            # Cache failure must not block source selection or workflow handoff.
+            pass
+
+    def show_preview_error(self, detail: str):
+        self._preview_image = QImage()
+        self._preview_source_path = None
+        self.preview_label.setPixmap(QPixmap())
+        self.preview_label.setText(
+            f"Preview unavailable.\n{detail}\nThe original source remains selectable."
+        )
 
     def render_cached_preview(self):
         if self._preview_image.isNull():
