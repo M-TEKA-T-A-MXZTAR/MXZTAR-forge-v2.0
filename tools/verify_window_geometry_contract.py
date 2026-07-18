@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -28,45 +29,64 @@ import qt_app  # noqa: E402
 from qt_app import MXZTARForgeWindow  # noqa: E402
 
 
+TEST_SETTINGS_ORG = "MXZTAR-forge-verifier"
+TEST_SETTINGS_APP = "window-geometry-contract"
+
+
+def require(condition: bool, message: str) -> None:
+    """Raise a deterministic verifier failure instead of relying on assert."""
+    if not condition:
+        raise RuntimeError(message)
+
+
 def main() -> int:
-    app = QApplication.instance() or QApplication([])
-    app.setOrganizationName(qt_app.SETTINGS_ORG)
-    app.setApplicationName(qt_app.SETTINGS_APP)
+    with tempfile.TemporaryDirectory(prefix="mxztar-qt-settings-") as settings_root:
+        os.environ["XDG_CONFIG_HOME"] = settings_root
 
-    window = MXZTARForgeWindow()
+        app = QApplication.instance() or QApplication([])
+        app.setOrganizationName(TEST_SETTINGS_ORG)
+        app.setApplicationName(TEST_SETTINGS_APP)
 
-    minimum = window.minimumSize()
-    current = window.size()
+        qt_app.SETTINGS_ORG = TEST_SETTINGS_ORG
+        qt_app.SETTINGS_APP = TEST_SETTINGS_APP
 
-    assert minimum.width() <= current.width(), "window width starts below minimum"
-    assert minimum.height() <= current.height(), "window height starts below minimum"
-    assert minimum.width() <= 800, "minimum width should permit smaller screens"
-    assert minimum.height() <= 560, "minimum height should permit smaller screens"
+        window = MXZTARForgeWindow()
 
-    window.resize(minimum.width() + 40, minimum.height() + 40)
-    resized = window.size()
-    assert resized.width() == minimum.width() + 40, "window width did not resize as requested"
-    assert resized.height() == minimum.height() + 40, "window height did not resize as requested"
+        minimum = window.minimumSize()
+        current = window.size()
 
-    assert isinstance(window.page_scroll, QScrollArea), "main pages must be inside a scroll area"
-    assert window.page_scroll.widgetResizable(), "page scroll area must resize its widget"
+        require(minimum.width() <= current.width(), "window width starts below minimum")
+        require(minimum.height() <= current.height(), "window height starts below minimum")
+        require(minimum.width() <= 800, "minimum width should permit smaller screens")
+        require(minimum.height() <= 560, "minimum height should permit smaller screens")
 
-    geometry = window.saveGeometry()
-    assert not geometry.isEmpty(), "window geometry did not serialize"
+        requested_width = minimum.width() + 40
+        requested_height = minimum.height() + 40
+        window.resize(requested_width, requested_height)
+        resized = window.size()
+        require(resized.width() == requested_width, "window width did not resize as requested")
+        require(resized.height() == requested_height, "window height did not resize as requested")
 
-    window.settings.setValue("main_window/geometry", geometry)
-    restored_window = MXZTARForgeWindow()
-    restored_geometry = restored_window.settings.value("main_window/geometry")
-    assert restored_geometry is not None, "saved geometry was not available to restore"
+        require(isinstance(window.page_scroll, QScrollArea), "main pages must be inside a scroll area")
+        require(window.page_scroll.widgetResizable(), "page scroll area must resize its widget")
 
-    print("PASS: main window is resizable")
-    print("PASS: minimum size is screen-friendly")
-    print("PASS: page area is scrollable")
-    print("PASS: window geometry can be saved and restored")
-    print("PASS: window geometry contract verified")
+        geometry = window.saveGeometry()
+        require(not geometry.isEmpty(), "window geometry did not serialize")
 
-    window.close()
-    restored_window.close()
+        window.settings.setValue("main_window/geometry", geometry)
+        restored_window = MXZTARForgeWindow()
+        restored_geometry = restored_window.settings.value("main_window/geometry")
+        require(restored_geometry is not None, "saved geometry was not available to restore")
+
+        print("PASS: main window is resizable")
+        print("PASS: minimum size is screen-friendly")
+        print("PASS: page area is scrollable")
+        print("PASS: window geometry can be saved and restored")
+        print("PASS: window geometry contract verified")
+
+        window.close()
+        restored_window.close()
+
     return 0
 
 
