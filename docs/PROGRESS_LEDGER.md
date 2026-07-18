@@ -1,4 +1,4 @@
-# MXZTAR-forge v2c0 — Progress Ledger
+# MXZTAR-forge v2.0 — Progress Ledger
 
 ## Ledger purpose
 
@@ -210,7 +210,7 @@ Files changed:
 Verification command after local sync:
 
 ```bash
-cd "$HOME/MXZTAR-forge-v2c0" || exit 1
+cd "$HOME/MXZTAR-forge-v2.0" || exit 1
 PYTHONPATH=src .venv/bin/python tools/verify_agent_worker_contract.py
 PYTHONPATH=src .venv/bin/python -m py_compile src/qt_panels/agent_worker.py tools/verify_agent_worker_contract.py
 ```

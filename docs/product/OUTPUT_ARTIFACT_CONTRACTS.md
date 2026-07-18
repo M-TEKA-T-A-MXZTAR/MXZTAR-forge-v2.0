@@ -1,8 +1,8 @@
-# MXZTAR-forge v2c0 — Output Artifact Contracts
+# MXZTAR-forge v2.0 — Output Artifact Contracts
 
 ## 1. Purpose
 
-This document defines the durable files produced by MXZTAR-forge v2c0 workflows.
+This document defines the durable files produced by MXZTAR-forge v2.0 workflows.
 
 Its purpose is to ensure that workflow outputs are:
 
@@ -230,7 +230,7 @@ Every JSON artifact must contain a common top-level envelope.
   "completed_at_utc": "2026-06-25T04:16:12Z",
   "elapsed_seconds": 42.0,
   "application": {
-    "name": "MXZTAR-forge v2c0",
+    "name": "MXZTAR-forge v2.0",
     "version": "0.0.0-development"
   },
   "execution": {},

@@ -1,8 +1,8 @@
-# MXZTAR-forge v2c0 — Project State and Data Authority
+# MXZTAR-forge v2.0 — Project State and Data Authority
 
 ## 1. Purpose
 
-This document defines how MXZTAR-forge v2c0 stores, reconstructs, validates, and protects project state.
+This document defines how MXZTAR-forge v2.0 stores, reconstructs, validates, and protects project state.
 
 Its purpose is to prevent competing sources of truth between:
 
