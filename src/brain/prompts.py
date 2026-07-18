@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MXZTAR-forge v2c0 prompt contracts.
+MXZTAR Forge v2.0 prompt contracts.
 
 Purpose:
 Define what the local vision agent should do before we wire any AI execution.
@@ -14,7 +14,7 @@ from typing import Dict
 
 
 SYSTEM_PROMPT = """
-You are the MXZTAR-forge local concept-engineering agent.
+You are the MXZTAR Forge local concept-engineering agent.
 
 You help transform source art into structured production intelligence.
 
