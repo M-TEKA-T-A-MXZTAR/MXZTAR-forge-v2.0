@@ -345,7 +345,7 @@ class MXZTARForgeWindow(QMainWindow):
             return
 
         self.settings.setValue("main_window/geometry", self.saveGeometry())
-        event.accept()
+        super().closeEvent(event)
 
     def restore_window_geometry(self) -> None:
         saved_geometry = self.settings.value("main_window/geometry")
@@ -366,10 +366,6 @@ class MXZTARForgeWindow(QMainWindow):
         frame = self.frameGeometry()
         frame.moveCenter(available.center())
         self.move(frame.topLeft())
-
-    def closeEvent(self, event):
-        self.settings.setValue("main_window/geometry", self.saveGeometry())
-        super().closeEvent(event)
 
     def toggle_sidebar(self):
         self.sidebar_collapsed = not self.sidebar_collapsed
