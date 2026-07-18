@@ -26,7 +26,6 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtWidgets import QApplication, QScrollArea  # noqa: E402
 
 import qt_app  # noqa: E402
-from qt_app import MXZTARForgeWindow  # noqa: E402
 
 
 TEST_SETTINGS_ORG = "MXZTAR-forge-verifier"
@@ -50,7 +49,7 @@ def main() -> int:
         qt_app.SETTINGS_ORG = TEST_SETTINGS_ORG
         qt_app.SETTINGS_APP = TEST_SETTINGS_APP
 
-        window = MXZTARForgeWindow()
+        window = qt_app.MXZTARForgeWindow()
 
         minimum = window.minimumSize()
         current = window.size()
@@ -74,7 +73,7 @@ def main() -> int:
         require(not geometry.isEmpty(), "window geometry did not serialize")
 
         window.settings.setValue("main_window/geometry", geometry)
-        restored_window = MXZTARForgeWindow()
+        restored_window = qt_app.MXZTARForgeWindow()
         restored_geometry = restored_window.settings.value("main_window/geometry")
         require(restored_geometry is not None, "saved geometry was not available to restore")
 
