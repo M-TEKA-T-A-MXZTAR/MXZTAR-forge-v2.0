@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-cd "$HOME/MXZTAR-forge-v2.0" || exit 1
+set -euo pipefail
 
-if [ -d ".venv" ]; then
-  source .venv/bin/activate
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [ -x "$SCRIPT_DIR/.venv/bin/python" ]; then
+  PYTHON="$SCRIPT_DIR/.venv/bin/python"
+else
+  PYTHON="python3"
 fi
 
-python3 src/mxztar_forge.py
+exec "$PYTHON" "$SCRIPT_DIR/src/mxztar_forge.py"
