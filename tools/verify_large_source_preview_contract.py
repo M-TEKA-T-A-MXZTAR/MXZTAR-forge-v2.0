@@ -72,6 +72,16 @@ def main() -> int:
             source_path.write_bytes(b"untouched-large-source-fixture")
             before = digest(source_path)
 
+            identity_fixture = Path(temp_dir) / "cache-identity.png"
+            identity_fixture.write_bytes(b"version-one")
+            first_cache_identity = original_cache_path(identity_fixture)
+            identity_fixture.write_bytes(b"version-two-with-new-size")
+            second_cache_identity = original_cache_path(identity_fixture)
+            require(
+                first_cache_identity != second_cache_identity,
+                "source change did not invalidate thumbnail cache identity",
+            )
+
             item = SourceArtItem(
                 label=f"input / {source_path.name}",
                 path=source_path,
@@ -125,6 +135,7 @@ def main() -> int:
                 f"PASS: preview decode bound = {requested.width()}x{requested.height()}"
             )
             print("PASS: bounded thumbnail is cached and reused")
+            print("PASS: source changes invalidate thumbnail cache identity")
             print("PASS: resize rendering uses the cached bounded preview")
             print("PASS: original large source bytes remain unchanged")
             print("PASS: large-source preview contract verified")
