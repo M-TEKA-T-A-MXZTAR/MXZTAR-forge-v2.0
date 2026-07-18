@@ -102,6 +102,11 @@ def main() -> int:
             panel = panel_module.AgentPanel()
             set_source(panel, source_path)
 
+            panel._elapsed_seconds = 14
+            panel.update_elapsed_time()
+            require("00:15" in panel.elapsed_label.text(), "elapsed display did not advance")
+            require("Still working locally" in panel.progress_output.toPlainText(), "heartbeat was not visible")
+
             run_case(
                 app,
                 panel,
@@ -137,6 +142,7 @@ def main() -> int:
             require(allowed_close.isAccepted(), "window did not close when idle")
 
             print("PASS: worker executes outside the Qt main thread")
+            print("PASS: elapsed timer and heartbeat remain visible")
             print("PASS: one-active-job guard rejects a second launch")
             print("PASS: success, saved failure, and unsaved failure remain distinct")
             print("PASS: controls return to idle after every final state")
