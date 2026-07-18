@@ -6,7 +6,7 @@ Known-good shell wiring:
 - Dashboard page
 - Start Here page
 - Agent Workflows page wired to AgentPanel
-- My Library placeholder
+- My Library source-art browser wired to Agent Workflows
 - Shape Library placeholder
 - Jobs placeholder
 - collapsible sidebar with icon-only state
@@ -40,6 +40,7 @@ from core.hardware_profile import apply_local_ai_policy, policy_summary
 from core.paths import ensure_project_dirs
 from qt_panels.start_here_panel import StartHerePanel
 from qt_panels.agent_panel import AgentPanel
+from qt_panels.my_library_panel import MyLibraryPanel
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -68,8 +69,8 @@ NAV_ITEMS = [
     },
     {
         "icon": "▤",
-        "label": "My Library — planned",
-        "tooltip": "Planned: concept folders, prompt library, drafts, previews, copy text, open folder.",
+        "label": "My Library",
+        "tooltip": "My Library: preview known source art and send a deliberate selection to Agent Workflows.",
     },
     {
         "icon": "◇",
@@ -106,9 +107,9 @@ WORKFLOW_GUIDANCE = {
         "status": "Planned after safe AI runner.",
     },
     "Restore My Library": {
-        "next": "Next: scan concept folders, prompt files, web copy drafts, and agent outputs into one panel.",
-        "lever": "ZCVIOS lever: reduce lost work and file hunting.",
-        "status": "Planned.",
+        "next": "Next: choose known source art in My Library and send it to Agent Workflows.",
+        "lever": "ZCVIOS lever: deliberate source selection without file duplication.",
+        "status": "Working source-art baseline. Durable workflow outputs remain a later project-contract stage.",
     },
 }
 
@@ -255,10 +256,9 @@ class MXZTARForgeWindow(QMainWindow):
         self.agent_panel = AgentPanel()
         self.agent_panel.status_changed.connect(self.set_status)
 
-        self.library_panel = PlaceholderPanel(
-            "My Library",
-            "Planned: concept folders, my prompts, web copy drafts, agent outputs, preview, copy text, and open folder."
-        )
+        self.library_panel = MyLibraryPanel()
+        self.library_panel.status_changed.connect(self.set_status)
+        self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
 
         self.shape_panel = PlaceholderPanel(
             "Shape / Structure Extraction",
@@ -335,6 +335,12 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.setCentralWidget(root)
         self.restore_window_geometry()
+
+    def open_library_source_in_agent_panel(self, item):
+        if self.agent_panel.select_source_item(item):
+            self.pages.setCurrentIndex(2)
+            self.sidebar.setCurrentRow(2)
+            self.set_status(f"Opened library source in Agent Workflows: {item.path.name}")
 
     def closeEvent(self, event):
         if self.agent_panel.has_active_job():
