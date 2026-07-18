@@ -41,7 +41,7 @@ Status values:
 | Agent runner JSON save path | VERIFIED historically | Simple-image source-art intelligence probe saved JSON output | Validate against new artifact-contract expectations |
 | Agent worker / QThread path | PARTIAL | Worker is wired to `AgentPanel` through a dedicated `QThread`; deterministic panel verifier covers lifecycle and final-state behaviour | Run verifier and manual Ollama smoke test locally before merge |
 | Agent Workflows source selector | VERIFIED manually | User selected an image and workflow | Reproduce in controlled compatibility test |
-| My Library source-art baseline | PARTIAL | Read-only source discovery, preview, facts, open-folder action, and exact `SourceArtItem` handoff are implemented on the PR branch | Run offscreen verifier and manual library-to-workflow smoke test before merge |
+| My Library source-art baseline | MERGED | Read-only source discovery, preview, facts, open-folder action, and exact `SourceArtItem` handoff merged in PR #23 | Verify bounded thumbnails and manual library-to-workflow path on large real source art |
 | UI run control | PARTIAL | Selected source/workflow can launch one background job with locked controls, elapsed time, heartbeat, progress, and saved path feedback | Verify against a known-compatible local source/model pair |
 | Random workflow run | OBSERVED | A saved output was shown alongside an `AgentResult(ok=False)` / Ollama HTTP 400; later audit confirmed saved-failure records are valid and worker success semantics were defective | Keep OBS-001 open until UI final-state wiring is verified |
 | Workflow success semantics | MERGED | `AgentWorker` unpacks `(AgentResult, Path)` and emits success only when `AgentResult.ok` is true; worker verifier covers success, saved failure, and exception paths | Preserve distinction in panel and artifact contracts |
@@ -350,6 +350,53 @@ Remaining local installation step after merge:
 - rename `$HOME/MXZTAR-forge-v2c0` to `$HOME/MXZTAR-forge-v2.0` only after checking the destination does not already exist;
 - back up and update the external application-menu and Desktop `.desktop` files;
 - confirm both launchers resolve to the canonical checkout and repository launcher.
+
+## 2026-07-19 — Bounded large-source thumbnail branch
+
+Branch: `agent/bound-large-source-previews`.
+
+Observed defect:
+
+- My Library attempted to construct a full-resolution `QPixmap` for very large source art;
+- Qt rejected the decode when it exceeded the 256 MB allocation limit;
+- raising the global allocation ceiling would risk UI freeze and excessive memory use on modest hardware.
+
+Purpose:
+
+- retain the original source file and exact workflow handoff path;
+- decode at most a 1600×1200 UI derivative;
+- cache the bounded thumbnail under `workspace/cache/source_previews`;
+- invalidate cache identity when source path, byte size, or modification time changes;
+- rerender window resizes from the bounded in-memory image rather than decoding the source again;
+- keep preview failure non-blocking so the original remains selectable.
+
+Files changed:
+
+- `src/core/paths.py`;
+- `src/core/source_preview_cache.py`;
+- `src/qt_panels/my_library_panel.py`;
+- `tools/verify_large_source_preview_contract.py`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_large_source_preview_contract.py
+
+PYTHONPATH=src .venv/bin/python -m py_compile \
+  src/core/paths.py \
+  src/core/source_preview_cache.py \
+  src/qt_panels/my_library_panel.py \
+  tools/verify_large_source_preview_contract.py
+```
+
+Boundary:
+
+- thumbnail files are rebuildable cache, not project truth;
+- this PR does not resize or overwrite original source art;
+- AI-request image preflight remains a separate execution-path gate before large-source model testing;
+- the application does not raise Qt's global allocation limit.
 
 ## Immediate next milestone after this ledger merges
 
