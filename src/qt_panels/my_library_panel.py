@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import subprocess
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QImage, QImageReader, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -32,6 +32,10 @@ from core.source_library import (
 )
 
 
+PREVIEW_MAX_WIDTH = 1600
+PREVIEW_MAX_HEIGHT = 1200
+
+
 class MyLibraryPanel(QWidget):
     status_changed = Signal(str)
     source_selected = Signal(object)
@@ -39,6 +43,8 @@ class MyLibraryPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.source_items = []
+        self._preview_image = QImage()
+        self._preview_source_path = None
 
         title = QLabel("My Library")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
@@ -177,16 +183,39 @@ class MyLibraryPanel(QWidget):
         self.load_preview(item)
 
     def load_preview(self, item: SourceArtItem):
-        pixmap = QPixmap(str(item.path))
+        reader = QImageReader(str(item.path))
+        reader.setAutoTransform(True)
+        source_size = reader.size()
 
-        if pixmap.isNull():
+        if source_size.isValid():
+            bounded_size = source_size.scaled(
+                QSize(PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT),
+                Qt.AspectRatioMode.KeepAspectRatio,
+            )
+            reader.setScaledSize(bounded_size)
+
+        image = reader.read()
+
+        if image.isNull():
+            self._preview_image = QImage()
+            self._preview_source_path = None
             self.preview_label.setPixmap(QPixmap())
+            detail = reader.errorString() or "Qt could not decode this format."
             self.preview_label.setText(
-                "Preview unavailable for this file.\nThe source remains selectable."
+                f"Preview unavailable.\n{detail}\nThe source remains selectable."
             )
             return
 
+        self._preview_image = image
+        self._preview_source_path = item.path
+        self.render_cached_preview()
+
+    def render_cached_preview(self):
+        if self._preview_image.isNull():
+            return
+
         target = self.preview_label.size()
+        pixmap = QPixmap.fromImage(self._preview_image)
         scaled = pixmap.scaled(
             max(1, target.width() - 16),
             max(1, target.height() - 16),
@@ -198,13 +227,13 @@ class MyLibraryPanel(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        item = self.selected_source()
-        if item is not None:
-            self.load_preview(item)
+        self.render_cached_preview()
 
     def clear_selection(self):
         self.use_button.setEnabled(False)
         self.open_folder_button.setEnabled(False)
+        self._preview_image = QImage()
+        self._preview_source_path = None
         self.preview_label.setPixmap(QPixmap())
         self.preview_label.setText("No source preview available.")
         folders = "\n".join(f"- {path}" for path in known_source_dirs())
