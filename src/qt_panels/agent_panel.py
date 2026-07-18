@@ -7,7 +7,7 @@ Stage 3B:
 - show end-user value and market/audience problem solved
 - restore source-art discovery UI
 - show adaptive local model policy
-- avoid dead AI execution until QThread worker is restored
+- run one visible AI workflow through a guarded QThread worker
 """
 
 import subprocess
@@ -168,8 +168,8 @@ class AgentPanel(QWidget):
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
 
         intro = QLabel(
-            "This panel defines how MXZTAR Forge turns source art into production intelligence. "
-            "AI execution is deliberately held back until the safe threaded worker is restored."
+            "This panel turns selected source art into saved production intelligence through "
+            "one visible, hardware-governed local workflow at a time."
         )
         intro.setWordWrap(True)
         intro.setStyleSheet("color: #cfcfcf;")
@@ -268,13 +268,13 @@ class AgentPanel(QWidget):
         card_layout.addWidget(self.status_label)
         card.setLayout(card_layout)
 
-        next_title = QLabel("Next restoration target")
+        next_title = QLabel("Current execution boundary")
         next_title.setStyleSheet("font-size: 18px; font-weight: 700;")
 
         next_body = QLabel(
-            "Next we rebuild the safe AI worker: Ollama call, qwen2.5vl:3b default model, "
-            "adaptive hardware policy, QThread execution, elapsed timer, progress messages, "
-            "and clear output saved to workspace/data/brain. No silent freeze, no mystery waiting."
+            "The safe baseline runs one QThread workflow with elapsed time, heartbeat, truthful "
+            "completion state, and output saved under workspace/data/brain. Cooperative cancellation "
+            "and large-image preflight remain separate verified milestones."
         )
         next_body.setWordWrap(True)
         next_body.setStyleSheet("color: #cfcfcf;")
