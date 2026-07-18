@@ -1,0 +1,17 @@
+name: "MXZTAR-forge CodeQL configuration"
+
+paths:
+  - src
+  - tools
+  - scripts
+
+paths-ignore:
+  - .venv
+  - workspace
+  - assets
+  - "**/__pycache__/**"
+  - "**/*.pyc"
+
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
