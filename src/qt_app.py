@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MXZTAR-forge v2c0 Qt shell.
+MXZTAR Forge v2.0 Qt shell.
 
 Known-good shell wiring:
 - Dashboard page
@@ -44,7 +44,7 @@ from qt_panels.agent_panel import AgentPanel
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SETTINGS_ORG = "MXZTAR"
-SETTINGS_APP = "MXZTAR-forge-v2c0"
+SETTINGS_APP = "MXZTAR-Forge-v2.0"
 DEFAULT_WINDOW_SIZE = QSize(1080, 680)
 MINIMUM_WINDOW_SIZE = QSize(760, 520)
 SCREEN_MARGIN_PX = 80
@@ -244,7 +244,7 @@ class MXZTARForgeWindow(QMainWindow):
         self.settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.sidebar_collapsed = False
 
-        self.setWindowTitle("MXZTAR-forge v2c0")
+        self.setWindowTitle("MXZTAR Forge v2.0")
         self.setMinimumSize(MINIMUM_WINDOW_SIZE)
         self.resize(screen_safe_default_size())
 
