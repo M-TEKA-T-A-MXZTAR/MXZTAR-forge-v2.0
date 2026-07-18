@@ -1,6 +1,6 @@
-# MXZTAR-forge v2c0
+# MXZTAR Forge v2.0
 
-MXZTAR-forge v2c0 is a local-first, human-governed creative concept-engineering forge.
+MXZTAR Forge v2.0 is a local-first, human-governed creative concept-engineering forge.
 
 It helps creators, concept artists, 3D/blockout artists, game/film/animation planners, and design-system builders turn complex source art into structured, inspectable, reusable production intelligence.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MXZTAR-forge v2c0 Ollama HTTP service.
+MXZTAR Forge v2.0 Ollama HTTP service.
 
 Uses Ollama's local HTTP API, not the unavailable `ollama generate` command.
 

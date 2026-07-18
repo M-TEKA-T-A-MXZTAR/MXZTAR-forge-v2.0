@@ -1,8 +1,8 @@
-# MXZTAR-forge v2c0 — First Rentable Release
+# MXZTAR-forge v2.0 — First Rentable Release
 
 ## 1. Purpose
 
-The first rentable release of MXZTAR-forge v2c0 helps a creator turn source artwork into structured creative-production material.
+The first rentable release of MXZTAR-forge v2.0 helps a creator turn source artwork into structured creative-production material.
 
 It is not merely an image-description tool.
 
@@ -20,7 +20,7 @@ The first release must be useful without promising unfinished automation.
 
 ## 2. Core Product Promise
 
-MXZTAR-forge v2c0 turns source art into:
+MXZTAR-forge v2.0 turns source art into:
 
 * visual intelligence;
 * reusable structure and shape findings;

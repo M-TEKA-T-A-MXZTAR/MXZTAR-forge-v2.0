@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-cd "$HOME/MXZTAR-forge-v2c0" || exit 1
+cd "$HOME/MXZTAR-forge-v2.0" || exit 1
 
 export OLLAMA_NUM_THREAD=2
 export OLLAMA_NUM_PARALLEL=1

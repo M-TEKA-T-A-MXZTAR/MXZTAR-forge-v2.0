@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MXZTAR-forge v2c0 launcher entry point.
+MXZTAR Forge v2.0 launcher entry point.
 
 Local creative-concept engineering forge.
 Default AI resource policy:

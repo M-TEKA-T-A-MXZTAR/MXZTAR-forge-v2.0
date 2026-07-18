@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Persistent onboarding/profile storage for MXZTAR-forge v2c0.
+Persistent onboarding/profile storage for MXZTAR Forge v2.0.
 """
 
 import json
@@ -15,7 +15,7 @@ from core.paths import (
 
 
 DEFAULT_PROFILE = {
-    "project_name": "MXZTAR-forge v2c0",
+    "project_name": "MXZTAR Forge v2.0",
     "project_role": "Local creative-concept engineering forge",
     "creator_name": "",
     "brand_presence": "",

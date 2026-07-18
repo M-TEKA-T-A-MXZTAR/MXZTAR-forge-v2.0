@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MXZTAR-forge v2c0 agent runner.
+MXZTAR Forge v2.0 agent runner.
 
 Purpose:
 Run one safe local vision workflow and save the result as a JSON record.

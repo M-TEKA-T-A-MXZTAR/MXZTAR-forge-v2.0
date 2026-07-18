@@ -1,8 +1,8 @@
-# MXZTAR-forge v2c0 — Master Build Plan
+# MXZTAR-forge v2.0 — Master Build Plan
 
 ## 1. What we are building
 
-MXZTAR-forge v2c0 is a local-first, human-governed creative concept-engineering forge.
+MXZTAR-forge v2.0 is a local-first, human-governed creative concept-engineering forge.
 
 It turns source art into structured, inspectable, reusable production intelligence. It is not merely an image captioner, an automatic art generator, or a one-click 2D-to-3D converter.
 

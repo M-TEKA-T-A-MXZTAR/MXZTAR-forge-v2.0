@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Agent Workflows panel for MXZTAR-forge v2c0.
+Agent Workflows panel for MXZTAR Forge v2.0.
 
 Stage 3B:
-- define the actual MXZTAR-forge workflows
+- define the actual MXZTAR Forge workflows
 - show end-user value and market/audience problem solved
 - restore source-art discovery UI
 - show local model policy
@@ -158,7 +158,7 @@ class AgentPanel(QWidget):
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
 
         intro = QLabel(
-            "This panel defines how MXZTAR-forge turns source art into production intelligence. "
+            "This panel defines how MXZTAR Forge turns source art into production intelligence. "
             "AI execution is deliberately held back until the safe threaded worker is restored."
         )
         intro.setWordWrap(True)

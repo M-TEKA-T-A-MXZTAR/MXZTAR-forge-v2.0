@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Start Here panel for MXZTAR-forge v2c0.
+Start Here panel for MXZTAR Forge v2.0.
 
 Purpose:
 - store project identity

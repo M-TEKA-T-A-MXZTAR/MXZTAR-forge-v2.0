@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Source-art discovery for MXZTAR-forge v2c0.
+Source-art discovery for MXZTAR Forge v2.0.
 
 Scans the known source folders used by the rebuilt forge:
 - workspace/input

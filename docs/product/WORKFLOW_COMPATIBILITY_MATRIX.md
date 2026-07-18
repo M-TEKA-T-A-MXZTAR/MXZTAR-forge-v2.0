@@ -1,4 +1,4 @@
-# MXZTAR-forge v2c0 — Workflow Compatibility Matrix
+# MXZTAR-forge v2.0 — Workflow Compatibility Matrix
 
 ## 1. Purpose
 
