@@ -40,6 +40,7 @@ Status values:
 | Agent runner JSON save path | VERIFIED historically | Simple-image source-art intelligence probe saved JSON output | Validate against new artifact-contract expectations |
 | Agent worker / QThread path | PARTIAL | Worker is wired to `AgentPanel` through a dedicated `QThread`; deterministic panel verifier covers lifecycle and final-state behaviour | Run verifier and manual Ollama smoke test locally before merge |
 | Agent Workflows source selector | VERIFIED manually | User selected an image and workflow | Reproduce in controlled compatibility test |
+| My Library source-art baseline | PARTIAL | Read-only source discovery, preview, facts, open-folder action, and exact `SourceArtItem` handoff are implemented on the PR branch | Run offscreen verifier and manual library-to-workflow smoke test before merge |
 | UI run control | PARTIAL | Selected source/workflow can launch one background job with locked controls, elapsed time, heartbeat, progress, and saved path feedback | Verify against a known-compatible local source/model pair |
 | Random workflow run | OBSERVED | A saved output was shown alongside an `AgentResult(ok=False)` / Ollama HTTP 400; later audit confirmed saved-failure records are valid and worker success semantics were defective | Keep OBS-001 open until UI final-state wiring is verified |
 | Workflow success semantics | MERGED | `AgentWorker` unpacks `(AgentResult, Path)` and emits success only when `AgentResult.ok` is true; worker verifier covers success, saved failure, and exception paths | Preserve distinction in panel and artifact contracts |
@@ -270,6 +271,53 @@ Remaining boundary:
 - the existing 600-second service timeout remains the hard request boundary;
 - the former large-JPEG HTTP 400 still requires a separate source-image preflight milestone;
 - a known-compatible manual Ollama run remains required before marking the end-to-end path VERIFIED.
+
+## 2026-07-19 — My Library source-art baseline branch
+
+Branch: `agent/build-my-library-source-baseline`.
+
+Purpose:
+
+- replace the My Library placeholder with a useful read-only source-art browser;
+- preview supported images and display their path, type, size, and library section;
+- hand the exact selected `SourceArtItem` to Agent Workflows;
+- navigate to the workflow panel without copying, moving, renaming, or modifying the source;
+- keep workflow outputs and approved artifacts explicitly deferred until durable project contracts exist.
+
+Files changed:
+
+- `src/qt_panels/my_library_panel.py`;
+- `src/qt_panels/agent_panel.py`;
+- `src/qt_app.py`;
+- `tools/verify_my_library_contract.py`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_my_library_contract.py
+
+PYTHONPATH=src .venv/bin/python -m py_compile \
+  src/qt_panels/my_library_panel.py \
+  src/qt_panels/agent_panel.py \
+  src/qt_app.py \
+  tools/verify_my_library_contract.py
+```
+
+Expected evidence:
+
+- supported source art is discovered and previewed;
+- the exact selected source reaches Agent Workflows;
+- source replacement is rejected while an AI job is active;
+- source bytes remain unchanged through discovery and handoff;
+- an empty library disables actions and explains where source art belongs.
+
+Remaining boundary:
+
+- My Library currently represents the Source Art stage only;
+- durable workflow-output browsing, approvals, prompts, and concept folders depend on later project and artifact contracts;
+- no ownership or licence verification is inferred from file discovery.
 
 ## Immediate next milestone after this ledger merges
 
