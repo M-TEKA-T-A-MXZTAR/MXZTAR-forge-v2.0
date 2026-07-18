@@ -7,13 +7,13 @@ Stage 3B:
 - show end-user value and market/audience problem solved
 - restore source-art discovery UI
 - show adaptive local model policy
-- avoid dead AI execution until QThread worker is restored
+- run one visible AI workflow through a guarded QThread worker
 """
 
 import subprocess
 from pathlib import Path
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QThread, QTimer, Signal, Slot
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.hardware_profile import apply_local_ai_policy, policy_summary
+from qt_panels.agent_worker import AgentWorker
 from core.source_library import SourceArtItem, format_size, known_source_dirs, scan_source_art
 
 
@@ -153,13 +154,22 @@ class AgentPanel(QWidget):
         super().__init__()
 
         self.source_items = []
+        self._thread = None
+        self._worker = None
+        self._job_active = False
+        self._elapsed_seconds = 0
+        self._completion_received = False
+
+        self.elapsed_timer = QTimer(self)
+        self.elapsed_timer.setInterval(1000)
+        self.elapsed_timer.timeout.connect(self.update_elapsed_time)
 
         title = QLabel("Agent Workflows")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
 
         intro = QLabel(
-            "This panel defines how MXZTAR Forge turns source art into production intelligence. "
-            "AI execution is deliberately held back until the safe threaded worker is restored."
+            "This panel turns selected source art into saved production intelligence through "
+            "one visible, hardware-governed local workflow at a time."
         )
         intro.setWordWrap(True)
         intro.setStyleSheet("color: #cfcfcf;")
@@ -205,7 +215,29 @@ class AgentPanel(QWidget):
         self.source_details.setReadOnly(True)
         self.source_details.setMinimumHeight(180)
 
+        self.run_button = QPushButton("Run Selected Workflow")
+        self.run_button.setToolTip(
+            "Run one local workflow in a background thread. Only one heavy job may run at a time."
+        )
+        self.run_button.clicked.connect(self.start_selected_workflow)
+
+        self.elapsed_label = QLabel("Elapsed: 00:00")
+        self.elapsed_label.setStyleSheet("color: #bfbfbf;")
+
+        run_row = QHBoxLayout()
+        run_row.addWidget(self.run_button)
+        run_row.addWidget(self.elapsed_label)
+        run_row.addStretch(1)
+
+        self.progress_output = QTextEdit()
+        self.progress_output.setReadOnly(True)
+        self.progress_output.setMinimumHeight(150)
+        self.progress_output.setPlaceholderText(
+            "Workflow progress, completion state, and saved output path will appear here."
+        )
+
         self.status_label = QLabel("Ready.")
+        self.status_label.setWordWrap(True)
         self.status_label.setStyleSheet("color: #d6c27a;")
 
         card = QFrame()
@@ -230,16 +262,19 @@ class AgentPanel(QWidget):
         card_layout.addWidget(self.workflow_details)
         card_layout.addWidget(QLabel("Selected source details:"))
         card_layout.addWidget(self.source_details)
+        card_layout.addLayout(run_row)
+        card_layout.addWidget(QLabel("Execution progress:"))
+        card_layout.addWidget(self.progress_output)
         card_layout.addWidget(self.status_label)
         card.setLayout(card_layout)
 
-        next_title = QLabel("Next restoration target")
+        next_title = QLabel("Current execution boundary")
         next_title.setStyleSheet("font-size: 18px; font-weight: 700;")
 
         next_body = QLabel(
-            "Next we rebuild the safe AI worker: Ollama call, qwen2.5vl:3b default model, "
-            "adaptive hardware policy, QThread execution, elapsed timer, progress messages, "
-            "and clear output saved to workspace/data/brain. No silent freeze, no mystery waiting."
+            "The safe baseline runs one QThread workflow with elapsed time, heartbeat, truthful "
+            "completion state, and output saved under workspace/data/brain. Cooperative cancellation "
+            "and large-image preflight remain separate verified milestones."
         )
         next_body.setWordWrap(True)
         next_body.setStyleSheet("color: #cfcfcf;")
@@ -305,7 +340,7 @@ class AgentPanel(QWidget):
             "Current state:\n"
             "- Source selection works.\n"
             "- Workflow definitions are visible.\n"
-            "- AI execution comes next after safe worker restoration."
+            "- Safe threaded AI execution is available below."
         )
 
     def update_workflow_details(self, workflow_name: str):
@@ -342,6 +377,108 @@ class AgentPanel(QWidget):
             self.set_status(f"Opened workspace folder: {root}")
         except Exception as exc:
             self.set_status(f"Could not open workspace folder: {exc}")
+
+    def has_active_job(self) -> bool:
+        return self._job_active
+
+    def start_selected_workflow(self):
+        if self._job_active:
+            self.set_status("A local AI job is already running. Wait for it to finish.")
+            return
+
+        item = self.source_combo.currentData()
+        workflow_key = self.workflow_combo.currentText()
+
+        if not isinstance(item, SourceArtItem):
+            self.set_status("Select a supported source image before running a workflow.")
+            return
+
+        if not item.path.exists():
+            self.set_status(f"Selected source image no longer exists: {item.path}")
+            return
+
+        if workflow_key not in WORKFLOWS:
+            self.set_status("Select a recognised workflow before starting.")
+            return
+
+        self._job_active = True
+        self._completion_received = False
+        self._elapsed_seconds = 0
+        self.elapsed_label.setText("Elapsed: 00:00")
+        self.progress_output.clear()
+        self.append_progress("Preparing safe local workflow.")
+        self.set_running_controls(True)
+
+        self._thread = QThread(self)
+        self._worker = AgentWorker(
+            workflow_key=workflow_key,
+            source_path=str(item.path),
+        )
+        self._worker.moveToThread(self._thread)
+
+        self._thread.started.connect(self._worker.run)
+        self._worker.progress.connect(self.append_progress)
+        self._worker.finished.connect(self.handle_worker_finished)
+        self._worker.finished.connect(self._thread.quit)
+        self._worker.finished.connect(self._worker.deleteLater)
+        self._thread.finished.connect(self.handle_thread_finished)
+        self._thread.finished.connect(self._thread.deleteLater)
+
+        self.elapsed_timer.start()
+        self.set_status(f"Running {workflow_key} locally. The interface remains responsive.")
+        self._thread.start()
+
+    def set_running_controls(self, running: bool):
+        self.run_button.setEnabled(not running)
+        self.source_combo.setEnabled(not running)
+        self.workflow_combo.setEnabled(not running)
+
+    @Slot(str)
+    def append_progress(self, message: str):
+        self.progress_output.append(message)
+
+    @Slot()
+    def update_elapsed_time(self):
+        self._elapsed_seconds += 1
+        minutes, seconds = divmod(self._elapsed_seconds, 60)
+        self.elapsed_label.setText(f"Elapsed: {minutes:02d}:{seconds:02d}")
+
+        if self._elapsed_seconds % 15 == 0:
+            self.append_progress(
+                f"Still working locally — {minutes:02d}:{seconds:02d} elapsed."
+            )
+
+    @Slot(bool, str, str)
+    def handle_worker_finished(self, ok: bool, output_path: str, error: str):
+        self._completion_received = True
+        self.elapsed_timer.stop()
+
+        if ok:
+            self.append_progress("Workflow completed successfully.")
+            self.append_progress(f"Saved output: {output_path}")
+            self.set_status(f"Workflow succeeded. Saved output: {output_path}")
+            return
+
+        if output_path:
+            self.append_progress(f"Workflow failed. Diagnostic saved: {output_path}")
+            self.set_status(f"Workflow failed. Diagnostic saved: {output_path}. {error}")
+            return
+
+        self.append_progress(f"Workflow failed before a result was saved: {error}")
+        self.set_status(f"Workflow failed before saving a result: {error}")
+
+    @Slot()
+    def handle_thread_finished(self):
+        self.elapsed_timer.stop()
+
+        if not self._completion_received:
+            self.append_progress("Worker thread ended without a completion result.")
+            self.set_status("Workflow ended unexpectedly without a completion result.")
+
+        self._job_active = False
+        self.set_running_controls(False)
+        self._worker = None
+        self._thread = None
 
     def set_status(self, message: str):
         self.status_label.setText(message)
