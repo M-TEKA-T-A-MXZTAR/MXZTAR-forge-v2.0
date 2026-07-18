@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-MXZTAR-forge v2c0 path registry.
+MXZTAR Forge v2.0 path registry.
 
 Centralizes project paths so panels and engines do not hard-code folders.
 """
@@ -40,7 +40,7 @@ SETTINGS_NOTES_PATH = USER_PROFILE_DIR / "settings_notes.txt"
 
 
 def ensure_project_dirs() -> None:
-    """Create the standard MXZTAR-forge folders if missing."""
+    """Create the standard MXZTAR Forge folders if missing."""
     for path in [
         INPUT_DIR,
         IMPORTS_DIR,
