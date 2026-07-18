@@ -10,6 +10,9 @@ Known-good shell wiring:
 - Shape Library placeholder
 - Jobs placeholder
 - collapsible sidebar with icon-only state
+- screen-safe resizable main window
+- saved window size and position
+- scrollable page area for smaller displays
 - no duplicate visible app title
 """
 
@@ -17,7 +20,7 @@ import os
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSettings, QSize, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -27,6 +30,7 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMainWindow,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -39,6 +43,11 @@ from qt_panels.agent_panel import AgentPanel
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SETTINGS_ORG = "MXZTAR"
+SETTINGS_APP = "MXZTAR-forge-v2c0"
+DEFAULT_WINDOW_SIZE = QSize(1080, 680)
+MINIMUM_WINDOW_SIZE = QSize(760, 520)
+SCREEN_MARGIN_PX = 80
 
 
 NAV_ITEMS = [
@@ -102,6 +111,23 @@ WORKFLOW_GUIDANCE = {
         "status": "Planned.",
     },
 }
+
+
+def screen_safe_default_size() -> QSize:
+    """Return a default size that should fit inside the current primary screen."""
+    screen = QApplication.primaryScreen()
+
+    if screen is None:
+        return DEFAULT_WINDOW_SIZE
+
+    available = screen.availableGeometry()
+    max_width = max(MINIMUM_WINDOW_SIZE.width(), available.width() - SCREEN_MARGIN_PX)
+    max_height = max(MINIMUM_WINDOW_SIZE.height(), available.height() - SCREEN_MARGIN_PX)
+
+    return QSize(
+        min(DEFAULT_WINDOW_SIZE.width(), max_width),
+        min(DEFAULT_WINDOW_SIZE.height(), max_height),
+    )
 
 
 class DashboardPanel(QWidget):
@@ -215,10 +241,12 @@ class MXZTARForgeWindow(QMainWindow):
 
         ensure_project_dirs()
 
+        self.settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.sidebar_collapsed = False
 
         self.setWindowTitle("MXZTAR-forge v2c0")
-        self.resize(1250, 790)
+        self.setMinimumSize(MINIMUM_WINDOW_SIZE)
+        self.resize(screen_safe_default_size())
 
         self.pages = QStackedWidget()
 
@@ -251,6 +279,11 @@ class MXZTARForgeWindow(QMainWindow):
         self.pages.addWidget(self.library_panel)
         self.pages.addWidget(self.shape_panel)
         self.pages.addWidget(self.jobs_panel)
+
+        self.page_scroll = QScrollArea()
+        self.page_scroll.setWidgetResizable(True)
+        self.page_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.page_scroll.setWidget(self.pages)
 
         self.sidebar = QListWidget()
         self.sidebar.setFixedWidth(220)
@@ -292,7 +325,7 @@ class MXZTARForgeWindow(QMainWindow):
 
         main_row = QHBoxLayout()
         main_row.addWidget(self.side_container)
-        main_row.addWidget(self.pages, 1)
+        main_row.addWidget(self.page_scroll, 1)
 
         main_column = QVBoxLayout()
         main_column.addLayout(main_row, 1)
@@ -307,6 +340,31 @@ class MXZTARForgeWindow(QMainWindow):
         )
 
         self.setCentralWidget(root)
+        self.restore_window_geometry()
+
+    def restore_window_geometry(self) -> None:
+        saved_geometry = self.settings.value("main_window/geometry")
+
+        if saved_geometry is not None and self.restoreGeometry(saved_geometry):
+            return
+
+        self.resize(screen_safe_default_size())
+        self.center_on_primary_screen()
+
+    def center_on_primary_screen(self) -> None:
+        screen = QApplication.primaryScreen()
+
+        if screen is None:
+            return
+
+        available = screen.availableGeometry()
+        frame = self.frameGeometry()
+        frame.moveCenter(available.center())
+        self.move(frame.topLeft())
+
+    def closeEvent(self, event):
+        self.settings.setValue("main_window/geometry", self.saveGeometry())
+        super().closeEvent(event)
 
     def toggle_sidebar(self):
         self.sidebar_collapsed = not self.sidebar_collapsed
@@ -344,6 +402,8 @@ class MXZTARForgeWindow(QMainWindow):
 
 def main() -> int:
     app = QApplication(sys.argv)
+    app.setOrganizationName(SETTINGS_ORG)
+    app.setApplicationName(SETTINGS_APP)
     window = MXZTARForgeWindow()
     window.show()
     return app.exec()
