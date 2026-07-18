@@ -98,7 +98,7 @@ WORKFLOW_GUIDANCE = {
     "Restore Safe AI Runner": {
         "next": "Next: rebuild Ollama call, QThread worker, elapsed timer, progress messages, and saved outputs.",
         "lever": "ZCVIOS lever: no silent freeze; adaptive hardware-kind AI.",
-        "status": "Planned. qwen2.5vl:3b is installed and remains the default local vision agent.",
+        "status": "Working baseline. One background-thread workflow can run with truthful final states.",
     },
     "Restore Concept Folders": {
         "next": "Next: create README, source, prompts, notes, and agent_output.json from AI output.",
@@ -335,6 +335,17 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.setCentralWidget(root)
         self.restore_window_geometry()
+
+    def closeEvent(self, event):
+        if self.agent_panel.has_active_job():
+            self.set_status(
+                "A local AI workflow is still running. Wait for it to finish before closing."
+            )
+            event.ignore()
+            return
+
+        self.settings.setValue("main_window/geometry", self.saveGeometry())
+        event.accept()
 
     def restore_window_geometry(self) -> None:
         saved_geometry = self.settings.value("main_window/geometry")
