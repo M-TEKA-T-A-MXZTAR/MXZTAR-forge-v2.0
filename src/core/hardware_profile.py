@@ -16,7 +16,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Tuple
+from typing import Tuple
 
 BYTES_PER_GIB = 1024 ** 3
 SAFE_CPU_THREADS = 2
