@@ -38,11 +38,11 @@ Status values:
 | Default local vision model | VERIFIED historically | `qwen2.5vl:3b` passed simple-image vision probe | Reconfirm model availability and current digest/version |
 | Seven prompt contracts | VERIFIED historically | `source_art_intelligence`, `modular_set_perspective`, `prototype_imagination`, `shape_structure_harvest`, `concept_brief`, `render_prompt_pack`, `recommend_next_step` | Re-run verifier on current `main` |
 | Agent runner JSON save path | VERIFIED historically | Simple-image source-art intelligence probe saved JSON output | Validate against new artifact-contract expectations |
-| Agent worker / QThread path | MERGED historically | Worker implementation and UI wiring milestone were merged before later planning work | Audit current code and thread lifecycle |
+| Agent worker / QThread path | PARTIAL | Worker implementation exists and now has a contract verifier on the worker-only path; panel wiring remains absent | Wire only after execution baseline and final-state UI contract are verified |
 | Agent Workflows source selector | VERIFIED manually | User selected an image and workflow | Reproduce in controlled compatibility test |
-| UI run control | VERIFIED manually | User launched a selected workflow without reported UI freeze | Re-run with success and failure fixtures |
-| Random workflow run | OBSERVED | A saved output was shown alongside an `AgentResult(ok=False)` / Ollama HTTP 400; selection was random, so defect was not declared | Reproduce under known source/workflow combinations; classify payload, compatibility, and return contract |
-| Workflow success semantics | PARTIAL | Historical output suggests saved diagnostic and workflow success may have been conflated | Ensure failed result cannot be displayed as success |
+| UI run control | PARTIAL | Historical run existed, but current `AgentPanel` has no live run button or worker connection | Restore only after worker and UI final-state contract are proven |
+| Random workflow run | OBSERVED | A saved output was shown alongside an `AgentResult(ok=False)` / Ollama HTTP 400; later audit confirmed saved-failure records are valid and worker success semantics were defective | Keep OBS-001 open until UI final-state wiring is verified |
+| Workflow success semantics | PENDING PR | Worker fix branch unpacks `(AgentResult, Path)` and emits success only when `AgentResult.ok` is true; verifier covers success, saved failure, and exception paths | Merge PR and run verifier locally |
 | Cancellation | PLANNED | Required by build plan | Define contract and tests before adding visible control |
 | Timeout handling | PARTIAL | Service has timeout concepts; complete UI/artifact behaviour not proven | Add deterministic timeout fixture and final-state test |
 | Failure diagnostics | PARTIAL | Runner can save JSON; durable schema and UI truth not proven | Implement shared failure artifact after baseline audit |
@@ -50,8 +50,8 @@ Status values:
 | Workflow compatibility matrix | MERGED | `docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`, PR #14 | Implement encoded assessor in Phase 4 |
 | Output artifact contracts | MERGED | `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, PR #15 | Implement schemas and validators in Phase 5 |
 | Project state and data authority | MERGED | `docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`, PR #16 | Implement only after execution baseline is stable |
-| Master build plan | PENDING PR | `docs/product/MASTER_BUILD_PLAN.md` on current planning branch | Merge current planning PR |
-| Progress ledger | PENDING PR | This document on current planning branch | Merge current planning PR and update thereafter |
+| Master build plan | MERGED | `docs/product/MASTER_BUILD_PLAN.md`, PR #17 | Follow phased implementation order |
+| Progress ledger | MERGED | This document, PR #17 | Update after every meaningful audit or implementation milestone |
 | Project manifest and self-contained project directory | PLANNED | Authority contract defines requirements | Phase 2 |
 | SQLite rebuild from durable artifacts | PLANNED | SQLite is derived index, not sole truth | Phase 2 exit test |
 | Project lock / one-writer rule | PLANNED | Architecture contract defined | Phase 2 |
@@ -124,6 +124,18 @@ Established:
 - manual-edit handling;
 - backup, restore, and reconciliation boundaries.
 
+### PR #17 — Master build plan and progress ledger
+
+Status: `MERGED`.
+
+Established:
+
+- source-art-to-spatial-design intelligence product definition;
+- gap map;
+- phased build plan;
+- progress-ledger governance;
+- next permitted milestone: Execution Baseline Audit.
+
 ## Historical verified value path
 
 The earlier implementation proved this basic backend chain at least once:
@@ -160,22 +172,60 @@ Observed behaviour:
 
 Current interpretation:
 
-- not yet a confirmed bug because source/workflow compatibility was uncontrolled;
-- possible return-contract confusion between `(AgentResult, output_path)` and a success path;
-- possible malformed or unsupported vision request;
-- possible UI conflation of “diagnostic saved” with “workflow succeeded.”
+- the runner correctly saves both success records and failure diagnostic records;
+- the former large JPEG source still reproduces an Ollama HTTP 400 with the current vision request path;
+- the worker previously treated any returned `(AgentResult, output_path)` tuple as success because no Python exception was raised;
+- therefore storage success and workflow success were conflated at the worker-signal boundary.
 
 Required resolution:
 
-1. inspect current contracts;
-2. reproduce with a known compatible pair;
-3. reproduce with a known blocked pair;
-4. assert exact worker signal values;
-5. assert final UI label;
-6. assert saved artifact status;
-7. add regression coverage.
+1. inspect current contracts — completed;
+2. reproduce with a known compatible pair — completed;
+3. reproduce with the former failing source — completed;
+4. assert exact worker signal values — pending PR verifier;
+5. assert final UI label — pending future panel wiring;
+6. assert saved artifact status — pending artifact-contract implementation;
+7. add regression coverage — pending PR verifier.
 
-Do not close OBS-001 until evidence identifies the cause and proves the correction.
+Do not close OBS-001 until evidence proves final UI state, saved artifact status, and worker/panel wiring.
+
+## Execution baseline audit notes
+
+### 2026-07-06 — AgentWorker success semantics fix branch
+
+Branch: `fix-agent-worker-success-semantics`.
+
+Purpose:
+
+- prevent failed `AgentResult` records from being reported to the UI as successful workflows;
+- preserve the saved diagnostic path for failed-but-saved results;
+- distinguish runner exceptions from saved failure diagnostics.
+
+Files changed:
+
+- `src/qt_panels/agent_worker.py`;
+- `tools/verify_agent_worker_contract.py`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification command after local sync:
+
+```bash
+cd "$HOME/MXZTAR-forge-v2c0" || exit 1
+PYTHONPATH=src .venv/bin/python tools/verify_agent_worker_contract.py
+PYTHONPATH=src .venv/bin/python -m py_compile src/qt_panels/agent_worker.py tools/verify_agent_worker_contract.py
+```
+
+Expected result:
+
+- success result emits `finished(True, saved_path, "")`;
+- saved failure result emits `finished(False, diagnostic_path, error)`;
+- exception before saved result emits `finished(False, "", error)`.
+
+Remaining blockers:
+
+- `AgentPanel` still has no live run button, QThread lifecycle, elapsed timer, cancellation, or completion handler;
+- the large JPEG source still triggers Ollama HTTP 400 and needs image-size/preflight handling before repeated full-resolution vision requests;
+- swap configuration has been observed at 4 GiB and should be handled in a separate system-maintenance side quest after this PR.
 
 ## Immediate next milestone after this ledger merges
 
