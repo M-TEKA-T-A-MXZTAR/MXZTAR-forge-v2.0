@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Repository role: MXZTAR-forge v2c0 is a local Ubuntu creative-concept engineering forge. It turns complex source art into structured production material, prompt packs, modular design intelligence, and future workflow-ready assets.
+Repository role: MXZTAR Forge v2.0 is a local Ubuntu creative-concept engineering forge. It turns complex source art into structured production material, prompt packs, modular design intelligence, and future workflow-ready assets.
 
 Use this file as the compact coding source of truth for AI agents working in this repo.
 
@@ -15,7 +15,7 @@ Use this file as the compact coding source of truth for AI agents working in thi
 - Abstractions should remove difficulty, not hide reality. Avoid vague helpers such as `processData`, `handleThing`, or `doAction`.
 - Prefer small, reversible changes. Do not perform sweeping refactors unless the task explicitly requires them.
 
-## MXZTAR-forge guardrails
+## MXZTAR Forge guardrails
 
 - Git repository history is the leading source of truth. VX12 backups are dated safety copies. Terminal scrollback is not a source of truth.
 - Preserve the source-image to visual-intelligence to modular-candidates to prompt-pack/output path.
