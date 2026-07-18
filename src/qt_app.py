@@ -96,7 +96,7 @@ WORKFLOW_GUIDANCE = {
         "status": "In progress. Source discovery and workflow definitions should now be visible.",
     },
     "Restore Safe AI Runner": {
-        "next": "Next: rebuild Ollama call, QThread worker, elapsed timer, progress messages, and saved outputs.",
+        "next": "Next: verify the threaded runner with a compatible source, then address image preflight and cooperative cancellation.",
         "lever": "ZCVIOS lever: no silent freeze; adaptive hardware-kind AI.",
         "status": "Working baseline. One background-thread workflow can run with truthful final states.",
     },
