@@ -1,6 +1,6 @@
 # Source of Truth Policy
 
-This repo is the leading source of truth for MXZTAR-forge v2c0.
+This repo is the leading source of truth for MXZTAR Forge v2.0.
 
 ## Priority order
 
