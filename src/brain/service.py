@@ -4,21 +4,21 @@ MXZTAR Forge v2.0 Ollama HTTP service.
 
 Uses Ollama's local HTTP API, not the unavailable `ollama generate` command.
 
-Hardware-kind defaults:
-- qwen2.5vl:3b
-- 2 CPU threads
-- 1 parallel AI job
+Hardware-kind policy:
+- qwen2.5vl:3b remains the default local vision model;
+- runtime CPU thread count is selected by the adaptive hardware profile;
+- parallel heavy jobs remain capped at one by default.
 """
 
 import base64
 import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import requests
 
 from brain.prompts import build_prompt
+from core.hardware_profile import apply_local_ai_policy
 
 
 DEFAULT_MODEL = "qwen2.5vl:3b"
@@ -46,8 +46,7 @@ def run_vision_workflow(
     model: str = DEFAULT_MODEL,
     timeout_seconds: int = 600,
 ) -> AgentResult:
-    os.environ["OLLAMA_NUM_THREAD"] = "2"
-    os.environ["OLLAMA_NUM_PARALLEL"] = "1"
+    ai_policy = apply_local_ai_policy()
 
     source_path = Path(source_path).expanduser().resolve()
 
@@ -73,7 +72,7 @@ def run_vision_workflow(
         "images": [encode_image_base64(source_path)],
         "stream": False,
         "options": {
-            "num_thread": 2,
+            "num_thread": ai_policy.ollama_num_thread,
             "temperature": 0.35,
             "num_predict": 1200,
         },
