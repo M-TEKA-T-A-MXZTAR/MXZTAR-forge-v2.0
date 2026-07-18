@@ -34,17 +34,19 @@ This repository is the leading source of truth.
 
 VX12 backups are dated safety copies. GitHub is the repo history. Local project files are the working copy. Terminal scrollback is not project truth.
 
-## Current machine policy
+## Adaptive machine policy
 
-This project is built for a modest CPU-only rig.
+This project must remain safe on a modest CPU-only rig while adapting upward when a user's machine has more capacity.
 
-Default local AI policy:
+Default fallback policy:
 
-- `OLLAMA_NUM_THREAD=2`
-- `OLLAMA_NUM_PARALLEL=1`
+- `OLLAMA_NUM_THREAD=2` when hardware is unknown or modest;
+- `OLLAMA_NUM_PARALLEL=1` by default;
 - no silent long jobs;
 - no AI work on the Qt main thread;
 - no dead UI;
 - no frozen UI;
 - no silent model downloads;
 - one heavy local job at a time by default.
+
+Adaptive detection may recommend more CPU threads on capable rigs and may record GPU presence, but GPU detection must not silently enable multiple heavy local jobs or trigger model downloads.

@@ -16,7 +16,6 @@ Known-good shell wiring:
 - no duplicate visible app title
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -37,6 +36,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.hardware_profile import apply_local_ai_policy, policy_summary
 from core.paths import ensure_project_dirs
 from qt_panels.start_here_panel import StartHerePanel
 from qt_panels.agent_panel import AgentPanel
@@ -97,8 +97,8 @@ WORKFLOW_GUIDANCE = {
     },
     "Restore Safe AI Runner": {
         "next": "Next: rebuild Ollama call, QThread worker, elapsed timer, progress messages, and saved outputs.",
-        "lever": "ZCVIOS lever: no silent freeze; hardware-kind AI.",
-        "status": "Planned. qwen2.5vl:3b is installed and is the default local vision agent.",
+        "lever": "ZCVIOS lever: no silent freeze; adaptive hardware-kind AI.",
+        "status": "Planned. qwen2.5vl:3b is installed and remains the default local vision agent.",
     },
     "Restore Concept Folders": {
         "next": "Next: create README, source, prompts, notes, and agent_output.json from AI output.",
@@ -150,12 +150,8 @@ class DashboardPanel(QWidget):
         self.status_label.setWordWrap(True)
         self.status_label.setStyleSheet("font-size: 14px; color: #cfcfcf;")
 
-        ai_threads = os.environ.get("OLLAMA_NUM_THREAD", "not set")
-        ai_parallel = os.environ.get("OLLAMA_NUM_PARALLEL", "not set")
-
-        policy_label = QLabel(
-            f"Hardware-kind AI policy: {ai_threads} CPU threads, {ai_parallel} parallel AI job."
-        )
+        ai_policy = apply_local_ai_policy()
+        policy_label = QLabel(f"Adaptive hardware policy: {policy_summary(ai_policy)}")
         policy_label.setWordWrap(True)
         policy_label.setStyleSheet("font-size: 13px; color: #bfbfbf;")
 
@@ -240,6 +236,7 @@ class MXZTARForgeWindow(QMainWindow):
         super().__init__()
 
         ensure_project_dirs()
+        self.ai_policy = apply_local_ai_policy()
 
         self.settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.sidebar_collapsed = False
@@ -315,11 +312,8 @@ class MXZTARForgeWindow(QMainWindow):
         self.side_container.setLayout(side_layout)
         self.side_container.setStyleSheet("background-color: #181818;")
 
-        thread_limit = os.environ.get("OLLAMA_NUM_THREAD", "not set")
-        parallel_limit = os.environ.get("OLLAMA_NUM_PARALLEL", "not set")
-
         self.status_label = QLabel(
-            f"Ready. AI policy: threads={thread_limit}, parallel={parallel_limit}. Root: {PROJECT_ROOT}"
+            f"Ready. Adaptive AI policy: {policy_summary(self.ai_policy)}. Root: {PROJECT_ROOT}"
         )
         self.status_label.setStyleSheet("padding: 8px; color: #d6c27a;")
 
@@ -393,10 +387,8 @@ class MXZTARForgeWindow(QMainWindow):
                 item.setToolTip(nav["tooltip"])
 
     def set_status(self, message: str):
-        thread_limit = os.environ.get("OLLAMA_NUM_THREAD", "not set")
-        parallel_limit = os.environ.get("OLLAMA_NUM_PARALLEL", "not set")
         self.status_label.setText(
-            f"{message} AI policy: threads={thread_limit}, parallel={parallel_limit}."
+            f"{message} Adaptive AI policy: {policy_summary(self.ai_policy)}."
         )
 
 

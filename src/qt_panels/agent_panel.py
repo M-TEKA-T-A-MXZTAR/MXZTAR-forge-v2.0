@@ -6,11 +6,10 @@ Stage 3B:
 - define the actual MXZTAR Forge workflows
 - show end-user value and market/audience problem solved
 - restore source-art discovery UI
-- show local model policy
+- show adaptive local model policy
 - avoid dead AI execution until QThread worker is restored
 """
 
-import os
 import subprocess
 from pathlib import Path
 
@@ -26,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.hardware_profile import apply_local_ai_policy, policy_summary
 from core.source_library import SourceArtItem, format_size, known_source_dirs, scan_source_art
 
 
@@ -238,8 +238,8 @@ class AgentPanel(QWidget):
 
         next_body = QLabel(
             "Next we rebuild the safe AI worker: Ollama call, qwen2.5vl:3b default model, "
-            "2-thread policy, QThread execution, elapsed timer, progress messages, and clear "
-            "output saved to workspace/data/brain. No silent freeze, no mystery waiting."
+            "adaptive hardware policy, QThread execution, elapsed timer, progress messages, "
+            "and clear output saved to workspace/data/brain. No silent freeze, no mystery waiting."
         )
         next_body.setWordWrap(True)
         next_body.setStyleSheet("color: #cfcfcf;")
@@ -260,11 +260,10 @@ class AgentPanel(QWidget):
         self.update_workflow_details(self.workflow_combo.currentText())
 
     def model_policy_text(self) -> str:
-        threads = os.environ.get("OLLAMA_NUM_THREAD", "not set")
-        parallel = os.environ.get("OLLAMA_NUM_PARALLEL", "not set")
+        policy = apply_local_ai_policy()
         return (
             "Local core agent target: qwen2.5vl:3b. "
-            f"Hardware-kind policy: {threads} CPU threads, {parallel} parallel AI job."
+            f"Adaptive hardware policy: {policy_summary(policy)}."
         )
 
     def refresh_sources(self):
