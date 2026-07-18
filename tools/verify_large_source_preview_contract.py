@@ -31,6 +31,7 @@ def require(condition: bool, message: str) -> None:
 
 class FakeLargeImageReader:
     requested_scaled_size = QSize()
+    read_calls = 0
 
     def __init__(self, path: str):
         self.path = path
@@ -45,6 +46,7 @@ class FakeLargeImageReader:
         type(self).requested_scaled_size = size
 
     def read(self) -> QImage:
+        type(self).read_calls += 1
         size = type(self).requested_scaled_size
         image = QImage(size, QImage.Format.Format_RGB32)
         image.fill(0x335577)
@@ -62,6 +64,7 @@ def main() -> int:
     app = QApplication.instance() or QApplication([])
     original_reader = library_module.QImageReader
     original_scan = library_module.scan_source_art
+    original_cache_path = library_module.source_preview_cache_path
 
     try:
         with tempfile.TemporaryDirectory(prefix="mxztar-large-preview-") as temp_dir:
@@ -77,8 +80,10 @@ def main() -> int:
                 size_bytes=source_path.stat().st_size,
             )
 
+            thumbnail_path = Path(temp_dir) / "cached-preview.png"
             library_module.QImageReader = FakeLargeImageReader
             library_module.scan_source_art = lambda: [item]
+            library_module.source_preview_cache_path = lambda _: thumbnail_path
 
             panel = library_module.MyLibraryPanel()
             app.processEvents()
@@ -97,21 +102,36 @@ def main() -> int:
                 panel._preview_image.size() == requested,
                 "panel did not cache the bounded decoded image",
             )
+            require(thumbnail_path.exists(), "bounded thumbnail was not cached")
             require(
                 digest(source_path) == before,
                 "bounded preview processing modified the original source",
+            )
+
+            first_read_count = FakeLargeImageReader.read_calls
+            second_panel = library_module.MyLibraryPanel()
+            app.processEvents()
+            require(
+                FakeLargeImageReader.read_calls == first_read_count,
+                "cached thumbnail did not prevent a second source decode",
+            )
+            require(
+                not second_panel._preview_image.isNull(),
+                "cached thumbnail could not be rendered",
             )
 
             print("PASS: 50000x40000 source requests a bounded preview decode")
             print(
                 f"PASS: preview decode bound = {requested.width()}x{requested.height()}"
             )
+            print("PASS: bounded thumbnail is cached and reused")
             print("PASS: resize rendering uses the cached bounded preview")
             print("PASS: original large source bytes remain unchanged")
             print("PASS: large-source preview contract verified")
     finally:
         library_module.QImageReader = original_reader
         library_module.scan_source_art = original_scan
+        library_module.source_preview_cache_path = original_cache_path
 
     return 0
 
