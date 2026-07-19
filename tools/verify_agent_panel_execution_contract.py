@@ -140,6 +140,16 @@ def main() -> int:
             allowed_close = QCloseEvent()
             window.closeEvent(allowed_close)
             require(allowed_close.isAccepted(), "window did not close when idle")
+            require(
+                window.library_panel._thumbnail_loader is None
+                or not window.library_panel._thumbnail_loader.isRunning(),
+                "window close left the My Library thumbnail thread running",
+            )
+            require(
+                window.jobs_panel._scan_thread is None
+                or not window.jobs_panel._scan_thread.isRunning(),
+                "window close left the Jobs scan thread running",
+            )
 
             print("PASS: worker executes outside the Qt main thread")
             print("PASS: elapsed timer and heartbeat remain visible")
@@ -147,6 +157,7 @@ def main() -> int:
             print("PASS: success, saved failure, and unsaved failure remain distinct")
             print("PASS: controls return to idle after every final state")
             print("PASS: active workflow blocks unsafe window close")
+            print("PASS: idle window close stops every panel-owned background thread")
             print("PASS: AgentPanel execution contract verified")
     finally:
         panel_module.AgentWorker = original_worker
