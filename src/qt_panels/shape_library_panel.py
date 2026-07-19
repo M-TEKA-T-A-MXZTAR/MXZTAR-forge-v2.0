@@ -29,11 +29,18 @@ def is_shape_evidence(record: JobRecord) -> bool:
     )
 
 
+def is_shape_evidence_path(path) -> bool:
+    return path.name.startswith((f"{SHAPE_WORKFLOW}-", f"{SHAPE_WORKFLOW}__"))
+
+
 class ShapeEvidenceScanThread(QThread):
     evidence_ready = Signal(object)
 
     def run(self):
-        scan = scan_job_records(self.isInterruptionRequested)
+        scan = scan_job_records(
+            self.isInterruptionRequested,
+            path_filter=is_shape_evidence_path,
+        )
         if self.isInterruptionRequested():
             return
         filtered = tuple(record for record in scan.records if is_shape_evidence(record))
@@ -163,7 +170,13 @@ class ShapeLibraryPanel(QWidget):
             return
         self.open_folder_button.setEnabled(True)
         record = read_job_record(record.path)
-        evidence = record.output_text or record.error or "No evidence text was recorded."
+        evidence_parts = []
+        if record.error:
+            evidence_parts.append(f"Error:\n{record.error}")
+        if record.output_text:
+            evidence_parts.append(f"Saved output text:\n{record.output_text}")
+        if not evidence_parts:
+            evidence_parts.append("No evidence text was recorded.")
         self.details.setPlainText(
             "Authority: RAW SHAPE-HARVEST EVIDENCE — NOT AN APPROVED SHAPE\n"
             f"Record status: {record.status}\n"
@@ -171,7 +184,7 @@ class ShapeLibraryPanel(QWidget):
             f"Model: {record.model or 'Unavailable'}\n"
             f"Source: {record.source_path or 'Unavailable'}\n"
             f"Record: {record.path}\n\n"
-            f"Evidence:\n{evidence}"
+            "Evidence:\n" + "\n\n".join(evidence_parts)
         )
 
     def clear_selection(self):
