@@ -188,6 +188,10 @@ def main() -> int:
                 or not window.jobs_panel._scan_thread.isRunning(),
                 "window close left the Jobs scan thread running",
             )
+            require(
+                not window.shape_panel.has_active_scan(),
+                "window close left the Shape Library scan thread running",
+            )
 
             print("PASS: worker executes outside the Qt main thread")
             print("PASS: elapsed timer and heartbeat remain visible")
