@@ -18,13 +18,20 @@ from PySide6.QtWidgets import (
 )
 
 from core.job_records import JobRecord, JobScanResult, read_job_record, scan_job_records
+from core.project_session import ProjectSession
 
 
 class JobScanThread(QThread):
     records_ready = Signal(object)
 
+    def __init__(self, project_dir=None, parent=None):
+        super().__init__(parent)
+        self._project_dir = project_dir
+
     def run(self):
-        result = scan_job_records(self.isInterruptionRequested)
+        result = scan_job_records(
+            self.isInterruptionRequested, project_dir=self._project_dir
+        )
         if not self.isInterruptionRequested():
             self.records_ready.emit(result)
 
@@ -33,8 +40,9 @@ class JobsPanel(QWidget):
     status_changed = Signal(str)
     background_idle = Signal()
 
-    def __init__(self):
+    def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
+        self.project_session = project_session or ProjectSession()
         self._scan_thread = None
         self._refresh_pending = False
 
@@ -102,10 +110,13 @@ class JobsPanel(QWidget):
 
         self.refresh_button.setEnabled(False)
         self.set_status("Scanning existing job records in the background…")
-        self._scan_thread = JobScanThread(self)
+        self._scan_thread = JobScanThread(self.project_session.project_dir, self)
         self._scan_thread.records_ready.connect(self.apply_records)
         self._scan_thread.finished.connect(self.scan_finished)
         self._scan_thread.start()
+
+    def set_project_state(self, _state=None):
+        self.refresh_jobs()
 
     def apply_records(self, result: JobScanResult):
         records = result.records
@@ -173,7 +184,7 @@ class JobsPanel(QWidget):
             f"Model: {record.model or 'Unavailable'}\n"
             f"Source: {record.source_path or 'Unavailable'}\n"
             f"Record: {record.path}\n\n"
-            f"{'Failure / validation evidence' if record.status != 'SUCCESS' else 'Saved evidence'}:\n"
+            f"{'Saved evidence' if record.status in ('SUCCESS', 'MODEL_OK') else 'Failure / validation evidence'}:\n"
             + "\n\n".join(evidence)
         )
 
