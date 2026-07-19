@@ -193,7 +193,13 @@ class StartHerePanel(QWidget):
     def refresh_projects(self):
         selected_path = self.project_selector.currentData()
         self.project_selector.clear()
-        for path in discover_project_directories(self.project_session.projects_root):
+        try:
+            projects = discover_project_directories(self.project_session.projects_root)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.update_project_controls()
+            self.set_status(f"Could not discover projects: {exc}")
+            return
+        for path in projects:
             self.project_selector.addItem(path.name, str(path))
         if selected_path:
             index = self.project_selector.findData(selected_path)
@@ -226,15 +232,22 @@ class StartHerePanel(QWidget):
         self._show_project_state(state, "Opened")
 
     def close_project(self):
+        was_writable = self.project_session.is_writable
         try:
-            self.project_session.close()
+            result = self.project_session.close()
         except (OSError, ValueError, RuntimeError) as exc:
             self.set_status(f"Could not safely close project: {exc}")
             return False
         self.project_status_label.setText("No project is open.")
         self.update_project_controls()
         self.project_changed.emit(None)
-        self.set_status("Closed project and released its writer lease.")
+        if result.warning:
+            message = f"Closed project with a durability warning: {result.warning}"
+        elif was_writable and result.released_writer:
+            message = "Closed project and released its writer lease."
+        else:
+            message = "Detached the read-only project; no writer lease was held or released."
+        self.set_status(message)
         return True
 
     def _show_project_state(self, state, action: str):
