@@ -34,8 +34,14 @@ def require(condition: bool, message: str) -> None:
 
 def wait_until(app, predicate, message: str, timeout: float = 10) -> None:
     deadline = time.monotonic() + timeout
-    while not predicate() and time.monotonic() < deadline:
+    while time.monotonic() < deadline:
         app.processEvents()
+        if predicate():
+            # Require idle across another event turn so a queued finished callback
+            # cannot start follow-up work after this helper declares completion.
+            app.processEvents()
+            if predicate():
+                return
         time.sleep(0.01)
     app.processEvents()
     require(predicate(), message)
