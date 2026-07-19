@@ -57,16 +57,15 @@ def make_sources(temp_dir: str) -> list[SourceArtItem]:
 def wait_for_thumbnails(app: QApplication, panel, timeout: float = 10) -> None:
     deadline = time.monotonic() + timeout
     while (
-        panel._thumbnail_loader is not None
-        and panel._thumbnail_loader.isRunning()
+        panel.has_active_thumbnail_loading()
         and time.monotonic() < deadline
     ):
         app.processEvents()
         time.sleep(0.01)
     app.processEvents()
     require(
-        panel._thumbnail_loader is None or not panel._thumbnail_loader.isRunning(),
-        "background thumbnail loading did not finish",
+        not panel.has_active_thumbnail_loading(),
+        "background discovery or thumbnail loading did not finish",
     )
 
 
