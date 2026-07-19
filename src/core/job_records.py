@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import heapq
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
@@ -13,6 +14,8 @@ from core.agent_runner import WORKFLOW_OUTPUT_DIRS
 
 MAX_JOB_RECORDS = 500
 MAX_RECORD_BYTES = 2 * 1024 * 1024
+MAX_AGGREGATE_RECORD_BYTES = 16 * 1024 * 1024
+MAX_SCAN_DIAGNOSTICS = 20
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,13 @@ class JobRecord:
     source_path: str = ""
     output_text: str = ""
     error: str = ""
+
+
+@dataclass(frozen=True)
+class JobScanResult:
+    records: tuple[JobRecord, ...]
+    diagnostics: tuple[str, ...] = ()
+    omitted_for_byte_budget: int = 0
 
 
 def _text(value: object) -> str:
@@ -60,39 +70,57 @@ def read_job_record(path: Path) -> JobRecord:
             output_text=_text(payload.get("output_text")),
             error=_text(payload.get("error")),
         )
-    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as exc:
+    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError, ValueError) as exc:
         return JobRecord(path=path, status="INVALID", error=f"Could not read record: {exc}")
 
 
 def scan_job_records(
     should_stop: Callable[[], bool] | None = None,
     limit: int = MAX_JOB_RECORDS,
-) -> list[JobRecord]:
+) -> JobScanResult:
     """Discover recent legacy records from the runner's existing output directories."""
     stop = should_stop or (lambda: False)
-    candidates: list[tuple[int, Path]] = []
+    candidate_heap: list[tuple[int, str, int, Path]] = []
+    diagnostics: list[str] = []
+
+    def note(message: str) -> None:
+        if len(diagnostics) < MAX_SCAN_DIAGNOSTICS:
+            diagnostics.append(message)
 
     for directory in sorted(set(WORKFLOW_OUTPUT_DIRS.values()), key=str):
         if stop() or not directory.exists():
             continue
         try:
-            paths = directory.glob("*.json")
+            paths = directory.iterdir()
             for path in paths:
                 if stop():
-                    return []
+                    return JobScanResult(())
                 try:
-                    if path.is_symlink() or not path.is_file():
+                    if path.suffix.lower() != ".json" or path.is_symlink() or not path.is_file():
                         continue
-                    candidates.append((path.stat().st_mtime_ns, path))
-                except OSError:
+                    stat = path.stat()
+                    entry = (stat.st_mtime_ns, str(path), stat.st_size, path)
+                    if len(candidate_heap) < max(0, limit):
+                        heapq.heappush(candidate_heap, entry)
+                    elif candidate_heap and entry > candidate_heap[0]:
+                        heapq.heapreplace(candidate_heap, entry)
+                except OSError as exc:
+                    note(f"Could not inspect job record {path}: {exc}")
                     continue
-        except OSError:
+        except OSError as exc:
+            note(f"Could not scan job directory {directory}: {exc}")
             continue
 
-    candidates.sort(key=lambda pair: pair[0], reverse=True)
+    candidates = sorted(candidate_heap, reverse=True)
     records = []
-    for _, path in candidates[: max(0, limit)]:
+    decoded_bytes = 0
+    omitted = 0
+    for _, _, size, path in candidates:
         if stop():
-            return []
+            return JobScanResult(())
+        if decoded_bytes + min(size, MAX_RECORD_BYTES) > MAX_AGGREGATE_RECORD_BYTES:
+            omitted += 1
+            continue
         records.append(read_job_record(path))
-    return records
+        decoded_bytes += min(size, MAX_RECORD_BYTES)
+    return JobScanResult(tuple(records), tuple(diagnostics), omitted)
