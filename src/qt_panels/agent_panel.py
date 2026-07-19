@@ -150,6 +150,7 @@ WORKFLOWS = {
 class AgentPanel(QWidget):
     status_changed = Signal(str)
     job_record_saved = Signal(str)
+    job_active_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -160,6 +161,7 @@ class AgentPanel(QWidget):
         self._job_active = False
         self._elapsed_seconds = 0
         self._completion_received = False
+        self._active_project_id = None
 
         self.elapsed_timer = QTimer(self)
         self.elapsed_timer.setInterval(1000)
@@ -348,6 +350,34 @@ class AgentPanel(QWidget):
         self.set_status(f"Selected library source: {item.path.name}")
         return True
 
+    def set_project_state(self, state) -> None:
+        """Invalidate project-owned selections that do not belong to the active project."""
+        if self._job_active:
+            return
+        self._active_project_id = (
+            state.assessment.manifest["project_id"] if state is not None else None
+        )
+        removed = False
+        self.source_combo.blockSignals(True)
+        for index in reversed(range(self.source_combo.count())):
+            item = self.source_combo.itemData(index)
+            if (
+                isinstance(item, SourceArtItem)
+                and item.authority == "active_project"
+                and item.project_id != self._active_project_id
+            ):
+                self.source_combo.removeItem(index)
+                removed = True
+        self.source_combo.blockSignals(False)
+        self.source_items = [
+            self.source_combo.itemData(index)
+            for index in range(self.source_combo.count())
+            if isinstance(self.source_combo.itemData(index), SourceArtItem)
+        ]
+        self.update_source_details()
+        if removed:
+            self.set_status("Cleared source selections belonging to the former project.")
+
     def update_source_details(self):
         item = self.source_combo.currentData()
 
@@ -423,11 +453,19 @@ class AgentPanel(QWidget):
             self.set_status(f"Selected source image no longer exists: {item.path}")
             return
 
+        if (
+            item.authority == "active_project"
+            and item.project_id != self._active_project_id
+        ):
+            self.set_status("The selected project source does not belong to the active project.")
+            return
+
         if workflow_key not in WORKFLOWS:
             self.set_status("Select a recognised workflow before starting.")
             return
 
         self._job_active = True
+        self.job_active_changed.emit(True)
         self._completion_received = False
         self._elapsed_seconds = 0
         self.elapsed_label.setText("Elapsed: 00:00")
@@ -504,6 +542,7 @@ class AgentPanel(QWidget):
             self.set_status("Workflow ended unexpectedly without a completion result.")
 
         self._job_active = False
+        self.job_active_changed.emit(False)
         self.set_running_controls(False)
         self._worker = None
         self._thread = None
