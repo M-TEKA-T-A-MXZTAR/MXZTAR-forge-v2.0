@@ -160,17 +160,24 @@ form. Fields are progressive, editable, and separated by authority.
 Hidden profiling is prohibited. The user can inspect, correct, export, or remove their
 profile and project intent.
 
-## 6. Forge Pack: canonical internal output
+## 6. Project authority and Forge Pack export
 
-No single industry file is universal. Forge therefore uses a versioned, readable
-folder as its canonical output and supplies target-specific adapters.
+No single industry file is universal. The canonical internal project layout remains
+the authority defined by `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, including
+`source/originals`, `source/previews`, status-separated `findings`, `structures`,
+`briefs`, `prompts`, `diagnostics`, `logs`, `history`, and `exports`. Workflows must not
+invent competing internal locations.
+
+A Forge Pack is a deterministic, versioned **export view** assembled from approved
+project artifacts. It is portable output, not a second project-state authority. Its
+manifest retains the originating project/artifact IDs and hashes so it can be traced
+back to project truth.
 
 ```text
-project-name/
-├── project.json
+forge-pack/
+├── forge-pack.json
 ├── source/
-│   ├── source-reference.json
-│   └── processed/
+│   └── source-reference.json
 ├── analysis/
 │   ├── design-brief.json
 │   ├── design-brief.md
@@ -187,9 +194,9 @@ project-name/
 │   ├── spatial-layers.json
 │   └── blockout-plan.md
 ├── exports/
-├── jobs/
+├── job-evidence/
 ├── provenance/
-└── history/
+└── export-report.json
 ```
 
 Every material artifact carries an ID, schema version, source relationship, creator
@@ -242,18 +249,22 @@ A Shape Library entry is not merely a crop. It may contain:
 - proposed construction methods;
 - later derived 3D components and instances.
 
-Lifecycle:
+Lifecycle transitions:
 
 ```text
 candidate
 → reviewed
-→ corrected
-→ approved shape
-→ construction recipe
-→ editable 3D component
-→ positioned instance
-→ group / assembly / joined mesh / boolean result
-→ verified export
+  ├→ approved shape
+  ├→ correction requested → corrected candidate → reviewed
+  └→ rejected
+
+approved shape
+  ├→ superseded by a later approved shape
+  └→ construction recipe
+      → editable 3D component
+      → positioned instance
+      → group / assembly / joined mesh / boolean result
+      → verified export
 ```
 
 Parent-child provenance must survive every derivative.
@@ -388,7 +399,9 @@ commercial subscription or implemented functionality that does not exist.
 - retain responsive layout and safe window behaviour.
 
 Exit: users can navigate sources, workflows, jobs, and shapes; every visible control
-has a real path or is plainly marked unavailable.
+has its complete handler, engine/helper, input, output, error, feedback, persistence
+where required, and verification path. Deferred workspaces and unavailable actions are
+documented but are not exposed as placeholder controls.
 
 ### Phase 2 — Project authority and lifecycle
 
