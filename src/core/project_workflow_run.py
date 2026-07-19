@@ -102,67 +102,68 @@ def run_project_agent_job(
         image_bytes=verified_image_bytes,
     )
 
-    if (
-        not session.is_writable
-        or session.state is None
-        or session.project_dir != project_dir
-        or session.state.assessment.manifest["project_id"] != project_id
-    ):
-        raise ProjectWorkflowRunError(
-            "Project authority changed during the model run; no evidence was saved."
+    with session.mutation_guard():
+        if (
+            not session.is_writable
+            or session.state is None
+            or session.project_dir != project_dir
+            or session.state.assessment.manifest["project_id"] != project_id
+        ):
+            raise ProjectWorkflowRunError(
+                "Project authority changed during the model run; no evidence was saved."
+            )
+    
+        completed_at = utc_now_iso()
+        run_id = f"run_{uuid.uuid4().hex}"
+        status = "model_call_succeeded" if result.ok else "failed"
+        directory = project_dir / ("logs" if result.ok else "diagnostics")
+        if (
+            directory.is_symlink()
+            or not directory.is_dir()
+            or directory.resolve().parent != project_dir.resolve()
+        ):
+            raise ProjectWorkflowRunError(
+                "Canonical project evidence directory is unavailable or unsafe."
+            )
+        evidence_path = directory / f"{run_id}.workflow-run.json"
+        evidence = {
+            "schema_name": RUN_EVIDENCE_SCHEMA,
+            "schema_version": RUN_EVIDENCE_VERSION,
+            "run_id": run_id,
+            "project_id": project_id,
+            "workflow_key": workflow_key,
+            "status": status,
+            "workflow_complete": False,
+            "approval_state": "not_applicable",
+            "started_at_utc": started_at,
+            "completed_at_utc": completed_at,
+            "application_version": APPLICATION_VERSION,
+            "execution": {
+                "model_provider": "ollama",
+                "model_name": model,
+                "host_mode": "local",
+                "parallel_limit": 1,
+                "triggered_by": "user",
+                "worker_type": "qt_thread_worker",
+            },
+            "provenance": {
+                "source_asset_id": canonical.asset_id,
+                "source_project_id": canonical.project_id,
+                "source_sha256": canonical.sha256,
+                "source_path": canonical.path.relative_to(project_dir).as_posix(),
+            },
+            "raw_model_output": result.output_text,
+            "error": result.error or None,
+            "validation": {
+                "structured_findings_validated": False,
+                "note": (
+                    "This record is model-run evidence only. It is not an approved finding, "
+                    "shape, brief, recommendation, or completed workflow artifact."
+                ),
+            },
+        }
+        atomic_write_text(
+            evidence_path,
+            json.dumps(evidence, indent=2, ensure_ascii=False) + "\n",
         )
-
-    completed_at = utc_now_iso()
-    run_id = f"run_{uuid.uuid4().hex}"
-    status = "model_call_succeeded" if result.ok else "failed"
-    directory = project_dir / ("logs" if result.ok else "diagnostics")
-    if (
-        directory.is_symlink()
-        or not directory.is_dir()
-        or directory.resolve().parent != project_dir.resolve()
-    ):
-        raise ProjectWorkflowRunError(
-            "Canonical project evidence directory is unavailable or unsafe."
-        )
-    evidence_path = directory / f"{run_id}.workflow-run.json"
-    evidence = {
-        "schema_name": RUN_EVIDENCE_SCHEMA,
-        "schema_version": RUN_EVIDENCE_VERSION,
-        "run_id": run_id,
-        "project_id": project_id,
-        "workflow_key": workflow_key,
-        "status": status,
-        "workflow_complete": False,
-        "approval_state": "not_applicable",
-        "started_at_utc": started_at,
-        "completed_at_utc": completed_at,
-        "application_version": APPLICATION_VERSION,
-        "execution": {
-            "model_provider": "ollama",
-            "model_name": model,
-            "host_mode": "local",
-            "parallel_limit": 1,
-            "triggered_by": "user",
-            "worker_type": "qt_thread_worker",
-        },
-        "provenance": {
-            "source_asset_id": canonical.asset_id,
-            "source_project_id": canonical.project_id,
-            "source_sha256": canonical.sha256,
-            "source_path": canonical.path.relative_to(project_dir).as_posix(),
-        },
-        "raw_model_output": result.output_text,
-        "error": result.error or None,
-        "validation": {
-            "structured_findings_validated": False,
-            "note": (
-                "This record is model-run evidence only. It is not an approved finding, "
-                "shape, brief, recommendation, or completed workflow artifact."
-            ),
-        },
-    }
-    atomic_write_text(
-        evidence_path,
-        json.dumps(evidence, indent=2, ensure_ascii=False) + "\n",
-    )
-    return ProjectWorkflowRunResult(result, evidence_path)
+        return ProjectWorkflowRunResult(result, evidence_path)
