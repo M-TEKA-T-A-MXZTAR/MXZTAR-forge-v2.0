@@ -9,6 +9,7 @@ Workflows without modifying the source.
 from __future__ import annotations
 
 import subprocess
+from collections import OrderedDict
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QThread, Signal
@@ -48,6 +49,7 @@ PREVIEW_MAX_WIDTH = 1600
 PREVIEW_MAX_HEIGHT = 1200
 CARD_ICON_SIZE = QSize(180, 120)
 CARD_GRID_SIZE = QSize(210, 165)
+FULL_PREVIEW_CACHE_LIMIT = 4
 
 
 class ThumbnailLoader(QThread):
@@ -128,7 +130,7 @@ class MyLibraryPanel(QWidget):
         self._pending_intake_message = None
         self._discovery_diagnostic = None
         self._refresh_pending = False
-        self._thumbnail_images = {}
+        self._thumbnail_images = OrderedDict()
         self._thumbnail_errors = {}
 
         title = QLabel("My Library")
@@ -299,7 +301,7 @@ class MyLibraryPanel(QWidget):
         self.source_grid.blockSignals(True)
         self.source_grid.clear()
         self.source_items = list(sources)
-        self._thumbnail_images = {}
+        self._thumbnail_images = OrderedDict()
         self._thumbnail_errors = {}
 
         selected_item = None
@@ -357,7 +359,7 @@ class MyLibraryPanel(QWidget):
             return
 
         if not image.isNull():
-            self._thumbnail_images[source.path] = image
+            self._remember_thumbnail(source.path, image)
             self._thumbnail_errors.pop(source.path, None)
             card_image = image.scaled(
                 CARD_ICON_SIZE,
@@ -374,6 +376,13 @@ class MyLibraryPanel(QWidget):
             card.setToolTip(f"{card.toolTip()}\nPreview: {error}")
             if self.selected_source() == source:
                 self.show_preview_error(error)
+
+    def _remember_thumbnail(self, path: Path, image: QImage) -> None:
+        """Retain only a modest number of full bounded previews."""
+        self._thumbnail_images[path] = image
+        self._thumbnail_images.move_to_end(path)
+        while len(self._thumbnail_images) > FULL_PREVIEW_CACHE_LIMIT:
+            self._thumbnail_images.popitem(last=False)
 
     def _thumbnail_loading_finished(self):
         loader = self._thumbnail_loader
@@ -520,6 +529,12 @@ class MyLibraryPanel(QWidget):
         )
 
         cached = self._thumbnail_images.get(item.path, QImage())
+        if not cached.isNull():
+            self._thumbnail_images.move_to_end(item.path)
+        if cached.isNull():
+            current_card = self.source_grid.currentItem()
+            if current_card is not None and not current_card.icon().isNull():
+                cached = current_card.icon().pixmap(CARD_ICON_SIZE).toImage()
         if cached.isNull() and item.preview_path is None:
             try:
                 cached = QImage(str(source_preview_cache_path(item.path)))
@@ -544,9 +559,14 @@ class MyLibraryPanel(QWidget):
                     "Preview unavailable. Refresh Library to retry.\n"
                     "Original remains selectable."
                 )
-        self.set_status(
-            f"Selected {item.path.name}. Use it in Agent Workflows or import another source."
-        )
+        if self.has_active_thumbnail_loading():
+            self.set_status(
+                f"Selected {item.path.name}; background thumbnail loading is still active."
+            )
+        else:
+            self.set_status(
+                f"Selected {item.path.name}. Use it in Agent Workflows or import another source."
+            )
 
     def preview_image_for(self, item: SourceArtItem) -> tuple[QImage, str]:
         if item.preview_path is not None:
