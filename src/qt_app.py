@@ -350,6 +350,13 @@ class MXZTARForgeWindow(QMainWindow):
             event.ignore()
             return
 
+        if not self.jobs_panel.shutdown_scan():
+            self.set_status(
+                "The Jobs record scan is still stopping. Wait a moment, then close again."
+            )
+            event.ignore()
+            return
+
         self.settings.setValue("main_window/geometry", self.saveGeometry())
         super().closeEvent(event)
 
