@@ -402,11 +402,13 @@ class MyLibraryPanel(QWidget):
             or message.startswith("Already present project source")
         ):
             selected = self.selected_source()
+            state = self.project_session.state
             if (
                 selected is not None
+                and state is not None
                 and selected.authority == "active_project"
                 and selected.project_id
-                == self.project_session.state.assessment.manifest["project_id"]
+                == state.assessment.manifest["project_id"]
             ):
                 ready_source = selected
         if message is None and self._discovery_diagnostic:
