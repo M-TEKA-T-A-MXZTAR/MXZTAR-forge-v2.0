@@ -9,6 +9,8 @@ import socket
 import tempfile
 from pathlib import Path
 
+from core import project_access as access_module
+
 from core.project_access import (
     LOCK_FILENAME,
     LOCK_SCHEMA,
@@ -30,6 +32,8 @@ def require(condition: bool, message: str) -> None:
 
 
 def write_lock(project_dir: Path, *, process_id: int, host: str | None = None) -> Path:
+    identity = access_module.process_identity(process_id)
+    boot_id, process_start_id = identity if identity is not None else (None, None)
     path = project_dir / LOCK_FILENAME
     path.write_text(
         json.dumps(
@@ -40,6 +44,9 @@ def write_lock(project_dir: Path, *, process_id: int, host: str | None = None) -
                 "process_id": process_id,
                 "created_at_utc": "2026-07-20T00:00:00+00:00",
                 "host": host or socket.gethostname(),
+                "acquisition_id": "lock_test",
+                "boot_id": boot_id,
+                "process_start_id": process_start_id,
             }
         ),
         encoding="utf-8",
@@ -65,7 +72,9 @@ def main() -> None:
             raise AssertionError("second writer was accepted")
         print("PASS: one active writer is enforced by an exclusive project lock")
 
-        foreign = ProjectLockLease(project_dir, "writer_foreign", os.getpid(), socket.gethostname())
+        foreign = ProjectLockLease(
+            project_dir, "writer_foreign", os.getpid(), socket.gethostname(), "lock_foreign"
+        )
         try:
             release_project_lock(foreign)
         except ProjectAccessError:
@@ -76,6 +85,33 @@ def main() -> None:
         release_project_lock(lease)
         require(assess_project_open(project_dir).status is ProjectAccessStatus.WRITABLE, "release failed")
         print("PASS: only the owning lease can release a project lock")
+
+        first = acquire_project_lock(project_dir, "writer_reused")
+        release_project_lock(first)
+        second = acquire_project_lock(project_dir, "writer_reused")
+        try:
+            release_project_lock(first)
+        except ProjectAccessError:
+            pass
+        else:
+            raise AssertionError("old lease released a new lock incarnation")
+        require((project_dir / LOCK_FILENAME).exists(), "old lease removed the current lock")
+        release_project_lock(second)
+        print("PASS: lock incarnation tokens reject delayed stale leases")
+
+        original_fsync = access_module.fsync_directory
+        access_module.fsync_directory = lambda _path: (_ for _ in ()).throw(OSError("fsync test"))
+        try:
+            try:
+                acquire_project_lock(project_dir, "writer_failed")
+            except OSError:
+                pass
+            else:
+                raise AssertionError("injected acquisition failure was ignored")
+        finally:
+            access_module.fsync_directory = original_fsync
+        require(not (project_dir / LOCK_FILENAME).exists(), "failed acquisition leaked its lock")
+        print("PASS: failed acquisition removes only its owned lock file")
 
         stale_path = write_lock(project_dir, process_id=999_999_999)
         stale = assess_project_open(project_dir)
@@ -92,10 +128,64 @@ def main() -> None:
         malformed.unlink()
         print("PASS: malformed locks are preserved without silent repair")
 
+        oversized_integer = project_dir / LOCK_FILENAME
+        oversized_integer.write_text('{"process_id":' + "9" * 5000 + "}", encoding="utf-8")
+        require(
+            assess_project_open(project_dir).status is ProjectAccessStatus.READ_ONLY_RECOVERY,
+            "oversized integer escaped malformed-lock containment",
+        )
+        oversized_integer.unlink()
+        print("PASS: oversized-integer JSON is contained as read-only recovery")
+
+        fifo = project_dir / LOCK_FILENAME
+        os.mkfifo(fifo)
+        require(
+            assess_project_open(project_dir).status is ProjectAccessStatus.READ_ONLY_RECOVERY,
+            "non-regular lock was accepted",
+        )
+        fifo.unlink()
+        print("PASS: non-regular lock objects cannot block project opening")
+
         foreign_path = write_lock(project_dir, process_id=os.getpid(), host="another-host")
         require(assess_project_open(project_dir).status is ProjectAccessStatus.LOCKED, "foreign host lock ignored")
         foreign_path.unlink()
         print("PASS: an unverifiable foreign-host writer remains locked")
+
+        recycled_path = write_lock(project_dir, process_id=os.getpid())
+        recycled_payload = json.loads(recycled_path.read_text(encoding="utf-8"))
+        recycled_payload["process_start_id"] = "recycled-process-start"
+        recycled_path.write_text(json.dumps(recycled_payload), encoding="utf-8")
+        require(
+            assess_project_open(project_dir).status is ProjectAccessStatus.READ_ONLY_RECOVERY,
+            "recycled PID was classified as an active writer",
+        )
+        recycled_path.unlink()
+        print("PASS: boot and process-start identity detect recycled PIDs")
+
+        try:
+            acquire_project_lock(project_dir, "x" * 257)
+        except ProjectAccessError:
+            pass
+        else:
+            raise AssertionError("oversized writer ID was accepted")
+        require(not (project_dir / LOCK_FILENAME).exists(), "oversized writer created a lock")
+        print("PASS: writer IDs cannot create unreadable oversized locks")
+
+        parent_lease = acquire_project_lock(project_dir, "writer_parent")
+        original_getpid = access_module.os.getpid
+        access_module.os.getpid = lambda: parent_lease.process_id + 1
+        try:
+            try:
+                release_project_lock(parent_lease)
+            except ProjectAccessError:
+                pass
+            else:
+                raise AssertionError("non-owning process released the lock")
+        finally:
+            access_module.os.getpid = original_getpid
+        require((project_dir / LOCK_FILENAME).exists(), "non-owning process removed the lock")
+        release_project_lock(parent_lease)
+        print("PASS: a forked child cannot release its parent's lock")
 
         missing_dir, _ = create_project("Missing Structure", projects_root=root)
         (missing_dir / "source" / "originals").rmdir()

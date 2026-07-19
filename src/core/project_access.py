@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import stat
 import uuid
 from dataclasses import dataclass
 from enum import Enum
@@ -46,6 +47,9 @@ class ProjectLockRecord:
     process_id: int
     created_at_utc: str
     host: str
+    acquisition_id: str
+    boot_id: str | None
+    process_start_id: str | None
 
 
 @dataclass(frozen=True)
@@ -54,6 +58,7 @@ class ProjectLockLease:
     writer_id: str
     process_id: int
     host: str
+    acquisition_id: str
 
 
 @dataclass(frozen=True)
@@ -72,17 +77,24 @@ def _validate_lock(payload: object) -> ProjectLockRecord:
         raise ProjectAccessError("Project lock schema is unsupported.")
     if payload.get("lock_schema_version") != LOCK_SCHEMA_VERSION:
         raise ProjectAccessError("Project lock schema version is unsupported.")
-    for key in ("writer_id", "created_at_utc", "host"):
+    for key in ("writer_id", "created_at_utc", "host", "acquisition_id"):
         if not isinstance(payload.get(key), str) or not payload[key]:
             raise ProjectAccessError(f"Project lock requires non-empty string: {key}")
     process_id = payload.get("process_id")
     if not isinstance(process_id, int) or isinstance(process_id, bool) or process_id <= 0:
         raise ProjectAccessError("Project lock process_id must be a positive integer.")
+    for key in ("boot_id", "process_start_id"):
+        value = payload.get(key, object())
+        if value is not None and (not isinstance(value, str) or not value):
+            raise ProjectAccessError(f"Project lock {key} must be null or a non-empty string.")
     return ProjectLockRecord(
         writer_id=payload["writer_id"],
         process_id=process_id,
         created_at_utc=payload["created_at_utc"],
         host=payload["host"],
+        acquisition_id=payload["acquisition_id"],
+        boot_id=payload["boot_id"],
+        process_start_id=payload["process_start_id"],
     )
 
 
@@ -90,15 +102,25 @@ def read_project_lock(project_dir: Path) -> ProjectLockRecord | None:
     lock_path = Path(project_dir).expanduser().resolve() / LOCK_FILENAME
     if not lock_path.exists() and not lock_path.is_symlink():
         return None
-    if lock_path.is_symlink():
-        raise ProjectAccessError("Project lock must not be a symbolic link.")
     try:
-        if lock_path.stat().st_size > MAX_LOCK_BYTES:
+        metadata = lock_path.lstat()
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ProjectAccessError("Project lock must be a regular file.")
+        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(lock_path, flags)
+        with os.fdopen(descriptor, "r", encoding="utf-8") as handle:
+            opened_metadata = os.fstat(handle.fileno())
+            if not stat.S_ISREG(opened_metadata.st_mode):
+                raise ProjectAccessError("Project lock must be a regular file.")
+            if opened_metadata.st_size > MAX_LOCK_BYTES:
+                raise ProjectAccessError("Project lock exceeds the safe size limit.")
+            text = handle.read(MAX_LOCK_BYTES + 1)
+        if len(text.encode("utf-8")) > MAX_LOCK_BYTES:
             raise ProjectAccessError("Project lock exceeds the safe size limit.")
-        payload = json.loads(lock_path.read_text(encoding="utf-8"))
+        payload = json.loads(text)
     except ProjectAccessError:
         raise
-    except (OSError, UnicodeError, json.JSONDecodeError, RecursionError) as exc:
+    except (OSError, UnicodeError, ValueError, RecursionError) as exc:
         raise ProjectAccessError(f"Could not validate project lock: {exc}") from exc
     return _validate_lock(payload)
 
@@ -114,6 +136,19 @@ def process_is_alive(process_id: int) -> bool | None:
     except OSError:
         return None
     return True
+
+
+def process_identity(process_id: int) -> tuple[str, str] | None:
+    """Return Linux boot and process-start identities, or None when unverifiable."""
+    try:
+        boot_id = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
+        process_fields = Path(f"/proc/{process_id}/stat").read_text(encoding="ascii").split()
+        process_start_id = process_fields[21]
+    except (OSError, UnicodeError, IndexError):
+        return None
+    if not boot_id or not process_start_id:
+        return None
+    return boot_id, process_start_id
 
 
 def _validate_project_structure(project_dir: Path, manifest: dict) -> list[str]:
@@ -182,6 +217,24 @@ def assess_project_open(project_dir: Path) -> ProjectOpenAssessment:
         )
     alive = process_is_alive(lock.process_id)
     if alive is True:
+        live_identity = process_identity(lock.process_id)
+        recorded_identity = (lock.boot_id, lock.process_start_id)
+        if live_identity is None or None in recorded_identity:
+            return ProjectOpenAssessment(
+                ProjectAccessStatus.READ_ONLY_RECOVERY,
+                project_path,
+                manifest,
+                lock,
+                ("Project lock owner identity could not be verified. The lock was preserved.",),
+            )
+        if live_identity != recorded_identity:
+            return ProjectOpenAssessment(
+                ProjectAccessStatus.READ_ONLY_RECOVERY,
+                project_path,
+                manifest,
+                lock,
+                ("Project lock PID was reused or its boot identity changed. The stale lock was preserved.",),
+            )
         return ProjectOpenAssessment(
             ProjectAccessStatus.LOCKED,
             project_path,
@@ -210,6 +263,11 @@ def acquire_project_lock(project_dir: Path, writer_id: str | None = None) -> Pro
     writer = writer_id or f"writer_{uuid.uuid4().hex}"
     if not isinstance(writer, str) or not writer.strip():
         raise ProjectAccessError("Writer ID must be a non-empty string.")
+    if len(writer.encode("utf-8")) > 256:
+        raise ProjectAccessError("Writer ID exceeds the 256-byte limit.")
+    identity = process_identity(os.getpid())
+    boot_id, process_start_id = identity if identity is not None else (None, None)
+    acquisition_id = f"lock_{uuid.uuid4().hex}"
     record = {
         "lock_schema": LOCK_SCHEMA,
         "lock_schema_version": LOCK_SCHEMA_VERSION,
@@ -217,19 +275,41 @@ def acquire_project_lock(project_dir: Path, writer_id: str | None = None) -> Pro
         "process_id": os.getpid(),
         "created_at_utc": utc_now_iso(),
         "host": socket.gethostname(),
+        "acquisition_id": acquisition_id,
+        "boot_id": boot_id,
+        "process_start_id": process_start_id,
     }
+    serialized = json.dumps(record, indent=2) + "\n"
+    if len(serialized.encode("utf-8")) > MAX_LOCK_BYTES:
+        raise ProjectAccessError("Serialized project lock exceeds the safe size limit.")
     lock_path = assessment.project_dir / LOCK_FILENAME
+    created_identity: tuple[int, int] | None = None
     try:
         with lock_path.open("x", encoding="utf-8", newline="\n") as handle:
-            json.dump(record, handle, indent=2)
-            handle.write("\n")
+            created = os.fstat(handle.fileno())
+            created_identity = (created.st_dev, created.st_ino)
+            handle.write(serialized)
             handle.flush()
             os.fsync(handle.fileno())
         fsync_directory(assessment.project_dir)
     except FileExistsError as exc:
         raise ProjectLockedError("Another writer acquired the project lock first.") from exc
+    except Exception:
+        if created_identity is not None:
+            try:
+                current = lock_path.lstat()
+                if (current.st_dev, current.st_ino) == created_identity:
+                    lock_path.unlink()
+                    fsync_directory(assessment.project_dir)
+            except OSError:
+                pass
+        raise
     return ProjectLockLease(
-        assessment.project_dir, writer, os.getpid(), socket.gethostname()
+        assessment.project_dir,
+        writer,
+        os.getpid(),
+        socket.gethostname(),
+        acquisition_id,
     )
 
 
@@ -238,10 +318,13 @@ def release_project_lock(lease: ProjectLockLease) -> None:
     record = read_project_lock(lease.project_dir)
     if record is None:
         raise ProjectAccessError("Project lock no longer exists.")
+    if os.getpid() != lease.process_id or socket.gethostname() != lease.host:
+        raise ProjectAccessError("Only the lease-owning process may release its project lock.")
     if (
         record.writer_id != lease.writer_id
         or record.process_id != lease.process_id
         or record.host != lease.host
+        or record.acquisition_id != lease.acquisition_id
     ):
         raise ProjectAccessError("Refusing to release a project lock owned by another writer.")
     lock_path.unlink()
