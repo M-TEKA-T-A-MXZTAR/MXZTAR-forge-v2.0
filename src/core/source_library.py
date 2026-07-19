@@ -33,6 +33,9 @@ class SourceArtItem:
     folder_name: str
     suffix: str
     size_bytes: int
+    preview_path: Path | None = None
+    asset_id: str | None = None
+    authority: str = "legacy_workspace"
 
 
 def known_source_dirs() -> List[Path]:
