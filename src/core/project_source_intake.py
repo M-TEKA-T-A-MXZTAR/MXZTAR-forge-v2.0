@@ -22,6 +22,7 @@ from core.project_manifest import (
     validate_manifest,
 )
 from core.project_session import ProjectSession, ProjectSessionError
+from core.source_library import SourceArtItem
 
 
 MAX_SOURCE_BYTES = 1024 * 1024 * 1024
@@ -55,6 +56,46 @@ class SourceIntakeError(RuntimeError):
 class SourceIntakeResult:
     record: dict
     duplicate: bool
+
+
+def scan_project_source_art(session: ProjectSession) -> list[SourceArtItem]:
+    """Read the active project's declared source records without mutating authority."""
+    if session.state is None or session.project_dir is None:
+        return []
+    project_dir = session.project_dir
+    manifest = session.state.assessment.manifest
+    items: list[SourceArtItem] = []
+    seen_ids: set[str] = set()
+    for asset_id in manifest["source_asset_ids"]:
+        if not isinstance(asset_id, str) or asset_id in seen_ids:
+            raise SourceIntakeError("Project manifest contains an invalid source asset ID.")
+        seen_ids.add(asset_id)
+        record_path = project_dir / "source" / "originals" / f"{asset_id}.source.json"
+        if record_path.is_symlink() or not record_path.is_file():
+            raise SourceIntakeError(f"Declared source record is unavailable: {asset_id}")
+        try:
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ValueError, RecursionError) as exc:
+            raise SourceIntakeError(f"Could not read source record {asset_id}: {exc}") from exc
+        record = _validate_source_record(record, asset_id, record.get("sha256"))
+        source_path = _project_artifact_path(project_dir, record["project_relative_path"])
+        preview_path = _project_artifact_path(project_dir, record["preview_relative_path"])
+        if not source_path.is_file() or not preview_path.is_file():
+            raise SourceIntakeError(f"Declared project source artifacts are missing: {asset_id}")
+        lifecycle = record["lifecycle_status"]
+        items.append(
+            SourceArtItem(
+                label=f"project {project_dir.name} / {record['original_filename']}",
+                path=source_path,
+                folder_name=f"project source/{lifecycle}",
+                suffix=source_path.suffix.casefold(),
+                size_bytes=int(record["size_bytes"]),
+                preview_path=preview_path,
+                asset_id=asset_id,
+                authority="active_project",
+            )
+        )
+    return items
 
 
 def _validate_source_record(record: object, asset_id: str, sha256: str) -> dict:
