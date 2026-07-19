@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import stat
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
@@ -11,7 +14,7 @@ from pathlib import Path
 from brain.service import DEFAULT_MODEL, AgentResult, run_vision_workflow
 from core.project_manifest import APPLICATION_VERSION, atomic_write_text, utc_now_iso
 from core.project_session import ProjectSession, ProjectSessionError
-from core.project_source_intake import scan_project_source_art
+from core.project_source_intake import MAX_SOURCE_BYTES, scan_project_source_art
 from core.source_library import SourceArtItem
 
 
@@ -51,6 +54,32 @@ def _validated_project_source(
     )
 
 
+
+def _read_verified_source_bytes(source: SourceArtItem) -> bytes:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(source.path, flags)
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ProjectWorkflowRunError("Project workflow source must be a regular file.")
+        if metadata.st_size > MAX_SOURCE_BYTES:
+            raise ProjectWorkflowRunError("Project workflow source exceeds the 1 GiB limit.")
+        with os.fdopen(descriptor, "rb") as handle:
+            descriptor = -1
+            image_bytes = handle.read(MAX_SOURCE_BYTES + 1)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+    if len(image_bytes) > MAX_SOURCE_BYTES:
+        raise ProjectWorkflowRunError("Project workflow source grew beyond the safe limit.")
+    digest = hashlib.sha256(image_bytes).hexdigest()
+    if digest != source.sha256:
+        raise ProjectWorkflowRunError(
+            "Project source changed before model execution; the run was rejected."
+        )
+    return image_bytes
+
+
 def run_project_agent_job(
     session: ProjectSession,
     source: SourceArtItem,
@@ -63,12 +92,14 @@ def run_project_agent_job(
     project_dir = session.project_dir
     project_id = session.state.assessment.manifest["project_id"]
     started_at = utc_now_iso()
+    verified_image_bytes = _read_verified_source_bytes(canonical)
 
     result = run_vision_workflow(
         source_path=canonical.path,
         workflow_key=workflow_key,
         user_notes=user_notes,
         model=model,
+        image_bytes=verified_image_bytes,
     )
 
     if (
