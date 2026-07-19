@@ -57,16 +57,15 @@ def make_sources(temp_dir: str) -> list[SourceArtItem]:
 def wait_for_thumbnails(app: QApplication, panel, timeout: float = 10) -> None:
     deadline = time.monotonic() + timeout
     while (
-        panel._thumbnail_loader is not None
-        and panel._thumbnail_loader.isRunning()
+        panel.has_active_thumbnail_loading()
         and time.monotonic() < deadline
     ):
         app.processEvents()
         time.sleep(0.01)
     app.processEvents()
     require(
-        panel._thumbnail_loader is None or not panel._thumbnail_loader.isRunning(),
-        "background thumbnail loading did not finish",
+        not panel.has_active_thumbnail_loading(),
+        "background discovery or thumbnail loading did not finish",
     )
 
 
@@ -84,7 +83,7 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="mxztar-library-") as temp_dir:
             items = make_sources(temp_dir)
             before = {item.path: digest(item.path) for item in items}
-            library_module.scan_source_art = lambda: items
+            library_module.scan_source_art = lambda _interrupted=None: items
 
             panel = library_module.MyLibraryPanel()
             wait_for_thumbnails(app, panel)
@@ -139,7 +138,7 @@ def main() -> int:
             for item in items:
                 require(digest(item.path) == before[item.path], "library modified source bytes")
 
-            library_module.scan_source_art = lambda: []
+            library_module.scan_source_art = lambda _interrupted=None: []
             empty_panel = library_module.MyLibraryPanel()
             require(not empty_panel.use_button.isEnabled(), "empty library enabled handoff")
             require(

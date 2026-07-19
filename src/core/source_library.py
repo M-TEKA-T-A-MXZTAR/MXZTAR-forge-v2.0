@@ -10,6 +10,7 @@ Scans the known source folders used by the rebuilt forge:
 
 from dataclasses import dataclass
 from pathlib import Path
+from collections.abc import Callable
 from typing import List
 
 from core.paths import INPUT_DIR, IMPORTS_DIR, TEST_INPUTS_DIR, ensure_project_dirs
@@ -33,6 +34,10 @@ class SourceArtItem:
     folder_name: str
     suffix: str
     size_bytes: int
+    preview_path: Path | None = None
+    asset_id: str | None = None
+    project_id: str | None = None
+    authority: str = "legacy_workspace"
 
 
 def known_source_dirs() -> List[Path]:
@@ -44,16 +49,20 @@ def is_supported_source(path: Path) -> bool:
     return path.is_file() and path.suffix.lower() in SUPPORTED_IMAGE_SUFFIXES
 
 
-def scan_source_art() -> List[SourceArtItem]:
+def scan_source_art(interrupted: Callable[[], bool] | None = None) -> List[SourceArtItem]:
     ensure_project_dirs()
 
     items: List[SourceArtItem] = []
 
     for folder in known_source_dirs():
+        if interrupted is not None and interrupted():
+            break
         if not folder.exists():
             continue
 
-        for path in sorted(folder.iterdir(), key=lambda p: p.name.lower()):
+        for path in folder.iterdir():
+            if interrupted is not None and interrupted():
+                return items
             if not is_supported_source(path):
                 continue
 
@@ -74,7 +83,7 @@ def scan_source_art() -> List[SourceArtItem]:
                 )
             )
 
-    return items
+    return sorted(items, key=lambda item: item.label.casefold())
 
 
 def format_size(size_bytes: int) -> str:

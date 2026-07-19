@@ -19,6 +19,7 @@ from core.project_source_intake import (
     SourceIntakeError,
     import_source_copy,
     mark_source_processed,
+    scan_project_source_art,
 )
 
 
@@ -53,7 +54,13 @@ def main() -> None:
         require(manifest["source_asset_ids"] == [record["asset_id"]], "manifest source ID missing")
         history = (project_dir / manifest["history_path"]).read_text(encoding="utf-8")
         require('"event": "source_imported"' in history, "intake history event missing")
+        discovered = scan_project_source_art(session)
+        require(len(discovered) == 1, "project discovery omitted imported source")
+        require(discovered[0].path == project_dir / record["project_relative_path"], "discovery path drifted")
+        require(discovered[0].preview_path == project_dir / record["preview_relative_path"], "preview path drifted")
+        require(discovered[0].authority == "active_project", "project authority was not explicit")
         print("PASS: source intake copies bytes, hashes identity, and creates a bounded preview")
+        print("PASS: active-project discovery resolves canonical source and preview authority")
 
         history_before = history
         duplicate = import_source_copy(session, source)
@@ -69,6 +76,11 @@ def main() -> None:
         require(processed["project_relative_path"].startswith("source/processed/"), "source not moved")
         require((project_dir / processed["project_relative_path"]).read_bytes() == source_before, "move changed bytes")
         require(source.read_bytes() == source_before, "processed transition moved external source")
+        processed_discovery = scan_project_source_art(session)
+        require(
+            processed_discovery[0].path == project_dir / processed["project_relative_path"],
+            "processed project source was not rediscovered",
+        )
         print("PASS: explicit processed transition moves only the project-owned copy")
 
         symlink = external / "link.png"
@@ -163,6 +175,31 @@ def main() -> None:
             / f"{canonical_result.record['asset_id']}.source.json"
         )
         damaged_record = json.loads(canonical_record_path.read_text(encoding="utf-8"))
+        damaged_record["project_id"] = "project_foreign"
+        canonical_record_path.write_text(json.dumps(damaged_record), encoding="utf-8")
+        try:
+            scan_project_source_art(format_session)
+        except SourceIntakeError:
+            pass
+        else:
+            raise AssertionError("foreign-project source record was accepted")
+        canonical_record_path.write_text(
+            json.dumps(canonical_result.record, indent=2) + "\n", encoding="utf-8"
+        )
+        print("PASS: discovery rejects source records belonging to another project")
+
+        canonical_record_text = canonical_record_path.read_text(encoding="utf-8")
+        canonical_record_path.write_text(" " * (intake_module.MAX_SOURCE_RECORD_BYTES + 1))
+        try:
+            scan_project_source_art(format_session)
+        except SourceIntakeError:
+            pass
+        else:
+            raise AssertionError("oversized source record was accepted")
+        canonical_record_path.write_text(canonical_record_text, encoding="utf-8")
+        print("PASS: discovery bounds source-record reads before JSON parsing")
+
+        damaged_record = json.loads(canonical_record_text)
         damaged_record["project_relative_path"] = "project.json"
         canonical_record_path.write_text(json.dumps(damaged_record), encoding="utf-8")
         try:
@@ -180,12 +217,18 @@ def main() -> None:
         stored_path = format_session.project_dir / canonical_result.record["project_relative_path"]
         stored_path.write_bytes(b"corrupted project copy")
         try:
+            scan_project_source_art(format_session)
+        except SourceIntakeError:
+            pass
+        else:
+            raise AssertionError("corrupt project source was declared authoritative")
+        try:
             import_source_copy(format_session, canonical_source)
         except SourceIntakeError:
             pass
         else:
             raise AssertionError("corrupt stored copy was accepted as duplicate")
-        print("PASS: duplicate intake rehashes the stored project copy")
+        print("PASS: discovery and duplicate intake rehash the stored project copy")
         format_session.close()
 
         symlink_session = ProjectSession(projects)

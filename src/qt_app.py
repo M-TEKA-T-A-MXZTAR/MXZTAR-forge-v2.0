@@ -239,11 +239,25 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.agent_panel = AgentPanel()
         self.agent_panel.status_changed.connect(self.set_status)
+        self.agent_panel.job_active_changed.connect(
+            lambda active: self.start_here_panel.set_project_mutation_active(
+                active, "local AI workflow"
+            )
+        )
 
-        self.library_panel = MyLibraryPanel()
+        self.library_panel = MyLibraryPanel(self.project_session)
         self.library_panel.status_changed.connect(self.set_status)
         self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
         self.library_panel.background_idle.connect(self.finish_deferred_close)
+        self.library_panel.intake_active_changed.connect(
+            self.start_here_panel.set_project_mutation_active
+        )
+        self.library_panel.project_authority_changed.connect(
+            self.start_here_panel.refresh_attached_project_state
+        )
+        self.start_here_panel.project_changed.connect(self.library_panel.set_project_state)
+        self.start_here_panel.project_changed.connect(self.agent_panel.set_project_state)
+        self.agent_panel.set_project_state(self.project_session.state)
 
         self.shape_panel = ShapeLibraryPanel()
         self.shape_panel.status_changed.connect(self.set_status)
@@ -332,6 +346,12 @@ class MXZTARForgeWindow(QMainWindow):
             self.shape_panel.ensure_loaded()
 
     def closeEvent(self, event):
+        if self.library_panel.has_active_intake():
+            self.set_status(
+                "Project source intake is still active. Wait for its transaction to finish before closing."
+            )
+            event.ignore()
+            return
         if self.agent_panel.has_active_job():
             self.set_status(
                 "A local AI workflow is still running. Wait for it to finish before closing."
