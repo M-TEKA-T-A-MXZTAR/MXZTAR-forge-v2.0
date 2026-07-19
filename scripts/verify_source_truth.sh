@@ -17,6 +17,7 @@ for f in \
   docs/product/OUTPUT_ARTIFACT_CONTRACTS.md \
   docs/product/MASTER_BUILD_PLAN.md \
   docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
+  docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md \
   docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
   docs/PROGRESS_LEDGER.md
 do
@@ -40,8 +41,7 @@ PYTHONPATH=src python -m py_compile \
   src/core/agent_runner.py \
   src/core/project_access.py \
   src/core/project_manifest.py \
-  src/core/project_session.py \
-  src/core/project_source_intake.py
+  src/core/project_session.py
 
 echo "PASS: core Python files compile"
 
