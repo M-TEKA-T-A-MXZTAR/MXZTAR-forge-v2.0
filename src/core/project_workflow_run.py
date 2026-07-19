@@ -85,6 +85,14 @@ def run_project_agent_job(
     run_id = f"run_{uuid.uuid4().hex}"
     status = "model_call_succeeded" if result.ok else "failed"
     directory = project_dir / ("logs" if result.ok else "diagnostics")
+    if (
+        directory.is_symlink()
+        or not directory.is_dir()
+        or directory.resolve().parent != project_dir.resolve()
+    ):
+        raise ProjectWorkflowRunError(
+            "Canonical project evidence directory is unavailable or unsafe."
+        )
     evidence_path = directory / f"{run_id}.workflow-run.json"
     evidence = {
         "schema_name": RUN_EVIDENCE_SCHEMA,
@@ -109,6 +117,7 @@ def run_project_agent_job(
         "provenance": {
             "source_asset_id": canonical.asset_id,
             "source_project_id": canonical.project_id,
+            "source_sha256": canonical.sha256,
             "source_path": canonical.path.relative_to(project_dir).as_posix(),
         },
         "raw_model_output": result.output_text,
