@@ -139,6 +139,7 @@ define permission to modify or redistribute the source code.
 - [Future Construct and World vision](docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md)
 - [Progress ledger](docs/PROGRESS_LEDGER.md)
 - [Output artifact contracts](docs/product/OUTPUT_ARTIFACT_CONTRACTS.md)
+- [Level Four platform priorities](docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md)
 - [Workflow compatibility matrix](docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md)
 - [Project state and data authority](docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md)
 - [Source-of-truth policy](docs/SOURCE_OF_TRUTH.md)
