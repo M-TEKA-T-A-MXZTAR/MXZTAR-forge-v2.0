@@ -31,23 +31,31 @@ done
 
 echo
 echo "=== PYTHON COMPILE CHECK ==="
-if [ -d ".venv" ]; then
-  source .venv/bin/activate
+if [ -x ".venv/bin/python" ]; then
+  PYTHON_EXECUTABLE=".venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+  PYTHON_EXECUTABLE="$(command -v python3)"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_EXECUTABLE="$(command -v python)"
+else
+  echo "FAIL: Python 3 is required; create .venv or install python3." >&2
+  exit 1
 fi
 
-PYTHONPATH=src python -m py_compile \
+PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/brain/prompts.py \
   src/brain/service.py \
   src/core/agent_runner.py \
   src/core/project_access.py \
   src/core/project_manifest.py \
-  src/core/project_session.py
+  src/core/project_session.py \
+  src/core/project_source_intake.py
 
 echo "PASS: core Python files compile"
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
-PYTHONPATH=src python tools/verify_prompts.py
+PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_prompts.py
 
 echo
 echo "=== SOURCE TRUTH VERIFY COMPLETE ==="

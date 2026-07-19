@@ -987,6 +987,38 @@ Verification: documentation source-truth verification and Markdown whitespace ch
 
 Backup status: no backup is claimed before merge and local verification.
 
+## 2026-07-20 — Source-truth interpreter portability fix branch
+
+Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+
+Branch: `agent/fix-source-truth-python-selection`.
+
+Purpose:
+
+- make the source-truth verifier work from a fresh T1700 terminal without a global
+  `python` alias;
+- select the checkout-local `.venv/bin/python` first, then `python3`, then `python`;
+- fail visibly when no Python 3 interpreter is available;
+- restore `project_source_intake.py` to the compile check after its accidental omission
+  during the PR #37 documentation reconciliation.
+
+Files in scope:
+
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification command:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+bash scripts/verify_source_truth.sh
+```
+
+Exit gate: the unmodified command passes from the canonical checkout without PATH
+manipulation and still compiles every current project-authority module.
+
+Backup status: no backup is claimed before merge and T1700 verification.
+
 ## Ledger update contract
 
 Every merged milestone must add or update:
