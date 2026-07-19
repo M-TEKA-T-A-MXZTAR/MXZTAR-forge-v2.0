@@ -25,6 +25,7 @@ LOCK_FILENAME = ".mxztar-forge.lock"
 LOCK_SCHEMA = "mxztar_forge_project_lock"
 LOCK_SCHEMA_VERSION = "1.0.0"
 MAX_LOCK_BYTES = 64 * 1024
+SOURCE_TRANSACTION_FILENAME = ".mxztar-source-transaction.json"
 
 
 class ProjectAccessError(RuntimeError):
@@ -175,6 +176,11 @@ def _validate_project_structure(project_dir: Path, manifest: dict) -> list[str]:
                 diagnostics.append(f"Required project file is missing: {relative}")
         elif not candidate.is_dir():
             diagnostics.append(f"Required project directory is missing: {relative}")
+    transaction_path = project_dir / SOURCE_TRANSACTION_FILENAME
+    if transaction_path.exists() or transaction_path.is_symlink():
+        diagnostics.append(
+            "An interrupted source transaction requires explicit read-only recovery."
+        )
     return diagnostics
 
 

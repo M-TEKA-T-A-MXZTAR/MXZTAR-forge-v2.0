@@ -857,7 +857,7 @@ by this entry.
 
 ## 2026-07-20 — Project session and Start Here authority branch
 
-Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+Status: `VERIFIED` on the T1700 after PR #35 merged at `710468a`.
 
 Branch: `agent/build-project-session-start-here`.
 
@@ -897,6 +897,57 @@ normal project close or application shutdown leaks its writer lease.
 Next permitted milestone after verification: project-contained source intake with copy,
 hash, stable source ID, preview generation, manifest/history update, and explicit
 processed-source lifecycle. Legacy `workspace/input` must not be moved automatically.
+
+Recorded result:
+
+- every project-session and Start Here assertion passed, including writable creation,
+  locked and recovery attachment, bounded discovery, discovery diagnostics, root and
+  symlink containment, acquisition-race handling, partial-release reconciliation, and
+  application-shutdown lease release.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
+by this entry.
+
+## 2026-07-20 — Project-contained source intake branch
+
+Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+
+Branch: `agent/build-project-source-intake`.
+
+Purpose:
+
+- require a writable project session for every source mutation;
+- copy supported user-selected source art without changing or moving external bytes;
+- enforce the 1 GiB source limit and safe preview-dimension boundary;
+- create a stable content-addressed source ID and SHA-256 identity;
+- save a bounded project preview and validated project-relative source record;
+- update manifest and project history through atomic writes with tested rollback;
+- make duplicate intake idempotent;
+- provide an explicit processed transition that moves only the project-owned copy;
+- leave legacy `workspace/input` untouched and add no synchronous Qt import control.
+
+Files in scope:
+
+- `src/core/project_source_intake.py`;
+- `src/core/project_session.py`;
+- `tools/verify_project_source_intake_contract.py`;
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification command:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+PYTHONPATH=src .venv/bin/python tools/verify_project_source_intake_contract.py
+```
+
+Exit gate: imported identity and bytes are durable inside the project, external source
+bytes remain unchanged, failed transactions do not drift manifest/history authority, and
+processed transition moves only the project-owned copy.
+
+Next permitted milestone after verification: asynchronous project-source intake UI and
+project-aware My Library discovery. Hashing, copying, preview generation, and scanning
+must remain off the Qt main thread with visible progress and safe shutdown.
 
 Backup status: no backup is claimed before merge and T1700 verification.
 
