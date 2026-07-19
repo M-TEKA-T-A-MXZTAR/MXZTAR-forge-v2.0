@@ -11,6 +11,8 @@ Purpose:
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QComboBox,
+    QFrame,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -28,14 +30,17 @@ from core.onboarding_store import (
     save_profile,
     save_settings_notes,
 )
+from core.project_session import ProjectSession, discover_project_directories
 
 
 class StartHerePanel(QWidget):
     status_changed = Signal(str)
+    project_changed = Signal(object)
 
-    def __init__(self):
+    def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
 
+        self.project_session = project_session or ProjectSession()
         self.profile_fields = {}
 
         title = QLabel("Start Here")
@@ -47,6 +52,40 @@ class StartHerePanel(QWidget):
         )
         intro.setWordWrap(True)
         intro.setStyleSheet("color: #cfcfcf;")
+
+        self.project_status_label = QLabel("No project is open.")
+        self.project_status_label.setWordWrap(True)
+        self.project_status_label.setStyleSheet("color: #d6c27a; font-weight: 600;")
+
+        self.project_selector = QComboBox()
+        self.project_selector.setToolTip("Canonical projects found in workspace/projects.")
+        self.refresh_projects_button = QPushButton("Refresh Projects")
+        self.refresh_projects_button.clicked.connect(self.refresh_projects)
+        self.open_project_button = QPushButton("Open Selected")
+        self.open_project_button.clicked.connect(self.open_selected_project)
+        self.create_project_button = QPushButton("Create Project")
+        self.create_project_button.clicked.connect(self.create_current_project)
+        self.close_project_button = QPushButton("Close Project")
+        self.close_project_button.clicked.connect(self.close_project)
+
+        project_row = QHBoxLayout()
+        project_row.addWidget(self.project_selector, 1)
+        project_row.addWidget(self.refresh_projects_button)
+        project_row.addWidget(self.open_project_button)
+
+        project_actions = QHBoxLayout()
+        project_actions.addWidget(self.create_project_button)
+        project_actions.addWidget(self.close_project_button)
+        project_actions.addStretch(1)
+
+        project_frame = QFrame()
+        project_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        project_layout = QVBoxLayout()
+        project_layout.addWidget(QLabel("Project Authority"))
+        project_layout.addWidget(self.project_status_label)
+        project_layout.addLayout(project_row)
+        project_layout.addLayout(project_actions)
+        project_frame.setLayout(project_layout)
 
         form = QFormLayout()
         form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
@@ -121,6 +160,7 @@ class StartHerePanel(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(title)
         layout.addWidget(intro)
+        layout.addWidget(project_frame)
         layout.addSpacing(12)
         layout.addLayout(form)
         layout.addLayout(top_buttons)
@@ -144,6 +184,93 @@ class StartHerePanel(QWidget):
         self.setLayout(root)
 
         self.load_all()
+        self.refresh_projects()
+        if self.project_session.state is None:
+            self.update_project_controls()
+        else:
+            self._show_project_state(self.project_session.state, "Attached")
+
+    def refresh_projects(self):
+        selected_path = self.project_selector.currentData()
+        self.project_selector.clear()
+        try:
+            projects = discover_project_directories(self.project_session.projects_root)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.update_project_controls()
+            self.set_status(f"Could not discover projects: {exc}")
+            return
+        for path in projects:
+            self.project_selector.addItem(path.name, str(path))
+        if selected_path:
+            index = self.project_selector.findData(selected_path)
+            if index >= 0:
+                self.project_selector.setCurrentIndex(index)
+        self.update_project_controls()
+
+    def create_current_project(self):
+        try:
+            state = self.project_session.create_and_open(
+                self.profile_fields["project_name"].text(),
+                self.profile_fields["primary_goal"].text(),
+            )
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.set_status(f"Could not create project: {exc}")
+            return
+        self.refresh_projects()
+        self._show_project_state(state, "Created")
+
+    def open_selected_project(self):
+        selected = self.project_selector.currentData()
+        if not selected:
+            self.set_status("No canonical project is selected.")
+            return
+        try:
+            state = self.project_session.open(selected)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.set_status(f"Could not open project: {exc}")
+            return
+        self._show_project_state(state, "Opened")
+
+    def close_project(self):
+        was_writable = self.project_session.is_writable
+        try:
+            result = self.project_session.close()
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.set_status(f"Could not safely close project: {exc}")
+            return False
+        self.project_status_label.setText("No project is open.")
+        self.update_project_controls()
+        self.project_changed.emit(None)
+        if result.warning:
+            message = f"Closed project with a durability warning: {result.warning}"
+        elif was_writable and result.released_writer:
+            message = "Closed project and released its writer lease."
+        else:
+            message = "Detached the read-only project; no writer lease was held or released."
+        self.set_status(message)
+        return True
+
+    def _show_project_state(self, state, action: str):
+        assessment = state.assessment
+        if state.writable:
+            detail = "Writable session; this application owns the project lock."
+        else:
+            diagnostics = " ".join(assessment.diagnostics) or "Writable access is unavailable."
+            detail = f"{assessment.status.value}: {diagnostics}"
+        self.project_status_label.setText(
+            f"{action}: {assessment.project_dir.name}\n{detail}"
+        )
+        self.update_project_controls()
+        self.project_changed.emit(state)
+        self.set_status(f"{action} project {assessment.project_dir.name}: {detail}")
+
+    def update_project_controls(self):
+        attached = self.project_session.state is not None
+        self.create_project_button.setEnabled(not attached)
+        self.open_project_button.setEnabled(not attached and self.project_selector.count() > 0)
+        self.project_selector.setEnabled(not attached)
+        self.refresh_projects_button.setEnabled(not attached)
+        self.close_project_button.setEnabled(attached)
 
     def load_all(self):
         profile = load_profile()

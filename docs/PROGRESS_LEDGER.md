@@ -807,7 +807,7 @@ by this entry.
 
 ## 2026-07-20 — Project locking and validated-open branch
 
-Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+Status: `VERIFIED` on the T1700 after PR #34 merged at `b0e9f7a`.
 
 Branch: `agent/add-project-lock-recovery`.
 
@@ -844,6 +844,59 @@ without mutation and cannot be opened writable.
 Next permitted milestone after verification: a project session boundary and truthful
 Start Here create/open baseline. No source-import move or workflow integration is
 permitted before the session owns and releases the writer lease safely.
+
+Recorded result:
+
+- every project-access assertion passed, including exclusive ownership, stale and
+  malformed containment, lock-incarnation identity, failed-acquisition cleanup,
+  recycled-PID detection, non-regular-file rejection, symlink boundaries, and recovery
+  classification.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
+by this entry.
+
+## 2026-07-20 — Project session and Start Here authority branch
+
+Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+
+Branch: `agent/build-project-session-start-here`.
+
+Purpose:
+
+- give the application one explicit project-session owner;
+- create a canonical project from the existing Start Here project name and primary goal;
+- discover and open existing canonical projects from a bounded selector;
+- acquire exactly one writer lease for a valid available project;
+- attach locked or uncertain projects visibly without writable authority;
+- require explicit close before switching projects;
+- release the owning writer lease on project close and application shutdown;
+- preserve the existing onboarding profile and trust-note workflow;
+- leave source import, workflow writes, approvals, recovery actions, and SQLite indexing
+  to later verified milestones.
+
+Files in scope:
+
+- `src/core/project_session.py`;
+- `src/qt_panels/start_here_panel.py`;
+- `src/qt_app.py`;
+- `tools/verify_project_session_contract.py`;
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification command:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_project_session_contract.py
+```
+
+Exit gate: Start Here never presents a locked or uncertain project as writable, and no
+normal project close or application shutdown leaks its writer lease.
+
+Next permitted milestone after verification: project-contained source intake with copy,
+hash, stable source ID, preview generation, manifest/history update, and explicit
+processed-source lifecycle. Legacy `workspace/input` must not be moved automatically.
 
 Backup status: no backup is claimed before merge and T1700 verification.
 
