@@ -39,7 +39,7 @@ def write_record(path: Path, workflow: str, ok: bool, text: str) -> None:
                 "source_path": "/tmp/source.png",
                 "ok": ok,
                 "error": "" if ok else text,
-                "output_text": text if ok else "",
+                "output_text": text if ok else "raw failed response",
             }
         ),
         encoding="utf-8",
@@ -77,6 +77,13 @@ def main() -> int:
             )
             (root / "shape_structure_harvest-invalid.json").write_text("{bad", encoding="utf-8")
             write_record(root / "source-art.json", "source_art_intelligence", True, "not a shape report")
+            for index in range(510):
+                write_record(
+                    root / f"source_art_intelligence-{index:03d}.json",
+                    "source_art_intelligence",
+                    True,
+                    "newer unrelated evidence",
+                )
 
             agent_runner.WORKFLOW_OUTPUT_DIRS.clear()
             agent_runner.WORKFLOW_OUTPUT_DIRS["fixture"] = root
@@ -93,10 +100,13 @@ def main() -> int:
             require(any("INVALID" in label for label in labels), "invalid shape evidence is hidden")
             require("Approved shapes: 0" in panel.boundary_label.text(), "approval boundary is hidden")
             require("NOT AN APPROVED SHAPE" in panel.details.toPlainText(), "raw evidence was promoted")
+            panel.evidence_list.setCurrentRow(labels.index(next(x for x in labels if "FAILED" in x)))
+            require("shape workflow failed" in panel.details.toPlainText(), "failure reason was hidden")
+            require("Saved output text" in panel.details.toPlainText(), "failed saved output was hidden")
             for forbidden in ("approve_button", "extract_button", "morph_button", "make_3d_button", "delete_button"):
                 require(not hasattr(panel, forbidden), f"Shape Library exposed fake control: {forbidden}")
 
-            def slow_scan(should_stop):
+            def slow_scan(should_stop, **_):
                 while not should_stop():
                     time.sleep(0.01)
                 return JobScanResult(())
@@ -111,6 +121,8 @@ def main() -> int:
             print("PASS: Shape Library loads only when opened")
             print("PASS: raw success, failure, and invalid shape evidence remain distinct")
             print("PASS: unrelated workflow records are excluded")
+            print("PASS: unrelated records cannot crowd shape evidence out of bounded discovery")
+            print("PASS: failed evidence shows both error and saved output text")
             print("PASS: raw evidence is never represented as an approved shape")
             print("PASS: no fake approval, extraction, Morph, Make 3D, or delete action exists")
             print("PASS: Shape Library scan stops asynchronously before shutdown")
