@@ -114,11 +114,11 @@ def _make_preview(copied_path: Path, preview_path: Path) -> tuple[int, int]:
             if image.mode not in ("RGB", "RGBA"):
                 image = image.convert("RGB")
             image.save(preview_path, format="PNG", optimize=True)
-    except (OSError, ValueError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
-        raise SourceIntakeError(f"Could not create a safe project preview: {exc}") from exc
         with preview_path.open("rb") as preview:
             os.fsync(preview.fileno())
         fsync_directory(preview_path.parent)
+    except (OSError, ValueError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
+        raise SourceIntakeError(f"Could not create a safe project preview: {exc}") from exc
     return width, height
 
 
@@ -139,8 +139,8 @@ def import_source_copy(session: ProjectSession, source_path: Path) -> SourceInta
     created_paths: list[Path] = []
     history_before: str | None = None
     manifest_before: str | None = None
-    history_changed = False
-    manifest_changed = False
+    history_write_attempted = False
+    manifest_write_attempted = False
     try:
         sha256, size_bytes = _copy_and_hash(unresolved, temporary_copy)
         asset_id = f"source_{sha256[:24]}"
@@ -208,18 +208,18 @@ def import_source_copy(session: ProjectSession, source_path: Path) -> SourceInta
             "project_relative_path": record["project_relative_path"],
             "sha256": sha256,
         }
+        history_write_attempted = True
         atomic_write_text(history_path, history_before + json.dumps(event, ensure_ascii=False) + "\n")
-        history_changed = True
+        manifest_write_attempted = True
         atomic_write_text(manifest_path, json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
-        manifest_changed = True
         session.update_manifest_snapshot(manifest)
         return SourceIntakeResult(record=record, duplicate=False)
     except Exception as original_error:
         rollback_ok = True
         try:
-            if manifest_changed and manifest_before is not None:
+            if manifest_write_attempted and manifest_before is not None:
                 atomic_write_text(project_dir / "project.json", manifest_before)
-            if history_changed and history_before is not None:
+            if history_write_attempted and history_before is not None:
                 atomic_write_text(project_dir / session.state.assessment.manifest["history_path"], history_before)
         except Exception:
             rollback_ok = False
@@ -229,10 +229,12 @@ def import_source_copy(session: ProjectSession, source_path: Path) -> SourceInta
                     path.unlink()
                     fsync_directory(path.parent)
                 except FileNotFoundError:
+                    # A failed stage may not have created every registered path.
                     pass
         try:
             temporary_copy.unlink()
         except FileNotFoundError:
+            # Successful rename or earlier cleanup means no temporary copy remains.
             pass
         if not rollback_ok:
             raise SourceIntakeError(
@@ -271,7 +273,7 @@ def mark_source_processed(session: ProjectSession, asset_id: str) -> dict:
     if history_path.stat().st_size > MAX_HISTORY_BYTES:
         raise SourceIntakeError("Project history exceeds the safe transaction limit.")
     history_before = history_path.read_text(encoding="utf-8")
-    moved = record_changed = history_changed = False
+    moved = record_write_attempted = history_write_attempted = False
     try:
         source_path.rename(target_path)
         moved = True
@@ -281,8 +283,8 @@ def mark_source_processed(session: ProjectSession, asset_id: str) -> dict:
         record["project_relative_path"] = target_path.relative_to(project_dir).as_posix()
         record["lifecycle_status"] = "processed"
         record["processed_at_utc"] = now
+        record_write_attempted = True
         atomic_write_text(record_path, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
-        record_changed = True
         event = {
             "timestamp_utc": now,
             "event": "source_marked_processed",
@@ -290,15 +292,15 @@ def mark_source_processed(session: ProjectSession, asset_id: str) -> dict:
             "asset_id": asset_id,
             "project_relative_path": record["project_relative_path"],
         }
+        history_write_attempted = True
         atomic_write_text(history_path, history_before + json.dumps(event, ensure_ascii=False) + "\n")
-        history_changed = True
         return record
     except Exception as original_error:
         rollback_ok = True
         try:
-            if history_changed:
+            if history_write_attempted:
                 atomic_write_text(history_path, history_before)
-            if record_changed:
+            if record_write_attempted:
                 atomic_write_text(record_path, record_before)
             if moved and target_path.exists():
                 target_path.rename(source_path)

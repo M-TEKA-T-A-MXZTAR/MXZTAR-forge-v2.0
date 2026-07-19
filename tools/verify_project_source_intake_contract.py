@@ -106,9 +106,12 @@ def main() -> None:
         other_source = external / "other.png"
         Image.new("RGB", (32, 32), (90, 30, 10)).save(other_source)
         real_atomic_write = intake_module.atomic_write_text
+        manifest_failures_remaining = 1
 
         def fail_manifest(path, text):
-            if Path(path).name == "project.json":
+            nonlocal manifest_failures_remaining
+            if Path(path).name == "project.json" and manifest_failures_remaining:
+                manifest_failures_remaining -= 1
                 raise OSError("manifest write test")
             return real_atomic_write(path, text)
 
