@@ -80,12 +80,13 @@ class LibraryDiscoveryThread(QThread):
 
     def run(self):
         try:
-            sources = self._source_provider()
+            sources, diagnostic = self._source_provider(self.isInterruptionRequested)
         except Exception as exc:
-            self.discovered.emit([], str(exc))
+            if not self.isInterruptionRequested():
+                self.discovered.emit([], str(exc))
             return
         if not self.isInterruptionRequested():
-            self.discovered.emit(sources, "")
+            self.discovered.emit(sources, diagnostic)
 
 
 class SourceIntakeThread(QThread):
@@ -112,6 +113,7 @@ class MyLibraryPanel(QWidget):
     source_selected = Signal(object)
     background_idle = Signal()
     intake_active_changed = Signal(bool)
+    project_authority_changed = Signal(object)
 
     def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
@@ -123,6 +125,7 @@ class MyLibraryPanel(QWidget):
         self._discovery_thread = None
         self._intake_thread = None
         self._pending_intake_message = None
+        self._discovery_diagnostic = None
         self._refresh_pending = False
 
         title = QLabel("My Library")
@@ -264,16 +267,29 @@ class MyLibraryPanel(QWidget):
         self._discovery_thread.start()
         self.update_project_controls()
 
-    def discover_sources(self):
-        return list(scan_project_source_art(self.project_session)) + list(scan_source_art())
+    def discover_sources(self, interrupted):
+        sources = []
+        diagnostics = []
+        try:
+            sources.extend(scan_source_art(interrupted))
+        except Exception as exc:
+            diagnostics.append(f"Legacy source discovery: {exc}")
+        if interrupted():
+            return sources, ""
+        try:
+            sources[0:0] = scan_project_source_art(self.project_session, interrupted)
+        except Exception as exc:
+            diagnostics.append(f"Active project source discovery: {exc}")
+        return sources, " ".join(diagnostics)
 
     def _discovery_finished(self, sources, error):
-        if error:
+        if error and not sources:
             self.source_items = []
             self.source_grid.clear()
             self.clear_selection()
-            self.set_status(f"Could not discover project sources safely: {error}")
+            self.set_status(f"Could not discover sources safely: {error}")
             return
+        self._discovery_diagnostic = error or None
         previous = self.selected_source()
         previous_path = previous.path if previous is not None else None
         self.source_grid.blockSignals(True)
@@ -360,10 +376,16 @@ class MyLibraryPanel(QWidget):
             self._refresh_pending = False
             self.refresh_library()
             return
-        message = self._pending_intake_message or (
-            f"Showing all {len(self.source_items)} source-art file(s)."
-        )
+        message = self._pending_intake_message
+        if message is None and self._discovery_diagnostic:
+            message = (
+                f"Showing {len(self.source_items)} safe source-art file(s). "
+                f"Diagnostic: {self._discovery_diagnostic}"
+            )
+        if message is None:
+            message = f"Showing all {len(self.source_items)} source-art file(s)."
         self._pending_intake_message = None
+        self._discovery_diagnostic = None
         self.set_status(message)
         self.background_idle.emit()
 
@@ -459,6 +481,7 @@ class MyLibraryPanel(QWidget):
             thread.deleteLater()
         self.intake_progress.setVisible(False)
         self.intake_active_changed.emit(False)
+        self.project_authority_changed.emit(self.project_session.state)
         self.update_project_controls()
         self._refresh_pending = False
         self.refresh_library()
@@ -503,10 +526,7 @@ class MyLibraryPanel(QWidget):
 
     def preview_image_for(self, item: SourceArtItem) -> tuple[QImage, str]:
         if item.preview_path is not None:
-            image = QImage(str(item.preview_path))
-            if image.isNull():
-                return QImage(), "The declared project preview could not be decoded."
-            return image, ""
+            return self.decode_bounded_image(item.preview_path)
         try:
             cache_path = source_preview_cache_path(item.path)
         except OSError as exc:
@@ -516,7 +536,15 @@ class MyLibraryPanel(QWidget):
         if not cached.isNull():
             return cached, ""
 
-        reader = QImageReader(str(item.path))
+        image, error = self.decode_bounded_image(item.path)
+        if image.isNull():
+            return image, error
+
+        self.save_preview_cache(image, cache_path, item.path)
+        return image, ""
+
+    def decode_bounded_image(self, path: Path) -> tuple[QImage, str]:
+        reader = QImageReader(str(path))
         reader.setAutoTransform(True)
         source_size = reader.size()
 
@@ -547,7 +575,6 @@ class MyLibraryPanel(QWidget):
         if image.isNull():
             return QImage(), reader.errorString() or "Qt could not decode this format."
 
-        self.save_preview_cache(image, cache_path, item.path)
         return image, ""
 
     def save_preview_cache(self, image: QImage, cache_path: Path, source_path: Path):
