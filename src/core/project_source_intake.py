@@ -113,6 +113,7 @@ def scan_project_source_art(
                 asset_id=asset_id,
                 project_id=manifest["project_id"],
                 authority="active_project",
+                sha256=record["sha256"],
             )
         )
     return items
