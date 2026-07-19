@@ -8,6 +8,7 @@ import json
 import os
 import re
 import stat
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -28,6 +29,7 @@ from core.source_library import SourceArtItem
 MAX_SOURCE_BYTES = 1024 * 1024 * 1024
 MAX_PREVIEW_PIXELS = 100_000_000
 MAX_HISTORY_BYTES = 16 * 1024 * 1024
+MAX_SOURCE_RECORD_BYTES = 1024 * 1024
 PREVIEW_MAX_SIZE = (1600, 1600)
 SUPPORTED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"}
 FORMAT_BY_EXTENSION = {
@@ -52,13 +54,19 @@ class SourceIntakeError(RuntimeError):
     pass
 
 
+class SourceDiscoveryInterrupted(SourceIntakeError):
+    pass
+
+
 @dataclass(frozen=True)
 class SourceIntakeResult:
     record: dict
     duplicate: bool
 
 
-def scan_project_source_art(session: ProjectSession) -> list[SourceArtItem]:
+def scan_project_source_art(
+    session: ProjectSession, interrupted: Callable[[], bool] | None = None
+) -> list[SourceArtItem]:
     """Read the active project's declared source records without mutating authority."""
     if session.state is None or session.project_dir is None:
         return []
@@ -67,21 +75,32 @@ def scan_project_source_art(session: ProjectSession) -> list[SourceArtItem]:
     items: list[SourceArtItem] = []
     seen_ids: set[str] = set()
     for asset_id in manifest["source_asset_ids"]:
+        if interrupted is not None and interrupted():
+            break
         if not isinstance(asset_id, str) or asset_id in seen_ids:
             raise SourceIntakeError("Project manifest contains an invalid source asset ID.")
         seen_ids.add(asset_id)
         record_path = project_dir / "source" / "originals" / f"{asset_id}.source.json"
-        if record_path.is_symlink() or not record_path.is_file():
-            raise SourceIntakeError(f"Declared source record is unavailable: {asset_id}")
         try:
-            record = json.loads(record_path.read_text(encoding="utf-8"))
+            record = json.loads(
+                _read_bounded_regular_text(record_path, MAX_SOURCE_RECORD_BYTES)
+            )
         except (OSError, UnicodeError, ValueError, RecursionError) as exc:
             raise SourceIntakeError(f"Could not read source record {asset_id}: {exc}") from exc
-        record = _validate_source_record(record, asset_id, record.get("sha256"))
+        record = _validate_source_record(
+            record,
+            asset_id,
+            record.get("sha256") if isinstance(record, dict) else None,
+            manifest["project_id"],
+        )
         source_path = _project_artifact_path(project_dir, record["project_relative_path"])
         preview_path = _project_artifact_path(project_dir, record["preview_relative_path"])
         if not source_path.is_file() or not preview_path.is_file():
             raise SourceIntakeError(f"Declared project source artifacts are missing: {asset_id}")
+        if _hash_regular_file(source_path, interrupted) != record["sha256"]:
+            raise SourceIntakeError(
+                f"Project source bytes no longer match their recorded identity: {asset_id}"
+            )
         lifecycle = record["lifecycle_status"]
         items.append(
             SourceArtItem(
@@ -92,13 +111,37 @@ def scan_project_source_art(session: ProjectSession) -> list[SourceArtItem]:
                 size_bytes=int(record["size_bytes"]),
                 preview_path=preview_path,
                 asset_id=asset_id,
+                project_id=manifest["project_id"],
                 authority="active_project",
             )
         )
     return items
 
 
-def _validate_source_record(record: object, asset_id: str, sha256: str) -> dict:
+def _read_bounded_regular_text(path: Path, max_bytes: int) -> str:
+    """Read a small regular UTF-8 file without following links or trusting a stale stat."""
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(path, flags)
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise SourceIntakeError("Source record must be a regular file.")
+        if metadata.st_size > max_bytes:
+            raise SourceIntakeError("Source record exceeds the safe read limit.")
+        with os.fdopen(descriptor, "rb") as handle:
+            descriptor = -1
+            payload = handle.read(max_bytes + 1)
+        if len(payload) > max_bytes:
+            raise SourceIntakeError("Source record grew beyond the safe read limit.")
+        return payload.decode("utf-8")
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
+def _validate_source_record(
+    record: object, asset_id: str, sha256: str, project_id: str
+) -> dict:
     if not isinstance(record, dict):
         raise SourceIntakeError("Source record root must be a JSON object.")
     if (
@@ -117,6 +160,8 @@ def _validate_source_record(record: object, asset_id: str, sha256: str) -> dict:
     for key, value in expected.items():
         if record.get(key) != value:
             raise SourceIntakeError(f"Source record identity mismatch: {key}")
+    if record.get("project_id") != project_id:
+        raise SourceIntakeError("Source record belongs to a different project.")
     lifecycle = record.get("lifecycle_status")
     if lifecycle not in ("ready", "processed"):
         raise SourceIntakeError("Source record lifecycle status is invalid.")
@@ -155,7 +200,9 @@ def _clear_transaction_marker(project_dir: Path, missing_ok: bool = False) -> No
     fsync_directory(project_dir)
 
 
-def _hash_regular_file(path: Path) -> str:
+def _hash_regular_file(
+    path: Path, interrupted: Callable[[], bool] | None = None
+) -> str:
     try:
         metadata = path.lstat()
     except OSError as exc:
@@ -165,6 +212,8 @@ def _hash_regular_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         while chunk := handle.read(1024 * 1024):
+            if interrupted is not None and interrupted():
+                raise SourceDiscoveryInterrupted("Project source discovery was interrupted.")
             digest.update(chunk)
     return digest.hexdigest()
 
@@ -295,7 +344,12 @@ def import_source_copy(session: ProjectSession, source_path: Path) -> SourceInta
                 record = json.loads(record_path.read_text(encoding="utf-8"))
             except (OSError, UnicodeError, ValueError, RecursionError) as exc:
                 raise SourceIntakeError(f"Duplicate source record is unavailable: {exc}") from exc
-            record = _validate_source_record(record, asset_id, sha256)
+            record = _validate_source_record(
+                record,
+                asset_id,
+                sha256,
+                session.state.assessment.manifest["project_id"],
+            )
             for key in ("project_relative_path", "preview_relative_path"):
                 artifact_path = _project_artifact_path(project_dir, record[key])
                 if not artifact_path.is_file():
@@ -413,7 +467,12 @@ def mark_source_processed(session: ProjectSession, asset_id: str) -> dict:
         record = json.loads(record_before)
     except (ValueError, RecursionError) as exc:
         raise SourceIntakeError(f"Could not validate source record: {exc}") from exc
-    record = _validate_source_record(record, asset_id, record.get("sha256"))
+    record = _validate_source_record(
+        record,
+        asset_id,
+        record.get("sha256"),
+        session.state.assessment.manifest["project_id"],
+    )
     if record.get("lifecycle_status") != "ready":
         raise SourceIntakeError("Only a ready source can transition to processed.")
     source_path = project_dir / record["project_relative_path"]
