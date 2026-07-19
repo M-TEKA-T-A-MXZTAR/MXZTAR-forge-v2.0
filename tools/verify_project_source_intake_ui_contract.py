@@ -22,6 +22,7 @@ from PySide6.QtCore import QTimer  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from core.project_session import ProjectSession  # noqa: E402
+from core.source_library import SourceArtItem  # noqa: E402
 from qt_app import MXZTARForgeWindow  # noqa: E402
 from qt_panels import my_library_panel as library_module  # noqa: E402
 
@@ -110,7 +111,40 @@ def main() -> int:
             require(item.path != source, "library still points at the external source")
             require(item.path.read_bytes() == source_before, "project copy bytes drifted")
             require(item.preview_path is not None and item.preview_path.is_file(), "preview missing")
+            with patch.object(
+                window.library_panel,
+                "decode_bounded_image",
+                return_value=(library_module.QImage(), "bounded fixture"),
+            ) as bounded_decode:
+                window.library_panel.preview_image_for(item)
+                bounded_decode.assert_called_once_with(item.preview_path)
             print("PASS: project intake stays off the Qt main thread and external bytes remain unchanged")
+            print("PASS: project previews use the bounded image decoder")
+
+            window.library_panel.source_selected.emit(item)
+            app.processEvents()
+            require(
+                window.agent_panel.source_combo.currentData() == item,
+                "Agent Workflows did not receive the active-project source",
+            )
+
+            legacy = external / "legacy.png"
+            Image.new("RGB", (32, 32), (3, 6, 9)).save(legacy)
+            legacy_item = SourceArtItem(
+                label="input / legacy.png",
+                path=legacy,
+                folder_name="input",
+                suffix=".png",
+                size_bytes=legacy.stat().st_size,
+            )
+            project_bytes = item.path.read_bytes()
+            item.path.write_bytes(b"corrupt project fixture")
+            with patch.object(library_module, "scan_source_art", return_value=[legacy_item]):
+                safe_sources, diagnostic = window.library_panel.discover_sources(lambda: False)
+            item.path.write_bytes(project_bytes)
+            require(safe_sources == [legacy_item], "project failure discarded valid legacy source")
+            require("Active project source discovery" in diagnostic, "project failure lacked diagnostic")
+            print("PASS: project discovery failure preserves independent legacy results")
 
             require(window.library_panel.start_project_intake(source), "duplicate intake did not start")
             wait_for_library(app, window.library_panel)
@@ -129,6 +163,15 @@ def main() -> int:
             require(window.library_panel.source_grid.count() == 1, "failed intake created project truth")
             print("PASS: failed intake remains failure and creates no project source")
 
+            session.revoke_writable_authority("rollback verification fixture")
+            window.library_panel.project_authority_changed.emit(session.state)
+            app.processEvents()
+            require(
+                "read_only_recovery" in window.start_here_panel.project_status_label.text(),
+                "Start Here did not refresh revoked writable authority",
+            )
+            print("PASS: rollback revocation refreshes visible project authority")
+
             window.start_here_panel.close_project()
             app.processEvents()
             wait_for_library(app, window.library_panel)
@@ -137,7 +180,42 @@ def main() -> int:
                 "detached session allowed intake",
             )
             require(window.library_panel.source_grid.count() == 0, "detached project source remained visible")
+            require(
+                all(
+                    not isinstance(window.agent_panel.source_combo.itemData(index), SourceArtItem)
+                    or window.agent_panel.source_combo.itemData(index).authority != "active_project"
+                    for index in range(window.agent_panel.source_combo.count())
+                ),
+                "Agent Workflows retained a former-project source",
+            )
             print("PASS: project discovery follows the active session and detached intake is blocked")
+            print("PASS: Agent Workflows invalidates former-project source selections")
+
+            interruption_seen = []
+
+            def cooperative_discovery(interrupted):
+                while not interrupted():
+                    time.sleep(0.01)
+                interruption_seen.append(True)
+                return [], ""
+
+            discovery = library_module.LibraryDiscoveryThread(
+                cooperative_discovery, window.library_panel
+            )
+            window.library_panel._discovery_thread = discovery
+            discovery.discovered.connect(window.library_panel._discovery_finished)
+            discovery.finished.connect(window.library_panel._discovery_thread_finished)
+            discovery.start()
+            wait_until(app, discovery.isRunning, "cooperative discovery did not start")
+            window.library_panel.request_thumbnail_shutdown()
+            wait_until(
+                app,
+                lambda: not window.library_panel.has_active_thumbnail_loading(),
+                "interrupted discovery did not stop promptly",
+                timeout=2,
+            )
+            require(interruption_seen, "discovery provider never observed interruption")
+            print("PASS: discovery interruption is cooperative during shutdown")
 
             window.close()
             app.processEvents()
