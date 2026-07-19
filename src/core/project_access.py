@@ -142,8 +142,14 @@ def process_identity(process_id: int) -> tuple[str, str] | None:
     """Return Linux boot and process-start identities, or None when unverifiable."""
     try:
         boot_id = Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip()
-        process_fields = Path(f"/proc/{process_id}/stat").read_text(encoding="ascii").split()
-        process_start_id = process_fields[21]
+        stat_path = (
+            Path("/proc/self/stat")
+            if process_id == os.getpid()
+            else Path(f"/proc/{process_id}/stat")
+        )
+        stat_text = stat_path.read_text(encoding="ascii")
+        process_fields_after_name = stat_text[stat_text.rindex(")") + 2 :].split()
+        process_start_id = process_fields_after_name[19]
     except (OSError, UnicodeError, IndexError):
         return None
     if not boot_id or not process_start_id:
@@ -157,7 +163,12 @@ def _validate_project_structure(project_dir: Path, manifest: dict) -> list[str]:
     required_paths.extend((Path("README.md"), Path(manifest["history_path"])))
     for relative in required_paths:
         candidate = project_dir / relative
-        if candidate.is_symlink():
+        components = tuple(relative.parents)[::-1][1:] + (relative,)
+        symlink = next(
+            (component for component in components if (project_dir / component).is_symlink()),
+            None,
+        )
+        if symlink is not None:
             diagnostics.append(f"Canonical project path must not be a symbolic link: {relative}")
         elif relative in (Path("README.md"), Path(manifest["history_path"])):
             if not candidate.is_file():
@@ -179,6 +190,15 @@ def assess_project_open(project_dir: Path) -> ProjectOpenAssessment:
             None,
             None,
             (f"Project directory does not exist: {project_path}",),
+        )
+    manifest_path = project_path / "project.json"
+    if manifest_path.is_symlink():
+        return ProjectOpenAssessment(
+            ProjectAccessStatus.READ_ONLY_RECOVERY,
+            project_path,
+            None,
+            None,
+            ("Canonical project path must not be a symbolic link: project.json",),
         )
     try:
         manifest = load_project_manifest(project_path)

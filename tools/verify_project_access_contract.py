@@ -187,6 +187,28 @@ def main() -> None:
         release_project_lock(parent_lease)
         print("PASS: a forked child cannot release its parent's lock")
 
+        symlink_dir, _ = create_project("Symlink Structure", projects_root=root)
+        source_dir = symlink_dir / "source"
+        source_real = symlink_dir / "source-real"
+        source_dir.rename(source_real)
+        source_dir.symlink_to(source_real, target_is_directory=True)
+        require(
+            assess_project_open(symlink_dir).status is ProjectAccessStatus.READ_ONLY_RECOVERY,
+            "intermediate canonical symlink was writable",
+        )
+        print("PASS: every canonical path component rejects symbolic links")
+
+        manifest_link_dir, _ = create_project("Symlink Manifest", projects_root=root)
+        manifest_path = manifest_link_dir / "project.json"
+        manifest_real = manifest_link_dir / "project-real.json"
+        manifest_path.rename(manifest_real)
+        manifest_path.symlink_to(manifest_real)
+        require(
+            assess_project_open(manifest_link_dir).status is ProjectAccessStatus.READ_ONLY_RECOVERY,
+            "symlinked manifest was followed",
+        )
+        print("PASS: project manifests are never loaded through symbolic links")
+
         missing_dir, _ = create_project("Missing Structure", projects_root=root)
         (missing_dir / "source" / "originals").rmdir()
         require(
