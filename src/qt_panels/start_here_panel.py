@@ -42,7 +42,7 @@ class StartHerePanel(QWidget):
 
         self.project_session = project_session or ProjectSession()
         self.profile_fields = {}
-        self._project_mutation_active = False
+        self._project_mutation_sources = set()
 
         title = QLabel("Start Here")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
@@ -267,7 +267,7 @@ class StartHerePanel(QWidget):
 
     def update_project_controls(self):
         attached = self.project_session.state is not None
-        unlocked = not self._project_mutation_active
+        unlocked = not self._project_mutation_sources
         self.create_project_button.setEnabled(not attached and unlocked)
         self.open_project_button.setEnabled(
             not attached and unlocked and self.project_selector.count() > 0
@@ -276,13 +276,33 @@ class StartHerePanel(QWidget):
         self.refresh_projects_button.setEnabled(not attached and unlocked)
         self.close_project_button.setEnabled(attached and unlocked)
 
-    def set_project_mutation_active(self, active: bool):
-        self._project_mutation_active = bool(active)
+    def set_project_mutation_active(self, active: bool, source: str = "source intake"):
+        if active:
+            self._project_mutation_sources.add(source)
+        else:
+            self._project_mutation_sources.discard(source)
         self.update_project_controls()
         if active:
             self.set_status(
-                "Project source intake is active; project switching and close are paused."
+                f"{source.capitalize()} is active; project switching and close are paused."
             )
+
+    def refresh_attached_project_state(self, state):
+        """Refresh displayed authority without announcing a project switch."""
+        if state is None:
+            self.project_status_label.setText("No project is open.")
+            self.update_project_controls()
+            return
+        assessment = state.assessment
+        if state.writable:
+            detail = "Writable session; this application owns the project lock."
+        else:
+            diagnostics = " ".join(assessment.diagnostics) or "Writable access is unavailable."
+            detail = f"{assessment.status.value}: {diagnostics}"
+        self.project_status_label.setText(
+            f"Attached: {assessment.project_dir.name}\n{detail}"
+        )
+        self.update_project_controls()
 
     def load_all(self):
         profile = load_profile()
