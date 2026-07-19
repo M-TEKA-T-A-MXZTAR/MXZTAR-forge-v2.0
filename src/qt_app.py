@@ -357,6 +357,13 @@ class MXZTARForgeWindow(QMainWindow):
             event.ignore()
             return
 
+        if not self.library_panel.shutdown_thumbnail_loading():
+            self.set_status(
+                "The source thumbnail scan is still stopping. Wait a moment, then close again."
+            )
+            event.ignore()
+            return
+
         self.settings.setValue("main_window/geometry", self.saveGeometry())
         super().closeEvent(event)
 
