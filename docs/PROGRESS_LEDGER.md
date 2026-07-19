@@ -1084,6 +1084,10 @@ Recorded review-workspace evidence:
   discovery interruption, and refresh revoked writable authority;
 - the review workspace could not execute PySide6 because its minimal runtime lacks
   `libEGL.so.1`; this is an environment limitation, not recorded as a UI pass.
+- the first T1700 Qt run exposed a verifier-only 10-second aggregate completion
+  deadline; the follow-up raises that hardware-kind transaction/discovery window to
+  60 seconds while retaining the independent event-loop responsiveness assertion and
+  adding exact thread-state timeout diagnostics.
 
 T1700 verification commands:
 
