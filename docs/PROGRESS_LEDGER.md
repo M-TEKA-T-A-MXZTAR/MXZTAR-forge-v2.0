@@ -613,7 +613,7 @@ Backup status: no backup is claimed before merge and T1700 verification.
 
 ## 2026-07-19 — Read-only Shape Library evidence baseline branch
 
-Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+Status: `VERIFIED` on the T1700 after PR #31 merged at `8cbdb07`.
 
 Branch: `agent/restore-shape-library-evidence`.
 
@@ -651,7 +651,15 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
 Boundary: this baseline creates no approved shape schema, files, or directory. Approval
 requires the future project-authority and review workflows.
 
-Backup status: no backup is claimed before merge and T1700 verification.
+Recorded result:
+
+- the Shape Library evidence contract passed every assertion and exited normally;
+- the AgentPanel execution contract also passed and exited normally;
+- raw success, failure, and invalid evidence remained distinct and no raw evidence was
+  presented as approved shape truth.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
+by this entry.
 
 ## Immediate next milestone after this ledger merges
 
@@ -744,7 +752,7 @@ engineering validation, or future-product feature is claimed as implemented.
 
 ## 2026-07-20 — Core project manifest foundation branch
 
-Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+Status: `VERIFIED` on the T1700 after PR #33 merged at `ebfa7d5`.
 
 Branch: `agent/build-project-manifest-foundation`.
 
@@ -787,6 +795,55 @@ structure; invalid or colliding creation cannot become a visible partial project
 Next permitted milestone after verification: project locking plus validated open and
 read-only recovery classification. No project-creation UI is permitted before that
 writer/recovery boundary exists.
+
+Recorded result:
+
+- all project-manifest contract assertions passed, including durable directory creation,
+  stable identity, reload validation, collision refusal, Unicode names, required state,
+  directory fsync, and private-project Git exclusion.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
+by this entry.
+
+## 2026-07-20 — Project locking and validated-open branch
+
+Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+
+Branch: `agent/add-project-lock-recovery`.
+
+Purpose:
+
+- classify a canonical project as writable, actively locked, or read-only recovery;
+- enforce one writer with an exclusively created, fsynced project-local lock;
+- record the writer ID, process ID, creation time, and host identity;
+- reject a second writer and refuse release by a non-owning lease;
+- preserve stale, malformed, foreign-host, and otherwise uncertain locks rather than
+  deleting or repairing them silently;
+- validate the manifest and required self-contained directory structure before writable
+  access is offered;
+- leave recovery actions, project UI, SQLite indexing, and workflow writes to later
+  separately verified milestones.
+
+Files in scope:
+
+- `src/core/project_access.py`;
+- `tools/verify_project_access_contract.py`;
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification command:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+PYTHONPATH=src .venv/bin/python tools/verify_project_access_contract.py
+```
+
+Exit gate: only one validated writer can hold a project; all uncertain state is reported
+without mutation and cannot be opened writable.
+
+Next permitted milestone after verification: a project session boundary and truthful
+Start Here create/open baseline. No source-import move or workflow integration is
+permitted before the session owns and releases the writer lease safely.
 
 Backup status: no backup is claimed before merge and T1700 verification.
 

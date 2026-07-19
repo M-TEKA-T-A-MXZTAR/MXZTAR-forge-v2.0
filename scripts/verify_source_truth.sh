@@ -38,6 +38,7 @@ PYTHONPATH=src python -m py_compile \
   src/brain/prompts.py \
   src/brain/service.py \
   src/core/agent_runner.py \
+  src/core/project_access.py \
   src/core/project_manifest.py
 
 echo "PASS: core Python files compile"
