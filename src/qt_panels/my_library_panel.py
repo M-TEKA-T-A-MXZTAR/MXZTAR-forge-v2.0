@@ -68,6 +68,7 @@ class ThumbnailLoader(QThread):
 class MyLibraryPanel(QWidget):
     status_changed = Signal(str)
     source_selected = Signal(object)
+    background_idle = Signal()
 
     def __init__(self):
         super().__init__()
@@ -256,6 +257,20 @@ class MyLibraryPanel(QWidget):
             self.refresh_library()
             return
         self.set_status(f"Showing all {len(self.source_items)} source-art file(s).")
+        self.background_idle.emit()
+
+    def has_active_thumbnail_loading(self) -> bool:
+        loader = self._thumbnail_loader
+        return loader is not None and loader.isRunning()
+
+    def request_thumbnail_shutdown(self) -> None:
+        """Request non-blocking thumbnail shutdown; completion emits background_idle."""
+        loader = self._thumbnail_loader
+        if loader is None or not loader.isRunning():
+            self.background_idle.emit()
+            return
+        self._refresh_pending = False
+        loader.requestInterruption()
 
     def update_selection(self, *_):
         item = self.selected_source()

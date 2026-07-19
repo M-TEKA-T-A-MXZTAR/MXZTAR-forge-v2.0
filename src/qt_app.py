@@ -19,7 +19,7 @@ Known-good shell wiring:
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, Qt
+from PySide6.QtCore import QSettings, QSize, Qt, QTimer
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
@@ -242,6 +242,7 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.sidebar_collapsed = False
+        self._close_when_background_idle = False
 
         self.setWindowTitle("MXZTAR Forge v2.0")
         self.setMinimumSize(MINIMUM_WINDOW_SIZE)
@@ -260,6 +261,7 @@ class MXZTARForgeWindow(QMainWindow):
         self.library_panel = MyLibraryPanel()
         self.library_panel.status_changed.connect(self.set_status)
         self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
+        self.library_panel.background_idle.connect(self.finish_deferred_close)
 
         self.shape_panel = PlaceholderPanel(
             "Shape / Structure Extraction",
@@ -268,6 +270,7 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.jobs_panel = JobsPanel()
         self.jobs_panel.status_changed.connect(self.set_status)
+        self.jobs_panel.background_idle.connect(self.finish_deferred_close)
         self.agent_panel.job_record_saved.connect(self.jobs_panel.refresh_jobs)
 
         self.pages.addWidget(self.dashboard_panel)
@@ -350,15 +353,30 @@ class MXZTARForgeWindow(QMainWindow):
             event.ignore()
             return
 
-        if not self.jobs_panel.shutdown_scan():
+        if (
+            self.jobs_panel.has_active_scan()
+            or self.library_panel.has_active_thumbnail_loading()
+        ):
+            self._close_when_background_idle = True
+            self.jobs_panel.request_scan_shutdown()
+            self.library_panel.request_thumbnail_shutdown()
             self.set_status(
-                "The Jobs record scan is still stopping. Wait a moment, then close again."
+                "Stopping background library scans before closing. The interface remains responsive."
             )
             event.ignore()
             return
 
+        self._close_when_background_idle = False
         self.settings.setValue("main_window/geometry", self.saveGeometry())
         super().closeEvent(event)
+
+    def finish_deferred_close(self):
+        if not self._close_when_background_idle:
+            return
+        if self.jobs_panel.has_active_scan() or self.library_panel.has_active_thumbnail_loading():
+            return
+        self._close_when_background_idle = False
+        QTimer.singleShot(0, self.close)
 
     def restore_window_geometry(self) -> None:
         saved_geometry = self.settings.value("main_window/geometry")

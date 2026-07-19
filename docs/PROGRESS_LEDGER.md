@@ -629,6 +629,48 @@ Required branch scope:
 Exit gate: Shape Library truthfully displays the durable shape evidence that actually
 exists without implying extraction, approval, or 3D construction is implemented.
 
+## 2026-07-19 — Panel-owned QThread shutdown regression
+
+Status: `OBSERVED`; fix is `PLANNED` until the regression PR merges and passes on the
+T1700.
+
+Observed after PR #29 merge:
+
+- every AgentPanel execution assertion printed `PASS`;
+- process teardown then reported `QThread: Destroyed while thread '' is still running`;
+- the verifier aborted and produced a core dump;
+- therefore the verifier run is not a valid overall pass.
+
+Root cause:
+
+- the full-window verifier constructs My Library, which starts background thumbnail
+  loading;
+- window close stopped the Jobs scan introduced by PR #29 but did not stop My Library's
+  pre-existing `ThumbnailLoader`;
+- destroying a panel-owned running `QThread` is a fatal Qt lifecycle violation.
+
+Required fix:
+
+- My Library and Jobs expose non-blocking interruption requests and idle signals;
+- main-window close requests both background scans to stop, rejects the current close
+  event immediately, and keeps the Qt event loop responsive;
+- the window closes automatically only after both panels report idle;
+- AgentPanel and My Library verifiers assert no panel-owned thread remains running.
+
+Verification commands:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_agent_panel_execution_contract.py
+
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_my_library_contract.py
+```
+
+No fix may be marked `VERIFIED` until both commands exit normally without a QThread
+warning, abort, or core dump.
+
 ## Ledger update contract
 
 Every merged milestone must add or update:

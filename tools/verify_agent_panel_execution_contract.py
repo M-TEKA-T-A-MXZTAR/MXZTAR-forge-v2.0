@@ -54,6 +54,12 @@ class FakeWorker(QObject):
         self.finished.emit(*type(self).result)
 
 
+class SlowBackgroundThread(QThread):
+    def run(self) -> None:
+        while not self.isInterruptionRequested():
+            self.msleep(10)
+
+
 def wait_until_idle(app: QApplication, panel, timeout_seconds: float = 2.0) -> None:
     deadline = time.monotonic() + timeout_seconds
     while panel.has_active_job() and time.monotonic() < deadline:
@@ -137,9 +143,51 @@ def main() -> int:
             require(not blocked_close.isAccepted(), "window closed while a job was active")
 
             window.agent_panel._job_active = False
+            window.jobs_panel.request_scan_shutdown()
+            window.library_panel.request_thumbnail_shutdown()
+            deadline = time.monotonic() + 2
+            while (
+                window.jobs_panel.has_active_scan()
+                or window.library_panel.has_active_thumbnail_loading()
+            ) and time.monotonic() < deadline:
+                app.processEvents()
+                time.sleep(0.01)
+
+            slow_thread = SlowBackgroundThread(window.library_panel)
+            window.library_panel._thumbnail_loader = slow_thread
+            slow_thread.finished.connect(window.library_panel._thumbnail_loading_finished)
+            slow_thread.start()
+            require(slow_thread.isRunning(), "deferred-close fixture thread did not start")
+
+            event_loop_tick = []
+            QTimer.singleShot(0, lambda: event_loop_tick.append(True))
+            deferred_close = QCloseEvent()
+            close_started = time.monotonic()
+            window.closeEvent(deferred_close)
+            require(time.monotonic() - close_started < 0.25, "close blocked the Qt main thread")
+            require(not deferred_close.isAccepted(), "window destroyed an active panel thread")
+            require(window._close_when_background_idle, "window did not enter deferred-close state")
+
+            deadline = time.monotonic() + 2
+            while slow_thread.isRunning() and time.monotonic() < deadline:
+                app.processEvents()
+                time.sleep(0.01)
+            app.processEvents()
+            require(event_loop_tick, "Qt event loop could not respond during deferred close")
+
             allowed_close = QCloseEvent()
             window.closeEvent(allowed_close)
-            require(allowed_close.isAccepted(), "window did not close when idle")
+            require(allowed_close.isAccepted(), "window did not close after panels became idle")
+            require(
+                window.library_panel._thumbnail_loader is None
+                or not window.library_panel._thumbnail_loader.isRunning(),
+                "window close left the My Library thumbnail thread running",
+            )
+            require(
+                window.jobs_panel._scan_thread is None
+                or not window.jobs_panel._scan_thread.isRunning(),
+                "window close left the Jobs scan thread running",
+            )
 
             print("PASS: worker executes outside the Qt main thread")
             print("PASS: elapsed timer and heartbeat remain visible")
@@ -147,6 +195,7 @@ def main() -> int:
             print("PASS: success, saved failure, and unsaved failure remain distinct")
             print("PASS: controls return to idle after every final state")
             print("PASS: active workflow blocks unsafe window close")
+            print("PASS: deferred close keeps Qt responsive until every panel thread is idle")
             print("PASS: AgentPanel execution contract verified")
     finally:
         panel_module.AgentWorker = original_worker

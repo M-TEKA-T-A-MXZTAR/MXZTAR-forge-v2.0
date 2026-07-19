@@ -127,7 +127,9 @@ def main() -> int:
             jobs_module.scan_job_records = slow_scan
             stopping_panel = JobsPanel()
             require(stopping_panel._scan_thread.isRunning(), "shutdown fixture scan did not start")
-            require(stopping_panel.shutdown_scan(), "Jobs scan did not stop before panel shutdown")
+            stopping_panel.request_scan_shutdown()
+            wait_for_scan(app, stopping_panel)
+            require(not stopping_panel.has_active_scan(), "Jobs scan survived shutdown request")
             jobs_module.scan_job_records = original_scan
 
             print("PASS: saved success, failure, and invalid records remain distinct")

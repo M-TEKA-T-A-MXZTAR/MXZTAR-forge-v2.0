@@ -31,6 +31,7 @@ class JobScanThread(QThread):
 
 class JobsPanel(QWidget):
     status_changed = Signal(str)
+    background_idle = Signal()
 
     def __init__(self):
         super().__init__()
@@ -147,6 +148,8 @@ class JobsPanel(QWidget):
         if self._refresh_pending:
             self._refresh_pending = False
             self.refresh_jobs()
+            return
+        self.background_idle.emit()
 
     def update_selection(self, *_):
         record = self.selected_record()
@@ -174,14 +177,18 @@ class JobsPanel(QWidget):
             + "\n\n".join(evidence)
         )
 
-    def shutdown_scan(self, timeout_ms: int = 5000) -> bool:
-        """Stop background record discovery before the panel can be destroyed."""
+    def has_active_scan(self) -> bool:
+        thread = self._scan_thread
+        return thread is not None and thread.isRunning()
+
+    def request_scan_shutdown(self) -> None:
+        """Request non-blocking scan shutdown; completion emits background_idle."""
         thread = self._scan_thread
         if thread is None or not thread.isRunning():
-            return True
+            self.background_idle.emit()
+            return
         self._refresh_pending = False
         thread.requestInterruption()
-        return thread.wait(timeout_ms)
 
     def clear_selection(self):
         self.open_folder_button.setEnabled(False)
