@@ -242,6 +242,12 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.start_here_panel = StartHerePanel(self.project_session)
         self.start_here_panel.status_changed.connect(self.set_status)
+        self.start_here_panel.profile_fields["project_name"].textChanged.connect(
+            lambda _text: self.refresh_guided_next_step()
+        )
+        self.start_here_panel.project_selector.currentIndexChanged.connect(
+            lambda _index: self.refresh_guided_next_step()
+        )
 
         self.agent_panel = AgentPanel(self.project_session)
         self.agent_panel.status_changed.connect(self.set_status)
