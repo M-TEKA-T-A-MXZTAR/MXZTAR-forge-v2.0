@@ -143,7 +143,7 @@ def main() -> int:
             require(item.path != source, "library still points at the external source")
             require(item.path.read_bytes() == source_before, "project copy bytes drifted")
             require(item.preview_path is not None and item.preview_path.is_file(), "preview missing")
-            window.library_panel.source_grid.clearSelection()
+            window.library_panel.source_grid.setCurrentRow(-1)
             window.library_panel.source_grid.setCurrentRow(0)
             app.processEvents()
             require(
