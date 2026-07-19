@@ -15,12 +15,14 @@ from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QImage, QImageIOHandler, QImageReader, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QFileDialog,
     QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
     QPushButton,
+    QProgressBar,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -31,6 +33,8 @@ from core.source_preview_cache import (
     prune_source_preview_cache,
     source_preview_cache_path,
 )
+from core.project_session import ProjectSession
+from core.project_source_intake import import_source_copy, scan_project_source_art
 from core.source_library import (
     SourceArtItem,
     format_size,
@@ -65,17 +69,60 @@ class ThumbnailLoader(QThread):
             self.preview_ready.emit(index, source, image, error)
 
 
+class LibraryDiscoveryThread(QThread):
+    """Discover sources outside the Qt main thread."""
+
+    discovered = Signal(object, str)
+
+    def __init__(self, source_provider, parent=None):
+        super().__init__(parent)
+        self._source_provider = source_provider
+
+    def run(self):
+        try:
+            sources = self._source_provider()
+        except Exception as exc:
+            self.discovered.emit([], str(exc))
+            return
+        if not self.isInterruptionRequested():
+            self.discovered.emit(sources, "")
+
+
+class SourceIntakeThread(QThread):
+    """Run one transactional project source intake off the Qt main thread."""
+
+    completed = Signal(object, str)
+
+    def __init__(self, project_session, source_path, parent=None):
+        super().__init__(parent)
+        self._project_session = project_session
+        self._source_path = Path(source_path)
+
+    def run(self):
+        try:
+            result = import_source_copy(self._project_session, self._source_path)
+        except Exception as exc:
+            self.completed.emit(None, str(exc))
+        else:
+            self.completed.emit(result, "")
+
+
 class MyLibraryPanel(QWidget):
     status_changed = Signal(str)
     source_selected = Signal(object)
     background_idle = Signal()
+    intake_active_changed = Signal(bool)
 
-    def __init__(self):
+    def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
+        self.project_session = project_session or ProjectSession()
         self.source_items = []
         self._preview_image = QImage()
         self._preview_source_path = None
         self._thumbnail_loader = None
+        self._discovery_thread = None
+        self._intake_thread = None
+        self._pending_intake_message = None
         self._refresh_pending = False
 
         title = QLabel("My Library")
@@ -108,8 +155,15 @@ class MyLibraryPanel(QWidget):
         )
         self.use_button.clicked.connect(self.use_in_agent_workflows)
 
+        self.import_button = QPushButton("Import into Active Project")
+        self.import_button.setToolTip(
+            "Copy a supported image into the active writable project. The external file remains unchanged."
+        )
+        self.import_button.clicked.connect(self.choose_project_source)
+
         action_row = QHBoxLayout()
         action_row.addWidget(self.use_button)
+        action_row.addWidget(self.import_button)
         action_row.addWidget(self.open_folder_button)
         action_row.addWidget(refresh_button)
         action_row.addStretch(1)
@@ -156,6 +210,13 @@ class MyLibraryPanel(QWidget):
         self.status_label.setWordWrap(True)
         self.status_label.setStyleSheet("color: #d6c27a;")
 
+        self.intake_progress = QProgressBar()
+        self.intake_progress.setRange(0, 0)
+        self.intake_progress.setVisible(False)
+        self.intake_progress.setToolTip(
+            "Indeterminate progress: file size and image decoding time vary by source."
+        )
+
         layout = QVBoxLayout()
         layout.setContentsMargins(18, 18, 18, 18)
         layout.setSpacing(8)
@@ -167,8 +228,10 @@ class MyLibraryPanel(QWidget):
         layout.addWidget(QLabel("Selected source:"))
         layout.addWidget(selected_frame, 0)
         layout.addWidget(self.status_label)
+        layout.addWidget(self.intake_progress)
         self.setLayout(layout)
 
+        self.update_project_controls()
         self.refresh_library()
 
     def selected_source(self) -> SourceArtItem | None:
@@ -179,18 +242,43 @@ class MyLibraryPanel(QWidget):
         return item if isinstance(item, SourceArtItem) else None
 
     def refresh_library(self):
+        if self.has_active_intake():
+            self._refresh_pending = True
+            self.set_status("Source intake is active; refresh will run after it finishes.")
+            return
+        if self._discovery_thread is not None and self._discovery_thread.isRunning():
+            self._refresh_pending = True
+            self._discovery_thread.requestInterruption()
+            self.set_status("Stopping the current source discovery before refreshing…")
+            return
         if self._thumbnail_loader is not None and self._thumbnail_loader.isRunning():
             self._refresh_pending = True
             self._thumbnail_loader.requestInterruption()
             self.set_status("Stopping the current thumbnail scan before refreshing…")
             return
 
+        self.set_status("Discovering legacy and active-project sources…")
+        self._discovery_thread = LibraryDiscoveryThread(self.discover_sources, self)
+        self._discovery_thread.discovered.connect(self._discovery_finished)
+        self._discovery_thread.finished.connect(self._discovery_thread_finished)
+        self._discovery_thread.start()
+        self.update_project_controls()
+
+    def discover_sources(self):
+        return list(scan_project_source_art(self.project_session)) + list(scan_source_art())
+
+    def _discovery_finished(self, sources, error):
+        if error:
+            self.source_items = []
+            self.source_grid.clear()
+            self.clear_selection()
+            self.set_status(f"Could not discover project sources safely: {error}")
+            return
         previous = self.selected_source()
         previous_path = previous.path if previous is not None else None
-
         self.source_grid.blockSignals(True)
         self.source_grid.clear()
-        self.source_items = scan_source_art()
+        self.source_items = list(sources)
 
         selected_item = None
         for source in self.source_items:
@@ -207,9 +295,11 @@ class MyLibraryPanel(QWidget):
 
         if not self.source_items:
             self.clear_selection()
-            self.set_status(
+            message = self._pending_intake_message or (
                 "No source art found. Paste supported images into the MXZTAR Forge Input folder."
             )
+            self._pending_intake_message = None
+            self.set_status(message)
             return
 
         self.source_grid.setCurrentItem(selected_item)
@@ -223,6 +313,19 @@ class MyLibraryPanel(QWidget):
         self._thumbnail_loader.preview_ready.connect(self._apply_thumbnail)
         self._thumbnail_loader.finished.connect(self._thumbnail_loading_finished)
         self._thumbnail_loader.start()
+
+    def _discovery_thread_finished(self):
+        thread = self._discovery_thread
+        self._discovery_thread = None
+        if thread is not None:
+            thread.deleteLater()
+        self.update_project_controls()
+        if self._refresh_pending and not self.has_active_thumbnail_loading():
+            self._refresh_pending = False
+            self.refresh_library()
+            return
+        if not self.has_active_thumbnail_loading():
+            self.background_idle.emit()
 
     def _apply_thumbnail(self, index, source, image, error):
         if index >= self.source_grid.count():
@@ -252,25 +355,117 @@ class MyLibraryPanel(QWidget):
         self._thumbnail_loader = None
         if loader is not None:
             loader.deleteLater()
+        self.update_project_controls()
         if self._refresh_pending:
             self._refresh_pending = False
             self.refresh_library()
             return
-        self.set_status(f"Showing all {len(self.source_items)} source-art file(s).")
+        message = self._pending_intake_message or (
+            f"Showing all {len(self.source_items)} source-art file(s)."
+        )
+        self._pending_intake_message = None
+        self.set_status(message)
         self.background_idle.emit()
 
     def has_active_thumbnail_loading(self) -> bool:
         loader = self._thumbnail_loader
-        return loader is not None and loader.isRunning()
+        discovery = self._discovery_thread
+        return (
+            (loader is not None and loader.isRunning())
+            or (discovery is not None and discovery.isRunning())
+        )
 
     def request_thumbnail_shutdown(self) -> None:
         """Request non-blocking thumbnail shutdown; completion emits background_idle."""
         loader = self._thumbnail_loader
-        if loader is None or not loader.isRunning():
-            self.background_idle.emit()
-            return
+        discovery = self._discovery_thread
+        active = False
         self._refresh_pending = False
-        loader.requestInterruption()
+        if discovery is not None and discovery.isRunning():
+            discovery.requestInterruption()
+            active = True
+        if loader is not None and loader.isRunning():
+            loader.requestInterruption()
+            active = True
+        if not active:
+            self.background_idle.emit()
+
+    def set_project_state(self, _state=None):
+        self.update_project_controls()
+        self.refresh_library()
+
+    def update_project_controls(self):
+        self.import_button.setEnabled(
+            self.project_session.is_writable
+            and not self.has_active_intake()
+            and not self.has_active_thumbnail_loading()
+        )
+
+    def choose_project_source(self):
+        if not self.project_session.is_writable:
+            self.set_status("Open or create a writable project before importing source art.")
+            return
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            "Import Source into Active Project",
+            str(Path.home()),
+            "Supported images (*.png *.jpg *.jpeg *.webp *.tif *.tiff)",
+        )
+        if path:
+            self.start_project_intake(Path(path))
+
+    def start_project_intake(self, source_path: Path) -> bool:
+        if self.has_active_intake():
+            self.set_status("A project source intake is already active.")
+            return False
+        if not self.project_session.is_writable:
+            self.set_status("A writable project session is required for source intake.")
+            return False
+        if self.has_active_thumbnail_loading():
+            self.set_status("Wait for source discovery and thumbnail loading to finish first.")
+            return False
+        self._intake_thread = SourceIntakeThread(
+            self.project_session, source_path, self
+        )
+        self._intake_thread.completed.connect(self._intake_completed)
+        self._intake_thread.finished.connect(self._intake_thread_finished)
+        self.intake_progress.setVisible(True)
+        self.intake_active_changed.emit(True)
+        self.update_project_controls()
+        self.set_status(
+            f"Importing {source_path.name}: copying, hashing, validating, and creating a bounded preview…"
+        )
+        self._intake_thread.start()
+        return True
+
+    def _intake_completed(self, result, error):
+        if error:
+            self._pending_intake_message = (
+                f"Source intake failed; no success is claimed: {error}"
+            )
+            self.set_status(self._pending_intake_message)
+            return
+        action = "Already present" if result.duplicate else "Imported"
+        self._pending_intake_message = (
+            f"{action} project source {result.record['original_filename']} "
+            f"as {result.record['asset_id']}."
+        )
+        self.set_status(self._pending_intake_message)
+
+    def _intake_thread_finished(self):
+        thread = self._intake_thread
+        self._intake_thread = None
+        if thread is not None:
+            thread.deleteLater()
+        self.intake_progress.setVisible(False)
+        self.intake_active_changed.emit(False)
+        self.update_project_controls()
+        self._refresh_pending = False
+        self.refresh_library()
+
+    def has_active_intake(self) -> bool:
+        thread = self._intake_thread
+        return thread is not None and thread.isRunning()
 
     def update_selection(self, *_):
         item = self.selected_source()
@@ -285,6 +480,7 @@ class MyLibraryPanel(QWidget):
             f"Name: {item.path.name}\n"
             f"Path: {item.path}\n"
             f"Library section: {item.folder_name}\n"
+            f"Authority: {item.authority}\n"
             f"Type: {item.suffix}\n"
             f"Size: {format_size(item.size_bytes)}\n\n"
             "Original remains unchanged. Selection does not imply ownership, licence "
@@ -306,6 +502,11 @@ class MyLibraryPanel(QWidget):
             self.preview_label.setText("Thumbnail loading…\nOriginal remains selectable.")
 
     def preview_image_for(self, item: SourceArtItem) -> tuple[QImage, str]:
+        if item.preview_path is not None:
+            image = QImage(str(item.preview_path))
+            if image.isNull():
+                return QImage(), "The declared project preview could not be decoded."
+            return image, ""
         try:
             cache_path = source_preview_cache_path(item.path)
         except OSError as exc:
