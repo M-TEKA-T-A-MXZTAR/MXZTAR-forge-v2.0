@@ -11,7 +11,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, QThread, Signal
 from PySide6.QtGui import QIcon, QImage, QImageIOHandler, QImageReader, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -45,6 +45,26 @@ CARD_ICON_SIZE = QSize(180, 120)
 CARD_GRID_SIZE = QSize(210, 165)
 
 
+class ThumbnailLoader(QThread):
+    """Decode library previews sequentially without blocking the Qt event loop."""
+
+    preview_ready = Signal(int, object, object, str)
+
+    def __init__(self, sources, preview_loader, parent=None):
+        super().__init__(parent)
+        self._sources = tuple(sources)
+        self._preview_loader = preview_loader
+
+    def run(self):
+        for index, source in enumerate(self._sources):
+            if self.isInterruptionRequested():
+                break
+            image, error = self._preview_loader(source)
+            if self.isInterruptionRequested():
+                break
+            self.preview_ready.emit(index, source, image, error)
+
+
 class MyLibraryPanel(QWidget):
     status_changed = Signal(str)
     source_selected = Signal(object)
@@ -54,6 +74,8 @@ class MyLibraryPanel(QWidget):
         self.source_items = []
         self._preview_image = QImage()
         self._preview_source_path = None
+        self._thumbnail_loader = None
+        self._refresh_pending = False
 
         title = QLabel("My Library")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
@@ -156,6 +178,12 @@ class MyLibraryPanel(QWidget):
         return item if isinstance(item, SourceArtItem) else None
 
     def refresh_library(self):
+        if self._thumbnail_loader is not None and self._thumbnail_loader.isRunning():
+            self._refresh_pending = True
+            self._thumbnail_loader.requestInterruption()
+            self.set_status("Stopping the current thumbnail scan before refreshing…")
+            return
+
         previous = self.selected_source()
         previous_path = previous.path if previous is not None else None
 
@@ -165,16 +193,9 @@ class MyLibraryPanel(QWidget):
 
         selected_item = None
         for source in self.source_items:
-            card = QListWidgetItem(source.path.name)
+            card = QListWidgetItem(source.label)
             card.setData(Qt.ItemDataRole.UserRole, source)
             card.setToolTip(f"{source.path}\n{format_size(source.size_bytes)}")
-
-            image, error = self.preview_image_for(source)
-            if not image.isNull():
-                card.setIcon(QIcon(QPixmap.fromImage(image)))
-            elif error:
-                card.setToolTip(f"{card.toolTip()}\nPreview: {error}")
-
             self.source_grid.addItem(card)
             if selected_item is None or (
                 previous_path is not None and source.path == previous_path
@@ -192,6 +213,48 @@ class MyLibraryPanel(QWidget):
 
         self.source_grid.setCurrentItem(selected_item)
         self.update_selection()
+        self.set_status(
+            f"Showing all {len(self.source_items)} source-art file(s); loading thumbnails…"
+        )
+        self._thumbnail_loader = ThumbnailLoader(
+            self.source_items, self.preview_image_for, self
+        )
+        self._thumbnail_loader.preview_ready.connect(self._apply_thumbnail)
+        self._thumbnail_loader.finished.connect(self._thumbnail_loading_finished)
+        self._thumbnail_loader.start()
+
+    def _apply_thumbnail(self, index, source, image, error):
+        if index >= self.source_grid.count():
+            return
+        card = self.source_grid.item(index)
+        if card.data(Qt.ItemDataRole.UserRole) != source:
+            return
+
+        if not image.isNull():
+            card_image = image.scaled(
+                CARD_ICON_SIZE,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            card.setIcon(QIcon(QPixmap.fromImage(card_image)))
+            if self.selected_source() == source:
+                self._preview_image = image
+                self._preview_source_path = source.path
+                self.render_selected_preview()
+        elif error:
+            card.setToolTip(f"{card.toolTip()}\nPreview: {error}")
+            if self.selected_source() == source:
+                self.show_preview_error(error)
+
+    def _thumbnail_loading_finished(self):
+        loader = self._thumbnail_loader
+        self._thumbnail_loader = None
+        if loader is not None:
+            loader.deleteLater()
+        if self._refresh_pending:
+            self._refresh_pending = False
+            self.refresh_library()
+            return
         self.set_status(f"Showing all {len(self.source_items)} source-art file(s).")
 
     def update_selection(self, *_):
@@ -213,15 +276,19 @@ class MyLibraryPanel(QWidget):
             "validation, or approval. Agent output is stored separately."
         )
 
-        image, error = self.preview_image_for(item)
-        self._preview_image = image
-        self._preview_source_path = item.path if not image.isNull() else None
-
-        if image.isNull():
-            self.show_preview_error(error or "Qt could not decode this format.")
-            return
-
-        self.render_selected_preview()
+        try:
+            cached = QImage(str(source_preview_cache_path(item.path)))
+        except OSError:
+            cached = QImage()
+        if not cached.isNull():
+            self._preview_image = cached
+            self._preview_source_path = item.path
+            self.render_selected_preview()
+        else:
+            self._preview_image = QImage()
+            self._preview_source_path = None
+            self.preview_label.setPixmap(QPixmap())
+            self.preview_label.setText("Thumbnail loading…\nOriginal remains selectable.")
 
     def preview_image_for(self, item: SourceArtItem) -> tuple[QImage, str]:
         try:
