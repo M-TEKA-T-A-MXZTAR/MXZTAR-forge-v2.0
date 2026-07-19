@@ -1146,3 +1146,10 @@ No milestone may be marked `VERIFIED` solely because code was committed or a PR 
 - Project authority is rechecked after the model call and before any write; changed or revoked authority blocks the save.
 - Legacy workspace sources retain their existing legacy runner and storage path.
 - Structured findings, approval, Shape Library promotion, and Forge Pack export remain later gated milestones.
+
+### My Library minimum-layout and preview-selection correction — PR pending
+
+- The project import action is now first in a two-row action grid so it remains visible at the supported minimum window size.
+- Completed bounded thumbnails and their truthful decode errors are retained for later card selection.
+- Reselecting a project source no longer falls back permanently to a stale `Thumbnail loading…` message after its worker has finished.
+- Selecting a filename now produces visible status guidance while preserving the exact-source handoff boundary.
