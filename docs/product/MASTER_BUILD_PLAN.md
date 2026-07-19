@@ -579,3 +579,17 @@ preserves the long-term direction for MXZTAR Construct, rig-efficient cyber-art,
 infrastructure building, and a persistent human-designed moon-scale virtual world.
 It is a future vision, not a Level One feature promise, and does not change the current
 phase order.
+
+The maturity horizon is now explicit:
+
+- Level One: operational local Forge and portable production intelligence;
+- Level Two: reversible component generation and modular Construct;
+- Level Three: infrastructure relationships, regional state, and offline delta
+  foundations;
+- Level Four: cross-device human-governed platform, operator jobs, portable personal
+  archives, immersive review, optional collaboration, and the first persistent region.
+
+Level Four priorities are governed by
+[`LEVEL_FOUR_PLATFORM_PRIORITIES.md`](LEVEL_FOUR_PLATFORM_PRIORITIES.md). The planning
+horizon is no earlier than approximately one year from 20 July 2026, subject to verified
+completion of the preceding levels. It does not change the immediate Level One sequence.

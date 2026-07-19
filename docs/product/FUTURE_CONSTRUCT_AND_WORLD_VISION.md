@@ -309,4 +309,17 @@ This future strengthens, but does not reorder, the current build:
 7. rig-aware performance metadata;
 8. human authority over consequential operations.
 
+## Level Four platform priority
+
+The cross-device and persistent-world milestone is governed by
+[`LEVEL_FOUR_PLATFORM_PRIORITIES.md`](LEVEL_FOUR_PLATFORM_PRIORITIES.md). It defines the
+future browser/tablet, mobile/AR, VR, and desktop contracts; operator-job system;
+portable personal archive; authorship economy boundary; delta model; market gaps; and
+Level Four proof gates.
+
+Level Four is planned no earlier than approximately one year from 20 July 2026 and only
+after Levels One through Three are verified. This estimate is not a release promise.
+The first deliverable is a small recoverable shared region with portable authorship—not
+an unverified moon-scale simulation claim.
+
 The next permitted milestone remains the Project Authority and Lifecycle Foundation.
