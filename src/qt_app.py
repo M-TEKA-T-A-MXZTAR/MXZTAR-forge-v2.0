@@ -263,10 +263,11 @@ class MXZTARForgeWindow(QMainWindow):
         self.shape_panel.status_changed.connect(self.set_status)
         self.shape_panel.background_idle.connect(self.finish_deferred_close)
 
-        self.jobs_panel = JobsPanel()
+        self.jobs_panel = JobsPanel(self.project_session)
         self.jobs_panel.status_changed.connect(self.set_status)
         self.jobs_panel.background_idle.connect(self.finish_deferred_close)
         self.agent_panel.job_record_saved.connect(self.jobs_panel.refresh_jobs)
+        self.start_here_panel.project_changed.connect(self.jobs_panel.set_project_state)
 
         self.pages.addWidget(self.dashboard_panel)
         self.pages.addWidget(self.start_here_panel)
