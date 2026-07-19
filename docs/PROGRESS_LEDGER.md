@@ -1,4 +1,4 @@
-# MXZTAR-forge v2.0 — Progress Ledger
+# MXZTAR Forge v2.0 — Progress Ledger
 
 ## Ledger purpose
 
@@ -19,13 +19,18 @@ Status values:
 
 ## Current product state
 
-**Current planning era:** source-art-to-spatial-design intelligence foundation.
+**Current planning era:** Level One operational Forge Pack foundation.
 
-**Current primary objective:** establish an honest, repeatable execution baseline before implementing project-state storage, schematic intelligence, spatial representation, or 3D translators.
+**Current primary objective:** restore Jobs and Shape Library, establish durable project
+authority, formalise structured analysis and review, and export the first verified
+Forge Pack before beginning 2D-to-3D construction.
 
-**Current product promise:** turn source art into structured visual, schematic, modular, and spatial production intelligence under human review.
+**Current product promise:** turn source art into structured, inspectable, reusable
+production intelligence under human review, then package approved findings and shapes
+for immediate continuation in specialist tools.
 
-**Current non-promise:** automatic production-ready 3D reconstruction.
+**Current non-promise:** automatic production-ready 3D reconstruction, engineering
+accuracy, manufacturing safety, or finished CAD geometry.
 
 ## Milestone ledger
 
@@ -48,11 +53,11 @@ Status values:
 | Cancellation | PLANNED | No misleading cancel control is exposed; active jobs prevent unsafe window close and retain the service timeout boundary | Define cooperative request/model cancellation contract before adding a button |
 | Timeout handling | PARTIAL | Service has timeout concepts; complete UI/artifact behaviour not proven | Add deterministic timeout fixture and final-state test |
 | Failure diagnostics | PARTIAL | Runner can save JSON; durable schema and UI truth not proven | Implement shared failure artifact after baseline audit |
-| First rentable release definition | MERGED | `docs/product/FIRST_RENTABLE_RELEASE.md`, PR #14 | Maintain scope discipline |
+| Historical first rentable release definition | MERGED | `docs/product/FIRST_RENTABLE_RELEASE.md`, PR #14; its access section now records the superseding free-access decision | Retain filename only as historical continuity or rename in a dedicated link-migration PR |
 | Workflow compatibility matrix | MERGED | `docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`, PR #14 | Implement encoded assessor in Phase 4 |
 | Output artifact contracts | MERGED | `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, PR #15 | Implement schemas and validators in Phase 5 |
 | Project state and data authority | MERGED | `docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`, PR #16 | Implement only after execution baseline is stable |
-| Master build plan | MERGED | `docs/product/MASTER_BUILD_PLAN.md`, PR #17 | Follow phased implementation order |
+| Level One master build plan | MERGED | `docs/product/MASTER_BUILD_PLAN.md`, initially PR #17 and comprehensively revised after PR #27 | Follow the revised operational MVP sequence |
 | Progress ledger | MERGED | This document, PR #17 | Update after every meaningful audit or implementation milestone |
 | Project manifest and self-contained project directory | PLANNED | Authority contract defines requirements | Phase 2 |
 | SQLite rebuild from durable artifacts | PLANNED | SQLite is derived index, not sole truth | Phase 2 exit test |
@@ -78,10 +83,11 @@ Status values:
 | CAD exchange | DEFERRED | Requires units, dimensional confidence, and geometry contracts | Later Phase 10 |
 | Benchmark corpus | PARTIAL | Simple generated shapes test exists | Phase 11 expanded corpus |
 | Progressive learning ledger | PLANNED | Must record approved observations, decisions, reasons, and downstream use | Phase 11 |
-| Rentable-release cockpit | PLANNED | LEVER contract defined | Phase 12 |
-| 60-day trial | PLANNED | Commercial model defined | Phase 13 |
-| NZD 10/month subscription | PLANNED | Commercial model defined; GST only when correctly configured | Phase 13 |
-| User access to local files after entitlement lapse | PLANNED REQUIRED | Product boundary requires protection of user-owned files | Phase 13 acceptance gate |
+| Level One cockpit | PLANNED | Start Here, My Library, Agent Workflows, Review, Shape Library, Jobs, and Export are the governed workspaces | Master plan Phases 1–9 |
+| Free-of-charge software access | PLANNED REQUIRED | Founder confirmed no timed trial, subscription, or feature paywall | Public-release acceptance gate |
+| Voluntary founder support | PLANNED | `https://buymeacoffee.com/mxztar`; donation must not alter core access | Add truthful non-intrusive release/UI link |
+| Formal open-source licence | BLOCKED | Repository is public but the founder has not selected a recognised `LICENSE` | Founder selects licence before public release |
+| User access to local files | PLANNED REQUIRED | Local-first authority requires uninterrupted access independent of support/donation | Level One acceptance gate |
 
 ## Merged planning milestones
 
@@ -448,85 +454,93 @@ Boundary:
 - an existing target launcher is backed up before replacement;
 - the star icon remains repository-owned and versioned.
 
-## 2026-07-19 — Visible library grid and Desktop intake branch
+## 2026-07-19 — PR #27 visible library grid and Desktop Input
 
-Branch: `agent/library-grid-desktop-input`.
+Status: `VERIFIED` on the T1700 after merge at `9167bf5`.
 
-Observed UI defect:
+Established:
 
-- six discovered sources were hidden behind one dropdown;
-- only the selected source had a visible image;
-- the selected preview occupied an oversized region with large black bands.
+- every discovered source appears as a visible card rather than a hidden selector;
+- thumbnail decoding runs incrementally outside the Qt main thread;
+- card icons retain bounded pixmaps;
+- folder-qualified labels distinguish duplicate basenames;
+- the selected preview remains compact;
+- the exact selected original reaches Agent Workflows;
+- active AI work rejects unsafe source replacement;
+- source bytes remain unchanged;
+- the Desktop Input link exposes the canonical input folder.
 
-Purpose:
+Recorded T1700 verification:
 
-- show every discovered source as a visible, selectable thumbnail card;
-- keep the selected preview within a compact 360×220 maximum region;
-- retain the exact original `SourceArtItem` handoff;
-- create a Desktop `MXZTAR-Forge-Input` folder-link to authoritative
-  `workspace/input`;
-- leave source bytes and locations unchanged.
-
-Repository inspection:
-
-- no files under `workspace/input`, `workspace/imports`, or
-  `workspace/test_inputs` are tracked on `main`;
-- therefore the six sources observed on the T1700 are local/runtime files, not
-  images shipped by the Git repository.
-
-Files changed:
-
-- `src/qt_panels/my_library_panel.py`;
-- `tools/verify_my_library_contract.py`;
-- `tools/install_desktop_launchers.sh`;
-- `tools/verify_desktop_launchers.py`;
-- `README.md`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification commands:
-
-```bash
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_my_library_contract.py
-
-python3 tools/verify_desktop_launchers.py
-bash -n tools/install_desktop_launchers.sh
+```text
+PASS: all six source images appear as visible cards
+PASS: every source card has a thumbnail
+PASS: card icons retain only card-sized pixmaps
+PASS: source cards retain folder-qualified labels
+PASS: selected preview height is compact
+PASS: grid selection emits the exact SourceArtItem
+PASS: handoff navigates to Agent Workflows
+PASS: active AI job rejects source replacement
+PASS: discovery and handoff leave all source bytes unchanged
+PASS: visible My Library grid verified
 ```
 
-Boundary:
+Remaining boundary:
 
-- this PR changes presentation and intake access only;
-- workflow success does not yet move a source;
-- Jobs and Shape Library remain separate panels with separate data contracts.
+- the grid is source intake, not yet the durable project/processed-source lifecycle;
+- Shape Library and Jobs still require restoration around current authority contracts;
+- source analysis, approval, and Forge Pack export remain incomplete.
+
+## 2026-07-19 — Level One product-definition planning
+
+Status: `PLANNED` until the documentation PR merges.
+
+Founder decisions recorded:
+
+- operational Level One MVP takes priority over advanced 3D construction;
+- primary value is reviewed production intelligence and a durable Forge Pack;
+- Start Here will collect progressive local user and project intent;
+- workflows should normally be automated but remain visible and human governed;
+- approved shapes form the basis of later reversible 2D-to-3D construction;
+- later Modular Construct provides three-axis placement, alignment, instances, arrays,
+  grouping, assembly, join, boolean operations, and verified export;
+- three-second hover Insights teach users what controls do;
+- official software use is free of charge;
+- voluntary founder support is available at `https://buymeacoffee.com/mxztar`;
+- a formal recognised open-source licence remains a founder release decision;
+- versioned official releases are the primary ordinary-user distribution channel.
+
+Planning artifacts:
+
+- `README.md` — public goal and Level One boundary;
+- `docs/product/MASTER_BUILD_PLAN.md` — product, data, workflow, roadmap, release, and
+  future construction authority;
+- `docs/product/FIRST_RENTABLE_RELEASE.md` — historical scope reconciled with the
+  confirmed free-access model;
+- `docs/PROGRESS_LEDGER.md` — decisions, current state, next gate, and evidence.
+
+This milestone changes documentation only. It does not claim that Start Here, Review,
+Shape Library, Jobs, Forge Pack export, 2D-to-3D, or Modular Construct are implemented.
 
 ## Immediate next milestone after this ledger merges
 
-Milestone name: **Execution Baseline Audit**.
+Milestone name: **Restore the Jobs panel baseline**.
 
 Required branch scope:
 
-- inspect current runtime files only;
-- no feature expansion;
-- no project-state implementation;
-- no new export controls;
-- no new models.
+- inspect current job records, runner outputs, panel placeholders, and data authority;
+- show durable success, saved failure, and unsaved failure truthfully;
+- preserve one-active-heavy-job enforcement;
+- provide useful source, workflow, model, timestamps, elapsed time, status, and paths;
+- open existing result/diagnostic locations safely;
+- remain read-only where durable edit/approval authority is not implemented;
+- add no fake retry, cancel, delete, approval, or export controls;
+- verify empty, active, success, saved-failure, unsaved-failure, refresh, and restart
+  behaviour;
+- update this ledger with exact evidence.
 
-Required checks:
-
-1. current branch and clean worktree;
-2. current Python, PySide6, Ollama, and model state;
-3. prompt-contract verifier;
-4. source-library discovery;
-5. simple text service probe;
-6. simple vision service probe;
-7. agent-runner probe;
-8. worker compile and lifecycle inspection;
-9. AgentPanel compile and handler inspection;
-10. manual known-compatible run;
-11. controlled failure run;
-12. exact output and diagnostic files;
-13. UI responsiveness and final-state truth;
-14. update this ledger with evidence.
+Exit gate: the Jobs panel truthfully recovers and displays current durable job evidence
+without becoming a second execution authority or freezing the UI.
 
 ## Ledger update contract
 
