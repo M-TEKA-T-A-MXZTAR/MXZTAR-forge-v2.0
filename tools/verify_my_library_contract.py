@@ -17,6 +17,7 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from PySide6.QtCore import QThread  # noqa: E402
 from PySide6.QtGui import QImage  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
@@ -67,6 +68,12 @@ def wait_for_thumbnails(app: QApplication, panel, timeout: float = 10) -> None:
         panel._thumbnail_loader is None or not panel._thumbnail_loader.isRunning(),
         "background thumbnail loading did not finish",
     )
+
+
+class SlowThumbnailThread(QThread):
+    def run(self) -> None:
+        while not self.isInterruptionRequested():
+            self.msleep(10)
 
 
 def main() -> int:
@@ -139,6 +146,12 @@ def main() -> int:
                 "No source art found" in empty_panel.status_label.text(),
                 "empty library did not explain the Desktop input action",
             )
+            slow_loader = SlowThumbnailThread(panel)
+            panel._thumbnail_loader = slow_loader
+            slow_loader.start()
+            require(slow_loader.isRunning(), "shutdown fixture thumbnail thread did not start")
+            require(panel.shutdown_thumbnail_loading(), "library thumbnail thread did not stop")
+            require(not slow_loader.isRunning(), "thumbnail thread survived panel shutdown")
 
             print("PASS: all six source images appear as visible cards")
             print("PASS: every source card has a thumbnail")
@@ -149,6 +162,7 @@ def main() -> int:
             print("PASS: handoff navigates to Agent Workflows")
             print("PASS: active AI job rejects source replacement")
             print("PASS: discovery and handoff leave all source bytes unchanged")
+            print("PASS: thumbnail loading stops safely before panel shutdown")
             print("PASS: visible My Library grid verified")
     finally:
         library_module.scan_source_art = original_scan
