@@ -716,6 +716,32 @@ Recorded result:
 Backup status: no new VX12 backup was recorded for the verification; no backup is
 claimed by this entry.
 
+## 2026-07-20 — Future Construct and World vision capture
+
+Status: `PLANNED` until the documentation PR merges.
+
+Purpose:
+
+- preserve the founder's long-term direction without expanding or reordering Level One;
+- define the product-family horizon: Forge, Construct, Infrastructure Builder, World;
+- record lateral shape reasoning, modular compatibility, alignment/weld distinctions,
+  materials, lighting, mechatronics, and hyper-grid command architecture;
+- establish rig-friendly cyber-art as maximum visual identity per unit of computation;
+- preserve the moon-scale infrastructure, ecology, authorship, fair-rights, portability,
+  and generational-persistence vision;
+- identify present-day ID, provenance, coordinate, compatibility, history, and
+  performance-metadata consequences.
+
+Authority:
+
+- `docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md` is future vision, not a Level One
+  implementation or marketing contract;
+- `docs/product/MASTER_BUILD_PLAN.md` links to it without changing current phase order;
+- the next permitted milestone remains Project Authority and Lifecycle Foundation.
+
+Boundary: no 3D editor, renderer, world simulation, virtual ownership, cloud service,
+engineering validation, or future-product feature is claimed as implemented.
+
 ## Ledger update contract
 
 Every merged milestone must add or update:
