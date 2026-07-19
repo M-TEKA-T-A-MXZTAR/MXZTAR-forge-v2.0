@@ -51,6 +51,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/project_session.py \
   src/core/project_source_intake.py \
   src/core/source_library.py \
+  src/qt_panels/agent_panel.py \
   src/qt_panels/my_library_panel.py \
   src/qt_panels/start_here_panel.py \
   src/qt_app.py \
