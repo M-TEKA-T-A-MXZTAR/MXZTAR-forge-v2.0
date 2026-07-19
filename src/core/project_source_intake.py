@@ -340,7 +340,6 @@ def import_source_copy(session: ProjectSession, source_path: Path) -> SourceInta
             if marker_created:
                 try:
                     _clear_transaction_marker(project_dir, missing_ok=True)
-                    marker_created = False
                 except OSError:
                     rollback_ok = False
         try:
@@ -442,7 +441,6 @@ def mark_source_processed(session: ProjectSession, asset_id: str) -> dict:
         history_write_attempted = True
         atomic_write_text(history_path, history_before + json.dumps(event, ensure_ascii=False) + "\n")
         _clear_transaction_marker(project_dir)
-        marker_created = False
         return record
     except Exception as original_error:
         rollback_ok = True
@@ -457,7 +455,6 @@ def mark_source_processed(session: ProjectSession, asset_id: str) -> dict:
                 fsync_directory(target_path.parent)
             if marker_created:
                 _clear_transaction_marker(project_dir, missing_ok=True)
-                marker_created = False
         except Exception:
             rollback_ok = False
         if not rollback_ok:
