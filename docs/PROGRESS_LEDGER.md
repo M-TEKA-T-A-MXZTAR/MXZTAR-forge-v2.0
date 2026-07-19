@@ -606,33 +606,71 @@ Boundary:
 - individual record reads are capped at 2 MiB, retained recent candidates are capped
   at 500, and decoded record bodies are capped at 16 MiB per refresh;
 - inaccessible directories and record-stat failures surface as scan warnings;
-- application close interrupts and waits for the Jobs scan before destroying its
-  `QThread`.
+- application close requests asynchronous scan interruption and defers destruction
+  until every panel-owned `QThread` reports idle.
+
+Backup status: no backup is claimed before merge and T1700 verification.
+
+## 2026-07-19 — Read-only Shape Library evidence baseline branch
+
+Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+
+Branch: `agent/restore-shape-library-evidence`.
+
+Audit finding:
+
+- no approved shape artifacts currently exist;
+- legacy `shape_structure_harvest` records are raw AI reports, not extracted masks,
+  SVGs, geometry, or approved reusable components;
+- the project/approval authority required to create approved shapes is a later phase;
+- inventing `workspace/data/shapes/approved` now would conflict with the canonical
+  project layout.
+
+Purpose:
+
+- replace the Shape Library placeholder with a useful read-only evidence browser;
+- load only when the user opens Shape Library, avoiding duplicate startup scans;
+- filter existing Jobs evidence to shape-harvest records;
+- preserve raw `SUCCESS`, `FAILED`, and `INVALID` distinctions;
+- state visibly that approved shapes remain zero;
+- expose no fake approval, extraction, correction, Morph, Make 3D, delete, or export
+  action;
+- participate in asynchronous application shutdown.
+
+Verification commands:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_shape_library_contract.py
+
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_agent_panel_execution_contract.py
+```
+
+Boundary: this baseline creates no approved shape schema, files, or directory. Approval
+requires the future project-authority and review workflows.
 
 Backup status: no backup is claimed before merge and T1700 verification.
 
 ## Immediate next milestone after this ledger merges
 
-Milestone name: **Define and restore the Shape Library baseline**.
+Milestone name: **Project authority and lifecycle foundation**.
 
-Required branch scope:
+Required scope:
 
-- inspect existing shape placeholders, prompts, output records, and artifact authority;
-- define the minimum approved-shape record without inventing 3D geometry;
-- browse approved shape records and their source provenance;
-- preserve candidate/reviewed/approved/rejected/superseded distinctions;
-- add no extraction, correction, morph, Make 3D, delete, or export control until each
-  complete workflow exists;
-- verify empty, valid, invalid, missing-source, refresh, and restart behaviour;
-- update this ledger with exact evidence.
+- create/open project manifest and canonical directory structure;
+- source originals/previews and explicit processed-source lifecycle;
+- stable artifact/run/project IDs and atomic writes;
+- one-writer lock, read-only recovery, and SQLite rebuild boundary;
+- no approval UI until durable approval derivatives can be written and validated.
 
-Exit gate: Shape Library truthfully displays the durable shape evidence that actually
-exists without implying extraction, approval, or 3D construction is implemented.
+Exit gate: durable project truth survives restart and derived-index deletion without
+inventing competing storage locations.
 
 ## 2026-07-19 — Panel-owned QThread shutdown regression
 
-Status: `OBSERVED`; fix is `PLANNED` until the regression PR merges and passes on the
-T1700.
+Status: `VERIFIED` on the T1700 after PR #30 merged at `140c99c`.
 
 Observed after PR #29 merge:
 
@@ -668,8 +706,15 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
   .venv/bin/python tools/verify_my_library_contract.py
 ```
 
-No fix may be marked `VERIFIED` until both commands exit normally without a QThread
-warning, abort, or core dump.
+Recorded result:
+
+- AgentPanel execution contract passed and exited normally;
+- My Library contract passed and exited normally;
+- Jobs contract passed and exited normally after its shutdown API changed;
+- no `QThread: Destroyed`, abort, or core dump followed any rerun.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is
+claimed by this entry.
 
 ## Ledger update contract
 
