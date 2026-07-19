@@ -16,6 +16,7 @@ for f in \
   docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md \
   docs/product/OUTPUT_ARTIFACT_CONTRACTS.md \
   docs/product/MASTER_BUILD_PLAN.md \
+  docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
   docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
   docs/PROGRESS_LEDGER.md
 do

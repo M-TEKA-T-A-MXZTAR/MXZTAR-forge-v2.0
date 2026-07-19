@@ -136,6 +136,7 @@ define permission to modify or redistribute the source code.
 ## Product authority
 
 - [Master build plan](docs/product/MASTER_BUILD_PLAN.md)
+- [Future Construct and World vision](docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md)
 - [Progress ledger](docs/PROGRESS_LEDGER.md)
 - [Output artifact contracts](docs/product/OUTPUT_ARTIFACT_CONTRACTS.md)
 - [Workflow compatibility matrix](docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md)

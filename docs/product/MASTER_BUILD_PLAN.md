@@ -570,3 +570,12 @@ The next permitted engineering order is:
 
 Every PR should advance one coherent gate, preserve current verified behaviour, update
 the progress ledger, and avoid unrelated UI promises.
+
+## 18. Future product horizon
+
+The separately governed
+[`FUTURE_CONSTRUCT_AND_WORLD_VISION.md`](FUTURE_CONSTRUCT_AND_WORLD_VISION.md)
+preserves the long-term direction for MXZTAR Construct, rig-efficient cyber-art,
+infrastructure building, and a persistent human-designed moon-scale virtual world.
+It is a future vision, not a Level One feature promise, and does not change the current
+phase order.
