@@ -50,12 +50,15 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/project_manifest.py \
   src/core/project_session.py \
   src/core/project_source_intake.py \
+  src/core/project_workflow_run.py \
   src/core/source_library.py \
   src/qt_panels/agent_panel.py \
+  src/qt_panels/agent_worker.py \
   src/qt_panels/my_library_panel.py \
   src/qt_panels/start_here_panel.py \
   src/qt_app.py \
-  tools/verify_project_source_intake_ui_contract.py
+  tools/verify_project_source_intake_ui_contract.py \
+  tools/verify_project_workflow_run_contract.py
 
 echo "PASS: listed Python files compile"
 
