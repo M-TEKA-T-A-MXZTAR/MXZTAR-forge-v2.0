@@ -42,6 +42,7 @@ class StartHerePanel(QWidget):
 
         self.project_session = project_session or ProjectSession()
         self.profile_fields = {}
+        self._project_mutation_active = False
 
         title = QLabel("Start Here")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
@@ -266,11 +267,22 @@ class StartHerePanel(QWidget):
 
     def update_project_controls(self):
         attached = self.project_session.state is not None
-        self.create_project_button.setEnabled(not attached)
-        self.open_project_button.setEnabled(not attached and self.project_selector.count() > 0)
-        self.project_selector.setEnabled(not attached)
-        self.refresh_projects_button.setEnabled(not attached)
-        self.close_project_button.setEnabled(attached)
+        unlocked = not self._project_mutation_active
+        self.create_project_button.setEnabled(not attached and unlocked)
+        self.open_project_button.setEnabled(
+            not attached and unlocked and self.project_selector.count() > 0
+        )
+        self.project_selector.setEnabled(not attached and unlocked)
+        self.refresh_projects_button.setEnabled(not attached and unlocked)
+        self.close_project_button.setEnabled(attached and unlocked)
+
+    def set_project_mutation_active(self, active: bool):
+        self._project_mutation_active = bool(active)
+        self.update_project_controls()
+        if active:
+            self.set_status(
+                "Project source intake is active; project switching and close are paused."
+            )
 
     def load_all(self):
         profile = load_profile()
