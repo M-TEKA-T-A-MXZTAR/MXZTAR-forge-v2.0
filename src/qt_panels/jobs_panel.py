@@ -17,16 +17,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.job_records import JobRecord, scan_job_records
+from core.job_records import JobRecord, JobScanResult, read_job_record, scan_job_records
 
 
 class JobScanThread(QThread):
     records_ready = Signal(object)
 
     def run(self):
-        records = scan_job_records(self.isInterruptionRequested)
+        result = scan_job_records(self.isInterruptionRequested)
         if not self.isInterruptionRequested():
-            self.records_ready.emit(records)
+            self.records_ready.emit(result)
 
 
 class JobsPanel(QWidget):
@@ -106,7 +106,8 @@ class JobsPanel(QWidget):
         self._scan_thread.finished.connect(self.scan_finished)
         self._scan_thread.start()
 
-    def apply_records(self, records):
+    def apply_records(self, result: JobScanResult):
+        records = result.records
         previous = self.selected_record()
         previous_path = previous.path if previous else None
         self.job_list.clear()
@@ -126,7 +127,16 @@ class JobsPanel(QWidget):
             self.job_list.setCurrentItem(selected)
         else:
             self.clear_selection()
-        self.set_status(f"Showing {len(records)} existing job record(s).")
+        message = f"Showing {len(records)} existing job record(s)."
+        warnings = list(result.diagnostics)
+        if result.omitted_for_byte_budget:
+            warnings.append(
+                f"{result.omitted_for_byte_budget} older candidate(s) omitted by the "
+                "16 MiB decoded-record budget."
+            )
+        if warnings:
+            message += " Scan warning: " + " | ".join(warnings)
+        self.set_status(message)
 
     def scan_finished(self):
         thread = self._scan_thread
@@ -145,9 +155,14 @@ class JobsPanel(QWidget):
             return
 
         self.open_folder_button.setEnabled(True)
-        result = record.output_text if record.status == "SUCCESS" else record.error
-        if not result:
-            result = "No result text was recorded."
+        record = read_job_record(record.path)
+        evidence = []
+        if record.error:
+            evidence.append(f"Error:\n{record.error}")
+        if record.output_text:
+            evidence.append(f"Saved output text:\n{record.output_text}")
+        if not evidence:
+            evidence.append("No result or error text was recorded.")
         self.details.setPlainText(
             f"Status: {record.status}\n"
             f"Created: {record.created_utc or 'Unavailable in this record'}\n"
@@ -155,9 +170,18 @@ class JobsPanel(QWidget):
             f"Model: {record.model or 'Unavailable'}\n"
             f"Source: {record.source_path or 'Unavailable'}\n"
             f"Record: {record.path}\n\n"
-            f"{'Failure / validation detail' if record.status != 'SUCCESS' else 'Saved result'}:\n"
-            f"{result}"
+            f"{'Failure / validation evidence' if record.status != 'SUCCESS' else 'Saved evidence'}:\n"
+            + "\n\n".join(evidence)
         )
+
+    def shutdown_scan(self, timeout_ms: int = 5000) -> bool:
+        """Stop background record discovery before the panel can be destroyed."""
+        thread = self._scan_thread
+        if thread is None or not thread.isRunning():
+            return True
+        self._refresh_pending = False
+        thread.requestInterruption()
+        return thread.wait(timeout_ms)
 
     def clear_selection(self):
         self.open_folder_button.setEnabled(False)
