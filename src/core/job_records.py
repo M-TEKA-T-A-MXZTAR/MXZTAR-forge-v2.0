@@ -77,6 +77,7 @@ def read_job_record(path: Path) -> JobRecord:
 def scan_job_records(
     should_stop: Callable[[], bool] | None = None,
     limit: int = MAX_JOB_RECORDS,
+    path_filter: Callable[[Path], bool] | None = None,
 ) -> JobScanResult:
     """Discover recent legacy records from the runner's existing output directories."""
     stop = should_stop or (lambda: False)
@@ -96,7 +97,12 @@ def scan_job_records(
                 if stop():
                     return JobScanResult(())
                 try:
-                    if path.suffix.lower() != ".json" or path.is_symlink() or not path.is_file():
+                    if (
+                        path.suffix.lower() != ".json"
+                        or (path_filter is not None and not path_filter(path))
+                        or path.is_symlink()
+                        or not path.is_file()
+                    ):
                         continue
                     stat = path.stat()
                     entry = (stat.st_mtime_ns, str(path), stat.st_size, path)
