@@ -1,5 +1,11 @@
 # MXZTAR-forge v2.0 — First Rentable Release
 
+> **Historical filename, revised authority:** this document originated before the
+> founder confirmed free-of-charge access. “First rentable release” now means the first
+> release that creates durable user value; it does not mean a paid entitlement. The
+> current Level One scope and sequencing authority is
+> `docs/product/MASTER_BUILD_PLAN.md`.
+
 ## 1. Purpose
 
 The first rentable release of MXZTAR-forge v2.0 helps a creator turn source artwork into structured creative-production material.
@@ -396,29 +402,27 @@ No source art should be uploaded to an external service without explicit user ac
 
 ---
 
-## 13. Commercial Model
+## 13. Access and Voluntary Support Model
 
-Planned access model:
+Confirmed access model:
 
-* 60 days free access;
-* then NZD $10 per month;
-* applicable GST treatment only when business registration, checkout, invoicing, and accounting handling are correct.
+* use of the official software is free of charge;
+* there is no timed trial, recurring subscription, or feature paywall;
+* users may voluntarily support the founder at
+  `https://buymeacoffee.com/mxztar`;
+* donation status must not control core functionality or access to local files.
 
-Before paid release, the system must clearly communicate:
+Before public release, the project must clearly communicate:
 
-* when the free period begins;
-* when it ends;
-* the exact paid price;
-* whether payment details are required before the trial;
-* how renewal works;
-* how cancellation works;
-* what happens to local files after cancellation;
-* refund and support policies;
-* privacy and data-use terms;
+* privacy and data-use behaviour;
+* local model and network behaviour;
 * licence scope;
-* software limitations.
+* software limitations;
+* update and support expectations;
+* that voluntary support is optional and does not purchase hidden entitlement.
 
-The product must not rely on ambiguous automatic-renewal language.
+A recognised open-source `LICENSE` remains a separate founder decision and release
+gate. Free-of-charge access alone does not define modification or redistribution terms.
 
 ---
 
@@ -458,7 +462,7 @@ The first rentable release is ready for controlled user testing when:
 9. The system recommends a sensible next action.
 10. A concept folder can be produced or updated.
 11. Local files remain accessible outside the application.
-12. Trial and subscription terms are clearly presented.
+12. Free access, optional support, privacy, and licence terms are clearly presented.
 13. The application can run on the target CPU-only reference machine.
 14. Installation, restoration, and backup processes are documented.
 15. The verified source state is preserved in GitHub and recoverable through VX12 backup.
@@ -491,9 +495,10 @@ Allow findings to move from raw to approved or rejected.
 
 Turn approved material into a useful production package.
 
-### Priority G — Trial and subscription enforcement
+### Priority G — Free-access release and licence clarity
 
-Add commercial access only after the product workflow is reliable.
+Publish clear free-access, optional-support, privacy, licence, and limitation terms
+without adding entitlement enforcement.
 
 ### Priority H — Packaging and controlled user testing
 
@@ -523,4 +528,3 @@ That document must define, for each workflow:
 * recommended next workflow.
 
 No further workflow UI expansion should occur until that matrix exists.
-

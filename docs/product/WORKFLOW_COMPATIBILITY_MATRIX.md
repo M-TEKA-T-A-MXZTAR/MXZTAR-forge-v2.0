@@ -1065,7 +1065,8 @@ The following require later system-design decisions:
 7. How timeouts differ by hardware class.
 8. Whether a failed workflow can be retried with modified settings.
 9. How compatibility rules are versioned.
-10. How local-only trial licensing interacts with offline access.
+10. How the selected formal open-source licence and official release policy interact
+    with offline installation, updates, forks, and local project access.
 
 ---
 
@@ -1090,4 +1091,3 @@ That document must define the durable files produced by each workflow, including
 * migration expectations.
 
 No new workflow should be considered complete until its output artifact contract is defined and verifiable.
-

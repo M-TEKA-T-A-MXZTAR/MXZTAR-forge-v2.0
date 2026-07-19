@@ -1,495 +1,572 @@
-# MXZTAR-forge v2.0 — Master Build Plan
+# MXZTAR Forge v2.0 — Master Build Plan
 
-## 1. What we are building
+## 1. Product goal
 
-MXZTAR-forge v2.0 is a local-first, human-governed creative concept-engineering forge.
+MXZTAR Forge v2.0 is a local-first, human-governed creative concept-engineering forge.
 
-It turns source art into structured, inspectable, reusable production intelligence. It is not merely an image captioner, an automatic art generator, or a one-click 2D-to-3D converter.
+It turns visual source material into reviewed design intelligence, reusable shapes,
+editable construction instructions, and specialist-tool handoffs. It closes the gap
+between “a model can describe this picture” and “a creator can continue productive
+work from this result.”
 
-Its core responsibility is to recover and organise the design grammar contained in source material so a creator can deliberately move toward:
-
-- reusable 2D assets;
-- vector and extraction candidates;
-- structured concept briefs and prompt packs;
-- 2.5D stacked constructions;
-- modular blockout systems;
-- Blender and CAD handoffs;
-- later OBJ/GLB and production-oriented 3D workflows;
-- saleable digital asset packs where the result is suitable.
-
-Core value path:
+Long-term value path:
 
 ```text
-source art
-→ source suitability and rights context
-→ visual and schematic intelligence
-→ line, shape, layer, depth, perspective, and module evidence
-→ observed versus inferred structure
-→ approved reusable design grammar
-→ concept brief / extraction map / module plan / prompt pack
-→ 2D derivative, 2.5D stack, blockout, Blender/CAD, or later 3D handoff
-→ review, correction, benchmark, learning, and reuse
+source art or generated source
+→ source identity, rights context, and user intent
+→ observed visual evidence and explicit uncertainty
+→ reviewed shapes, layers, components, and modular grammar
+→ reusable Shape Library assets and construction recipes
+→ editable 2D, 2.5D, and 3D components
+→ human-governed modular assembly
+→ verified Blender, engine, CAD, print, or media handoff
 ```
 
-The product closes the missing bridge between “AI sees a picture” and “a creator receives usable spatial production data.”
+The Level One MVP stops at a smaller, operational promise:
 
-## 2. Who it serves
+```text
+source image
+→ safe local analysis
+→ structured findings
+→ human review and approval
+→ reusable shapes
+→ durable Forge Pack
+```
 
-Primary users:
+The MVP does not claim automatic production-ready geometry.
 
-- visual artists with strong source art but limited 3D or CAD experience;
-- concept artists and industrial-design thinkers;
-- game, film, animation, environment, and world-building planners;
-- Blender blockout and kitbash creators;
-- modular design-system builders;
-- creators who need structured prompts, briefs, extraction maps, and component families;
-- solo creators working on modest CPU-only hardware.
+## 2. Asset, owner, user, and value
 
-## 3. The market and workflow gaps
+**Asset:** a durable Forge Pack containing source identity, structured analysis,
+approved shapes, construction guidance, job evidence, and portable exports.
 
-### 3.1 Generic image-description gap
+**Owner:** the creator controls their local source material, project records,
+approvals, derivatives, and exports. MXZTAR controls the Forge application and its
+official releases.
 
-General vision models describe visible subjects but usually do not identify production-useful structure: reusable silhouettes, construction lines, layers, panels, ribs, shells, joints, connectors, surfaces, repeated grammar, extraction priorities, risks, and next actions.
+**Primary Level One users:**
 
-MXZTAR-forge must inspect source art as production material, not merely as a picture.
+1. indie game, environment, and prop artists;
+2. concept and visual-development artists;
+3. Blender generalists and 3D blockout artists;
+4. small game, film, animation, and design teams without a technical-art department;
+5. makers and 3D-print designers at concept and handoff stage.
 
-### 3.2 Schematic and line-network gap
+**User problem:** image tools produce pictures or captions, while production tools
+expect structure, scale, hierarchy, geometry decisions, and file discipline. Creators
+currently reconstruct that missing information manually across folders, notes, AI
+chats, tracing tools, Blender, CAD, and game engines.
 
-Technical drawings, apex views, abstract diagrams, and layered line art need specialised interpretation of:
+**Forge value:** preserve source authority, recover design grammar, expose inference,
+retain corrections, create reusable components, recommend the next valid action, and
+package the result for immediate continuation in another tool.
 
-- connected and interrupted line networks;
-- open and closed contours;
-- centre lines and symmetry axes;
-- nested regions;
-- intersection and attachment points;
-- line weight and likely semantic roles;
-- stacked levels and sectional relationships.
+## 3. Product principles
 
-This is a known weak point and must become a first-class engineering track.
+1. **Local first.** Source art and project truth remain local unless the user explicitly
+   chooses an external operation.
+2. **Human governed.** Automation may propose and execute reversible work; approval,
+   destructive change, joining, replacement, and export remain visible user decisions.
+3. **Observed is not inferred.** Source evidence, calculation, model inference, user
+   intent, speculation, and approved truth are separate states.
+4. **No dead or frozen UI.** Heavy work runs outside the Qt main thread with progress,
+   heartbeat, elapsed time, cancellation boundaries, and truthful final state.
+5. **Modest hardware remains valid.** One heavy local job at a time by default, bounded
+   previews, conservative threads, no silent downloads, and no hidden escalation.
+6. **Readable durable output.** JSON, Markdown, SVG, PNG, and documented interchange
+   files remain inspectable outside Forge.
+7. **Every name is a promise.** No button, format, status, or AI claim exists without a
+   complete and verified workflow.
+8. **Corrections compound value.** User review creates durable project knowledge rather
+   than hidden, unreviewed memory.
+9. **Specialist tools are partners.** Forge prepares and validates handoffs; it does not
+   pretend to replace Krita, Blender, game engines, CAD systems, or slicers.
+10. **Free access is not reduced functionality.** Official software use is free of
+    charge. Users may voluntarily support the founder at
+    `https://buymeacoffee.com/mxztar`.
 
-### 3.3 Spatial bridge gap
+## 4. Level One MVP acceptance boundary
 
-The missing middle between 2D art and 3D construction is an explicit intermediate representation.
+Level One is complete only when a new user can:
 
-It must hold:
+1. install and launch an official release;
+2. create or open a local project;
+3. provide a reusable user profile and project-specific intent;
+4. populate the Desktop Input folder and see every supported source;
+5. inspect a bounded preview without modifying the original;
+6. select an appropriate workflow through READY, CAUTION, or BLOCKED assessment;
+7. run one local vision workflow without freezing the UI;
+8. receive schema-valid structured findings or a truthful diagnostic artifact;
+9. review observed evidence, inference, confidence, and unknowns;
+10. rename, correct, reject, approve, or supersede findings;
+11. save approved shapes into the Shape Library;
+12. inspect job history, model identity, elapsed time, status, and saved outputs;
+13. export a verified Forge Pack;
+14. move successfully processed source art to an explicit processed-source location;
+15. reopen the project and recover its durable state without relying on terminal history.
 
-- source-plane coordinates;
-- contour and region identities;
-- depth-order hypotheses;
-- occlusion relationships;
-- perspective cues;
-- symmetry and repetition rules;
-- component hierarchy;
-- module relationships;
-- scale and unit assumptions;
-- confidence and uncertainty.
+Level One does not promise:
 
-This representation is more important than prematurely generating a finished mesh.
-
-### 3.4 Observation-versus-inference gap
-
-Every workflow must distinguish:
-
-- observed source evidence;
-- calculated or derived geometry;
-- user-supplied intent;
-- model inference;
-- speculative design extension;
-- approved project truth.
-
-### 3.5 Workflow compatibility gap
-
-Not every source is appropriate for every workflow. The system must classify a proposed run as READY, CAUTION, or BLOCKED and explain missing inputs, expected output, recommended prior work, and what not to do yet.
-
-### 3.6 Persistent project-truth gap
-
-Useful work cannot live only in terminal scrollback, chat, or volatile UI state. The forge requires durable versioned artifacts, provenance, approvals, rejections, supersession, project history, rebuildable SQLite indexing, and non-destructive recovery.
-
-### 3.7 Benchmark and quality gap
-
-Plausible prose is not sufficient evidence of quality. The system needs repeatable benchmarks for:
-
-- shape and contour detection;
-- line-network interpretation;
-- repeated-form recognition;
-- layer and depth ordering;
-- perspective cues;
-- observed/inferred separation;
-- module-family consistency;
-- output-schema validity;
-- provenance protection;
-- user-correction retention.
-
-### 3.8 Toolchain-fragmentation gap
-
-Creators currently move manually between image folders, tracing tools, notes, AI chats, Blender, CAD, prompt files, and exports. MXZTAR-forge should become the governed bridge without pretending to replace every specialist tool.
-
-### 3.9 Hardware-access gap
-
-Many local AI tools assume powerful GPUs. The forge must remain useful on CPU-only hardware through conservative resource governance, one heavy job at a time, two-thread defaults, visible elapsed time and heartbeat, cancellation and timeout handling, no main-thread AI work, and no silent model downloads.
-
-### 3.10 Creator-skill and next-action gap
-
-A 2D creator may not know which spatial decision should happen next. The interface must apply the LEVER principle: current state, end goal, workflow chain, one primary next action, next few events, and what not to do yet.
-
-## 4. Additional gaps to bake in
-
-### 4.1 Multi-view evidence
-
-Support front, side, top, section, detail, and alternate-angle sources. Never pretend one image provides complete geometry.
-
-### 4.2 Scale and measurement anchors
-
-Allow units, known dimensions, grids, or reference objects. Dimensional claims remain unknown until anchored.
-
-### 4.3 Camera and perspective estimation
-
-Record vanishing points, horizon hypotheses, projection type, camera uncertainty, and correction decisions.
-
-### 4.4 Depth and occlusion graph
-
-Represent which region is in front of, behind, attached to, embedded in, or intersecting another region.
-
-### 4.5 Parametric and modular grammar
-
-Record repetition, symmetry, rotation, scaling, attachment, stacking, substitution, and family rules.
-
-### 4.6 Human correction as first-class data
-
-Users must be able to correct contours, labels, hierarchy, depth, module membership, and confidence. Corrections persist and influence later workflows through an audit-trailed learning ledger.
-
-### 4.7 Round-trip validation
-
-Future Blender/CAD exports must be re-importable or verifiable against the approved intermediate representation. File creation alone does not prove export success.
-
-### 4.8 Rights and provenance context
-
-Record ownership assertions, licence notes, source origin, and commercial-use status without claiming legal verification the application did not perform.
-
-### 4.9 Product and audience opportunity mapping
-
-Approved structures may be classified into opportunities such as vector packs, modular concept packs, kitbash planning packs, reference boards, texture/motif libraries, prompt packs, game/film planning kits, and later 3D blockout projects. This is recommendation, not automatic publication.
-
-### 4.10 Explicit interoperability profiles
-
-Define versioned handoffs rather than a vague export button:
-
-- PNG/JPEG/TIFF reference boards;
-- SVG vector layers;
-- JSON spatial/intermediate representation;
-- Blender Python or scene-manifest handoff;
-- future OBJ/GLB blockout export;
-- future CAD exchange only after units and geometry contracts are proven.
-
-## 5. Non-goals for the first rentable release
-
-The first release must not promise:
-
-- automatic production-ready 3D meshes;
-- engineering certification;
-- manufacturing safety;
-- dimensionally accurate reconstruction from an unscaled single image;
-- perfect hidden-surface recovery;
-- automatic CAD solids;
-- autonomous publishing or sales;
+- production-ready topology or finished 3D meshes;
+- engineering-grade dimensions from an unscaled image;
+- watertight or manufacture-safe geometry;
+- hidden-surface reconstruction;
+- automatic CAD solids, rigging, UVs, LODs, or final materials;
+- unattended publishing or sales;
 - unlimited parallel jobs;
-- cloud dependence;
-- learning from unreviewed hidden memory.
+- perfect AI interpretation;
+- a complete CAD or modular 3D editor.
 
-## 6. Architectural product layers
+## 5. Start Here and intent model
 
-1. **Source library and project boundary** — source identity, hashes, rights, previews, projects, and multi-view grouping.
-2. **Suitability and compatibility** — READY/CAUTION/BLOCKED workflow decisions.
-3. **Visual and schematic intelligence** — contours, lines, regions, motifs, layers, perspective, repeats, components, and uncertainty.
-4. **Spatial intermediate representation** — hierarchy, depth, occlusion, transforms, module rules, scale assumptions, and confidence.
-5. **Human review and approval** — correction, approval, rejection, and supersession.
-6. **Production translators** — briefs, extraction maps, prompt packs, module manifests, 2.5D plans, and specialist-tool handoffs.
-7. **Benchmark and learning system** — measurable quality, corrections, decisions, and approved lessons.
-8. **Commercial and entitlement boundary** — 60-day free access and later NZD 10/month without endangering user-owned local project files.
+Onboarding must gather useful intent without confronting every user with one giant
+form. Fields are progressive, editable, and separated by authority.
 
-## 7. Master implementation sequence
+### 5.1 Persistent local user profile
 
-### Phase 0 — Governance and source-of-truth foundation
+- discipline and role;
+- experience level;
+- programs used;
+- preferred units;
+- usual target platforms and asset types;
+- preferred output profiles;
+- default project and export locations;
+- local privacy and network preferences;
+- accessibility and learning-mode preferences;
+- permission for AI-generated source material;
+- automatically detected hardware profile, with visible policy.
+
+### 5.2 Per-project intent
+
+- project name and purpose;
+- source origin, ownership assertion, and licence notes;
+- target application or workflow;
+- intended asset or scene type;
+- 2D, 2.5D, blockout, CAD-concept, print-concept, or modular intent;
+- required accuracy, scale, and units;
+- structural versus decorative priority;
+- symmetry, repetition, modularity, material, and style expectations;
+- desired outputs and quality/time preference;
+- free-form direction.
+
+### 5.3 Conditional intent
+
+- game/VR/AR: engine, platform, scale, polygon target, collision, LOD, interaction;
+- film/animation: shot context, camera distance, detail tier, scene role;
+- CAD: dimensional authority, tolerance, solid/surface intent, manufacturing context;
+- 3D print: process, units, wall constraints, watertightness, slicer target;
+- 2D: canvas, colour, layer, vector/raster, and print requirements.
+
+Hidden profiling is prohibited. The user can inspect, correct, export, or remove their
+profile and project intent.
+
+## 6. Project authority and Forge Pack export
+
+No single industry file is universal. The canonical internal project layout remains
+the authority defined by `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, including
+`source/originals`, `source/previews`, status-separated `findings`, `structures`,
+`briefs`, `prompts`, `diagnostics`, `logs`, `history`, and `exports`. Workflows must not
+invent competing internal locations.
+
+A Forge Pack is a deterministic, versioned **export view** assembled from approved
+project artifacts. It is portable output, not a second project-state authority. Its
+manifest retains the originating project/artifact IDs and hashes so it can be traced
+back to project truth.
+
+```text
+forge-pack/
+├── forge-pack.json
+├── source/
+│   └── source-reference.json
+├── analysis/
+│   ├── design-brief.json
+│   ├── design-brief.md
+│   ├── observations.json
+│   ├── uncertainties.json
+│   └── annotated-source.png
+├── shapes/
+│   ├── shape-catalog.json
+│   ├── masks/
+│   ├── silhouettes/
+│   └── vectors/
+├── construction/
+│   ├── component-hierarchy.json
+│   ├── spatial-layers.json
+│   └── blockout-plan.md
+├── exports/
+├── job-evidence/
+├── provenance/
+└── export-report.json
+```
+
+Every material artifact carries an ID, schema version, source relationship, creator
+or model, timestamps, status, validation result, approval state, and supersession
+history. SQLite may index these files but is never the sole authority.
+
+The initial portable outputs are:
+
+- JSON for machine-readable project intelligence;
+- Markdown for human-readable briefs and instructions;
+- PNG for masks, previews, and annotated evidence;
+- SVG for reviewed silhouettes and vector construction;
+- GLB later as the first general 3D blockout adapter;
+- OBJ as a simple legacy mesh fallback;
+- DXF for later 2D CAD profiles;
+- 3MF for later additive-manufacturing handoff;
+- STEP only after dimensional and solid-geometry contracts are proven;
+- OpenUSD later for complex composed production scenes.
+
+## 7. Structured production intelligence contract
+
+Forge must create more than prose. The structured representation includes:
+
+- source identity and hash;
+- visible objects, motifs, surfaces, and regions;
+- line and contour evidence;
+- component IDs and hierarchy;
+- masks, silhouettes, vector candidates, holes, and interior contours;
+- layers, depth order, occlusion, and attachment hypotheses;
+- symmetry, repetition, module families, and variation rules;
+- source-plane coordinates, anchors, centres, and bounds;
+- scale, units, perspective, and camera assumptions;
+- colour and material observations;
+- construction recommendations;
+- observed/inferred/user-supplied/approved classification;
+- confidence, uncertainty, contradiction, and missing evidence;
+- intended downstream profile;
+- review, correction, rejection, approval, and supersession records.
+
+## 8. Shape and component lifecycle
+
+A Shape Library entry is not merely a crop. It may contain:
+
+- original source reference;
+- mask and vector outline;
+- holes, centre, bounds, symmetry axes, and anchors;
+- dimensional assumptions and confidence;
+- intended role: profile, panel, trim, cutout, volume, path, or decoration;
+- approval state and correction history;
+- proposed construction methods;
+- later derived 3D components and instances.
+
+Lifecycle transitions:
+
+```text
+candidate
+→ reviewed
+  ├→ approved shape
+  ├→ correction requested → corrected candidate → reviewed
+  └→ rejected
+
+approved shape
+  ├→ superseded by a later approved shape
+  └→ construction recipe
+      → editable 3D component
+      → positioned instance
+      → group / assembly / joined mesh / boolean result
+      → verified export
+```
+
+Parent-child provenance must survive every derivative.
+
+## 9. Automation with user control
+
+Forge exposes explicit automation levels:
+
+| Level | Behaviour |
+|---|---|
+| Manual | Tools execute only direct user commands |
+| Assisted | Forge proposes an action and waits for approval |
+| Guided Automatic | Forge runs a visible workflow and pauses at approval gates |
+| Batch Automatic | Forge applies user-approved rules and reports exceptions |
+
+Guided Automatic is the default.
+
+Every automated run declares inputs, stages, model or algorithm, storage destination,
+assumptions, workload state, elapsed time, heartbeat, cancellation boundary, outputs,
+failures, and next action. No unapproved rule becomes hidden project truth.
+
+## 10. UI and learning architecture
+
+Forge adopts a mature creative-application layout without copying another product:
+
+```text
+File | Edit | View | Project | Source | Analyse | Shapes | Construct | Export | Settings | Help
+```
+
+Primary workspaces:
+
+1. Start Here;
+2. My Library;
+3. Agent Workflows;
+4. Review;
+5. Shape Library;
+6. Jobs;
+7. Export;
+8. later Modular Construct.
+
+The centre is the active canvas or workspace. Toolbars and resizable panels surround
+it. Layout and geometry persist safely.
+
+Every important control has:
+
+- a concise normal tooltip;
+- after a three-second hover, an optional Insight explaining what it does, when to use
+  it, what changes, whether it is reversible, what it creates, and one example;
+- Learning Mode, Tooltips Only, New Features, and Insights Off preferences.
+
+## 11. Future modular 3D construction
+
+This is architected now but excluded from Level One implementation.
+
+The Modular Construct workspace will provide three-axis positioning, orthographic and
+perspective views, transform gizmos, units, snapping, numeric transforms, anchors,
+hierarchy, locking, visibility, duplication, mirroring, arrays, undo/redo, and
+non-destructive construction history.
+
+Approved 2D shapes may later use explicit operations:
+
+- extrude;
+- bevel;
+- revolve;
+- sweep;
+- loft;
+- relief;
+- shell;
+- AI-assisted morph with stated assumptions.
+
+One-click Make 3D means “generate a reversible preview using a declared method,” not
+“claim a finished object.” Group, assembly, join mesh, boolean union, boolean
+difference, separate, and bake remain distinct operations.
+
+Assistance may suggest alignment, mating edges, symmetry, arrays, intersections, and
+attachment points. The user approves movement and irreversible changes.
+
+## 12. Text-to-image source generation
+
+Text-to-image is a later input adapter, not an MVP dependency. It requires a separate
+generation model; the local vision model does not provide this capability.
+
+Requirements:
+
+- explicit model installation and storage consent;
+- no silent model downloads;
+- visible prompt, negative prompt, seed where available, settings, model, and date;
+- generated/imported provenance distinction;
+- source approval before analysis;
+- externally generated images remain valid inputs.
+
+## 13. Interoperability profiles
+
+Each adapter declares units, scale, coordinate system, up-axis, origins, pivots,
+hierarchy, names, materials, textures, output files, limitations, and validation.
+
+Planned profiles:
+
+- Krita/Inkscape 2D Construction;
+- Blender Blockout;
+- Unreal Engine Prop or Environment;
+- Godot Game Asset;
+- Unity Game Asset;
+- Generic GLB;
+- Generic CAD Profile;
+- 3D Printing Concept;
+- Generic Forge Pack.
+
+## 14. Implementation roadmap
+
+### Phase 0 — Governance and safe runtime foundation
 
 Status: substantially complete.
 
-Required outcomes:
+- canonical identity and source truth;
+- relocatable application and Desktop launchers;
+- adaptive modest-hardware policy;
+- bounded source previews;
+- one guarded QThread AI runner;
+- My Library visible-card baseline;
+- prompt and worker contracts.
 
-- first rentable release definition;
-- workflow compatibility matrix;
-- output artifact contracts;
-- project state and data authority;
-- master build plan;
-- progress ledger.
+Exit: current merged verifiers pass on the T1700 and documentation no longer claims a
+commercial subscription or implemented functionality that does not exist.
 
-Exit gate: planning documents agree on terminology, authority, and scope; the source-truth verifier checks them.
+### Phase 1 — Restore the operational shell
 
-### Phase 1 — Stabilise the existing execution path
+- restore Jobs with durable truthful records;
+- restore Shape Library around the new lifecycle contract;
+- establish top menu and workspace navigation without dead controls;
+- add Help/Insights foundation;
+- retain responsive layout and safe window behaviour.
 
-Purpose: establish an honest, repeatable runtime baseline before expansion.
+Exit: users can navigate sources, workflows, jobs, and shapes; every visible control
+has its complete handler, engine/helper, input, output, error, feedback, persistence
+where required, and verification path. Deferred workspaces and unavailable actions are
+documented but are not exposed as placeholder controls.
 
-Work:
-
-1. inspect `AgentPanel`, `AgentWorker`, `agent_runner`, prompts, and service contracts;
-2. reproduce the successful simple-image probe;
-3. reproduce and classify the earlier random-workflow HTTP 400 observation;
-4. ensure a failed `AgentResult` cannot become UI success through tuple or return-contract confusion;
-5. separate saved diagnostic output from workflow success;
-6. verify responsiveness, elapsed time, heartbeat, single-job protection, cancellation boundary, and final state;
-7. add regression tests for success, model failure, malformed output, missing source, timeout, and storage failure.
-
-Exit gate: one compatible workflow runs end to end; success is reported only after schema validation; failures save diagnostics and useful next actions; no Qt-main-thread AI work.
-
-### Phase 2 — Implement project skeleton and authority model
-
-Work:
+### Phase 2 — Project authority and lifecycle
 
 - project creation/opening;
-- `project.json` manifest;
-- project directory contract;
-- project lock and one-writer rule;
-- atomic writes;
-- artifact and run IDs;
-- project history;
-- SQLite as derived index;
-- index rebuild;
-- read-only recovery;
-- reconciliation report.
+- manifest and self-contained directory;
+- input, processed-source, shape, job, export, and history authorities;
+- atomic writes and IDs;
+- one-writer lock;
+- SQLite rebuild;
+- read-only recovery and reconciliation.
 
-Exit gate: deleting SQLite and rebuilding from project files loses no durable project truth.
+Exit: deleting the derived index loses no project truth; restart restores state.
 
-### Phase 3 — Build source intake and source profiles
+### Phase 3 — Start Here intent onboarding
 
-Work:
+- persistent local user profile;
+- project intent and conditional target fields;
+- profile inspection, correction, export, and deletion;
+- target workflow profiles;
+- privacy and network disclosure.
 
-- recursive discovery;
-- supported-image validation;
-- duplicate detection by hash;
-- previews;
-- rights notes;
-- source classification: artwork, schematic, photograph, screenshot, orthographic view, section, detail, mask, reference;
-- multi-view grouping;
-- scale/unit anchors;
-- quality and suitability report.
+Exit: relevant intent enters workflow artifacts without hidden profiling.
 
-Exit gate: every source has durable identity, validation, rights context, and suitability profile.
+### Phase 4 — Compatibility and workflow schemas
 
-### Phase 4 — Implement compatibility assessment
-
-Work:
-
-- encode READY/CAUTION/BLOCKED rules;
-- show reasons and missing requirements;
-- recommend one prior or alternative workflow;
-- version rule sets;
-- save material assessments.
-
-Exit gate: blocked workflows cannot launch; caution requires deliberate continuation; recommendations reference only real controls and workflows.
-
-### Phase 5 — Formalise schemas and validators
-
-Work:
-
+- READY/CAUTION/BLOCKED rules;
 - shared artifact envelope;
-- workflow-specific schemas;
-- status, approval, provenance, validation, and error objects;
-- atomic writer;
-- schema validation;
-- approval derivative;
-- supersession records;
-- migration scaffold;
-- JSONL execution and project-history logs.
+- success and failure schemas;
+- model/source preflight;
+- validation, migration, approval, rejection, and supersession.
 
-Exit gate: every workflow produces a schema-valid success or failure artifact; invalid output cannot be recorded as success.
+Exit: invalid output cannot be success; blocked jobs cannot launch.
 
-### Phase 6 — Source-art intelligence v1
+### Phase 5 — Source-art intelligence and review
 
-Work:
-
-- visible evidence;
-- motif, surface, object, and component candidates;
-- layers and structures;
-- uncertainty and quality notes;
-- user intent;
+- structured visible evidence;
+- components, motifs, materials, layers, and uncertainty;
 - observed/inferred separation;
-- recommended next workflow;
-- correction and approval UI.
+- annotated-source overlays;
+- correction and approval workspace.
 
-Exit gate: benchmark sources produce useful structured findings beyond a generic caption.
+Exit: benchmark sources produce useful reviewable findings beyond captions.
 
-### Phase 7 — Schematic and line-network intelligence
+### Phase 6 — Shape extraction and Shape Library
 
-Work:
+- line, contour, region, mask, and silhouette candidates;
+- open/closed contours, holes, intersections, endpoints, symmetry, and nesting;
+- vector candidates and manual correction;
+- approved shape records and reusable naming;
+- non-destructive source relationship.
 
-- line and contour extraction;
-- connected-component graph;
-- open/closed path classification;
-- intersection and endpoint detection;
-- centre-line and symmetry candidates;
-- nested-region analysis;
-- semantic line-role hypotheses;
-- correction overlays;
-- vector candidate records.
+Exit: an approved source-derived shape can be reopened, corrected, traced, and exported
+as PNG/SVG with schema-valid metadata.
 
-Exit gate: benchmark schematics yield a stable line/region graph with measurable quality and retained corrections.
+### Phase 7 — Layers, depth, and modular grammar
 
-### Phase 8 — Shape, layer, depth, and 2.5D representation
+- layer and occlusion graph;
+- anchors, transforms, perspective, and scale assumptions;
+- repetition, module families, connectors, attachment, variation, and hierarchy;
+- 2.5D preview and construction plan.
 
-Work:
+Exit: one project produces a reviewed modular family and inspectable 2.5D plan.
 
-- shape and silhouette entities;
-- layer ordering;
-- occlusion graph;
-- extrusion-depth hypotheses;
-- stacked levels;
-- transforms and anchors;
-- perspective/camera hypotheses;
-- confidence per relationship;
-- 2.5D preview;
-- non-destructive masks and extraction zones.
+### Phase 8 — Forge Pack and first production adapters
 
-Exit gate: users can inspect and correct a source-derived 2.5D construction plan without generating a final mesh.
+- deterministic package builder;
+- JSON, Markdown, annotated PNG, masks, and SVG;
+- Blender blockout brief and scene manifest;
+- adapter validation and provenance;
+- export summary and limitations.
 
-### Phase 9 — Modular design grammar
+Exit: a fresh downstream session can identify, import, and continue from the package
+without filesystem archaeology.
 
-Work:
+### Phase 9 — Level One release engineering
 
-- module candidates and families;
-- hierarchy;
-- connectors and attachment rules;
-- repetition, symmetry, scale, rotation, and stacking;
-- observed versus invented modules;
-- naming;
-- variation constraints;
-- kitbash/blockout manifest.
+- clean install, update, rollback, and removal;
+- versioned GitHub releases and checksums;
+- model compatibility declaration;
+- release notes, limitations, migration, backup, and recovery;
+- website download path;
+- voluntary support link;
+- formal software licence and contributor policy.
 
-Exit gate: one project produces a reusable, versioned module family and controlled variation plan.
+Exit: a new user can install, complete the acceptance journey, retain local work, and
+recover from a failed update on supported hardware.
 
-### Phase 10 — Production translators
+### Phase 10 — 2D-to-3D component generation
 
-Initial translators:
+- construction recipe schema;
+- extrude, revolve, sweep, loft, shell, relief, bevel, and morph proposals;
+- editable preview and parameter controls;
+- derived-component provenance;
+- GLB blockout validation.
 
-- concept brief;
-- extraction map;
-- render prompt pack;
-- module manifest;
-- source/reference board;
-- 2.5D stack plan;
-- Blender blockout brief;
-- next-step recommendation.
+Exit: an approved 2D shape generates a reversible, editable, explicitly limited 3D
+component that round-trips through the target profile.
 
-Later translators after contracts are proven:
+### Phase 11 — Modular Construct workspace
 
-- layered SVG;
-- Blender Python/scene-manifest adapter;
-- OBJ/GLB blockout;
-- CAD-oriented exchange.
+- three-axis scene and camera views;
+- transforms, snaps, anchors, arrays, hierarchy, instances, and undo/redo;
+- assisted alignment and modular placement;
+- group, assembly, join, boolean, separate, and bake distinctions;
+- construction history and export.
 
-Exit gate: every translator declares inputs, outputs, limitations, verification, and provenance; no generic “Export 3D” control exists without a validated path.
+Exit: users assemble approved components into a recoverable modular construction and
+export a verified blockout.
 
-### Phase 11 — Benchmark, correction, and progressive learning
+### Phase 12 — Advanced adapters and generation
 
-Work:
+- 3MF after print validation;
+- DXF and STEP after dimensional contracts;
+- OpenUSD for composed scenes;
+- optional text-to-image source generation;
+- community adapter/profile framework.
 
-- benchmark corpus for simple shapes, schematics, layered art, perspective scenes, repeated modules, and multi-view sets;
-- expected findings and tolerances;
-- workflow metrics;
-- correction records;
-- approved lesson ledger;
-- regression comparison across prompt, model, and schema versions;
-- failure-trend reports.
+## 15. Verification system
 
-Exit gate: improvements require benchmark evidence; approved corrections are traceable to later behaviour changes.
+Every milestone requires proportionate evidence:
 
-### Phase 12 — First rentable-release cockpit
+1. Markdown/source-truth checks;
+2. Python compile/import checks;
+3. pure-logic unit contracts;
+4. fixture-based integration contracts;
+5. thread and cancellation lifecycle contracts;
+6. schema and migration validation;
+7. filesystem interruption and recovery tests;
+8. benchmark-source comparisons;
+9. manual Qt smoke checks on the T1700;
+10. downstream import and round-trip checks for every export adapter.
 
-Cockpit must show:
+No milestone becomes VERIFIED solely because code was committed or merged.
 
-- current project and source;
-- integrity state;
-- selected goal;
-- workflow chain;
-- compatibility;
-- one primary next action;
-- active job and resource state;
-- review-required items;
-- latest valid artifacts;
-- what not to do yet.
+## 16. Distribution, access, and support
 
-Exit gate: a new user can import source art, run a suitable workflow, review and approve findings, produce a useful translated output, and reopen the project without filesystem archaeology.
+MXZTAR Forge is a MXZTAR Projects build from `https://www.mxztar.co.nz`.
 
-### Phase 13 — Packaging, trial, subscription, and release safety
+Official software use is free of charge. There is no timed trial, subscription, or
+feature paywall in the confirmed product model. Users may voluntarily support the
+founder at `https://buymeacoffee.com/mxztar`.
 
-Work:
+The public repository supports developer collaboration and forks. Ordinary users are
+directed to versioned official releases so installation, schemas, model compatibility,
+and migrations remain synchronized.
 
-- installer and launcher verification;
-- clean-machine recovery test;
-- continued local-project access after subscription lapse;
-- 60-day trial;
-- NZD 10/month entitlement boundary;
-- cancellation and renewal clarity;
-- privacy and licence terms;
-- diagnostics export;
-- update and rollback;
-- known limitations.
+Free access and open-source permissions are related but different decisions. Before
+the first public release, the repository must contain a recognised `LICENSE` selected
+by the founder and consistent contributor terms. Until then, documentation must not
+invent legal permissions beyond the confirmed free-of-charge access policy.
 
-Exit gate: commercial controls cannot endanger user-owned project files; restore, update, cancellation, and failure behaviour are tested.
+## 17. Immediate build sequence
 
-## 8. Cross-cutting build rules
+The next permitted engineering order is:
 
-Every milestone must define:
+1. reconcile the existing planning documents with this Level One contract;
+2. restore Jobs;
+3. define and restore Shape Library;
+4. implement project authority and processed-source lifecycle;
+5. implement Start Here onboarding;
+6. formalise the structured analysis schema;
+7. make Agent Workflows produce and validate it;
+8. build Review and approval;
+9. build the first Forge Pack exporter;
+10. complete Level One release acceptance before 2D-to-3D implementation.
 
-- purpose and user problem;
-- inputs and outputs;
-- data shapes;
-- handler and engine path;
-- success, caution, failure, cancellation, and timeout states;
-- persistence and provenance;
-- UI feedback;
-- targeted verification;
-- regression risk;
-- downstream consequences;
-- progress-ledger update.
-
-No visible control may be added without its complete functioning workflow path.
-
-## 9. Verification strategy
-
-Required layers:
-
-1. static compile/import checks;
-2. schema and contract validators;
-3. unit tests for pure logic;
-4. fixture-based integration tests;
-5. worker/thread lifecycle tests;
-6. file-system interruption tests;
-7. project rebuild and recovery tests;
-8. benchmark-source tests;
-9. manual Qt smoke tests;
-10. export round-trip tests when adapters exist.
-
-## 10. Branch and milestone discipline
-
-- one coherent milestone per branch;
-- inspect before patching;
-- small verified changes;
-- update documentation and verifiers with behaviour;
-- no unrelated cleanup;
-- no claim of completion without evidence;
-- merge only when clean and required checks pass;
-- prune merged branches;
-- update the progress ledger after each merged milestone;
-- make one normal VX12 backup at the end of a meaningful work period unless a risky migration requires an immediate backup.
-
-## 11. Immediate next milestone
-
-After this planning PR merges:
-
-1. synchronise local `main`;
-2. inspect the live runtime and unresolved Stage 4C-4 state;
-3. create a focused baseline-audit branch;
-4. verify prompts, service, runner, worker, panel, and simple-image probe;
-5. record the exact runtime-state matrix in the progress ledger;
-6. fix only confirmed execution-contract defects;
-7. add targeted regression tests;
-8. do not begin project-state implementation until the execution baseline is honest and repeatable.
+Every PR should advance one coherent gate, preserve current verified behaviour, update
+the progress ledger, and avoid unrelated UI promises.

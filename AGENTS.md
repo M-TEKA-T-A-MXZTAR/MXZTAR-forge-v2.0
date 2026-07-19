@@ -23,7 +23,10 @@ Use this file as the compact coding source of truth for AI agents working in thi
 - This project is built for a modest CPU-only rig. Default local AI policy: low thread count, one job at a time, no silent long jobs, and no AI work on the Qt main thread.
 - No dead UI and no frozen UI. Long-running agent/model work must be queued/asynchronous with visible status.
 - Do not overstate what vision or AI analysis can infer. Separate observed facts, model guesses, and user decisions.
-- Subscription/commercial text must stay truthful. Do not advertise '+ GST' unless GST registration and checkout/accounting handling are ready.
+- Access/support text must stay truthful: official use is free of charge, founder
+  support is voluntary, and no recognised open-source licence may be invented before
+  founder selection. Do not advertise '+ GST' unless GST registration and
+  checkout/accounting handling are ready.
 
 ## Compliance and conduct
 
