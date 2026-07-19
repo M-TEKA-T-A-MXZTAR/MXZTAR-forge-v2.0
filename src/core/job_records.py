@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable
 
 from core.agent_runner import WORKFLOW_OUTPUT_DIRS
+from core.project_workflow_run import RUN_EVIDENCE_SCHEMA, RUN_EVIDENCE_VERSION
 
 
 MAX_JOB_RECORDS = 500
@@ -52,6 +53,31 @@ def read_job_record(path: Path) -> JobRecord:
         if not isinstance(payload, dict):
             raise ValueError("record root is not a JSON object")
 
+        if payload.get("schema_name") == RUN_EVIDENCE_SCHEMA:
+            if payload.get("schema_version") != RUN_EVIDENCE_VERSION:
+                return JobRecord(path=path, status="INVALID", error="Unsupported run-evidence schema version.")
+            evidence_status = payload.get("status")
+            if evidence_status == "model_call_succeeded":
+                status = "MODEL_OK"
+            elif evidence_status == "failed":
+                status = "FAILED"
+            else:
+                return JobRecord(path=path, status="INVALID", error="Run evidence has an invalid status.")
+            execution = payload.get("execution")
+            provenance = payload.get("provenance")
+            if not isinstance(execution, dict) or not isinstance(provenance, dict):
+                return JobRecord(path=path, status="INVALID", error="Run evidence metadata is incomplete.")
+            return JobRecord(
+                path=path,
+                status=status,
+                created_utc=_text(payload.get("completed_at_utc") or payload.get("started_at_utc")),
+                workflow_key=_text(payload.get("workflow_key")),
+                model=_text(execution.get("model_name")),
+                source_path=_text(provenance.get("source_path")),
+                output_text=_text(payload.get("raw_model_output")),
+                error=_text(payload.get("error")),
+            )
+
         ok = payload.get("ok")
         if ok is True:
             status = "SUCCESS"
@@ -78,8 +104,9 @@ def scan_job_records(
     should_stop: Callable[[], bool] | None = None,
     limit: int = MAX_JOB_RECORDS,
     path_filter: Callable[[Path], bool] | None = None,
+    project_dir: Path | None = None,
 ) -> JobScanResult:
-    """Discover recent legacy records from the runner's existing output directories."""
+    """Discover recent legacy and active-project run-evidence records."""
     stop = should_stop or (lambda: False)
     candidate_heap: list[tuple[int, str, int, Path]] = []
     diagnostics: list[str] = []
@@ -88,7 +115,19 @@ def scan_job_records(
         if len(diagnostics) < MAX_SCAN_DIAGNOSTICS:
             diagnostics.append(message)
 
-    for directory in sorted(set(WORKFLOW_OUTPUT_DIRS.values()), key=str):
+    directories = set(WORKFLOW_OUTPUT_DIRS.values())
+    if project_dir is not None:
+        project_root = Path(project_dir).resolve()
+        for name in ("logs", "diagnostics"):
+            directory = project_root / name
+            if (
+                directory.is_dir()
+                and not directory.is_symlink()
+                and directory.resolve().parent == project_root
+            ):
+                directories.add(directory)
+
+    for directory in sorted(directories, key=str):
         if stop() or not directory.exists():
             continue
         try:

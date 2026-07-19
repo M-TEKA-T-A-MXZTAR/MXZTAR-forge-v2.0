@@ -38,6 +38,7 @@ class SourceArtItem:
     asset_id: str | None = None
     project_id: str | None = None
     authority: str = "legacy_workspace"
+    sha256: str | None = None
 
 
 def known_source_dirs() -> List[Path]:

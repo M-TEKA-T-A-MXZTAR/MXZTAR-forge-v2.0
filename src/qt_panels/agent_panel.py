@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from core.hardware_profile import apply_local_ai_policy, policy_summary
+from core.project_session import ProjectSession
 from qt_panels.agent_worker import AgentWorker
 from core.source_library import SourceArtItem, format_size, known_source_dirs, scan_source_art
 
@@ -152,8 +153,9 @@ class AgentPanel(QWidget):
     job_record_saved = Signal(str)
     job_active_changed = Signal(bool)
 
-    def __init__(self):
+    def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
+        self.project_session = project_session or ProjectSession()
 
         self.source_items = []
         self._thread = None
@@ -162,6 +164,7 @@ class AgentPanel(QWidget):
         self._elapsed_seconds = 0
         self._completion_received = False
         self._active_project_id = None
+        self._active_run_is_project = False
 
         self.elapsed_timer = QTimer(self)
         self.elapsed_timer.setInterval(1000)
@@ -275,8 +278,9 @@ class AgentPanel(QWidget):
         next_title.setStyleSheet("font-size: 18px; font-weight: 700;")
 
         next_body = QLabel(
-            "The safe baseline runs one QThread workflow with elapsed time, heartbeat, truthful "
-            "completion state, and output saved under workspace/data/brain. Cooperative cancellation "
+            "The safe baseline runs one QThread workflow with elapsed time, heartbeat, and truthful "
+            "completion state. Project-source runs save unvalidated evidence under the active project's "
+            "logs or diagnostics; legacy sources retain workspace/data/brain. Cooperative cancellation "
             "and large-image preflight remain separate verified milestones."
         )
         next_body.setWordWrap(True)
@@ -464,6 +468,11 @@ class AgentPanel(QWidget):
             self.set_status("Select a recognised workflow before starting.")
             return
 
+        self._active_run_is_project = item.authority == "active_project"
+        if self._active_run_is_project and not self.project_session.is_writable:
+            self.set_status("A writable active project is required for project-owned workflow evidence.")
+            return
+
         self._job_active = True
         self.job_active_changed.emit(True)
         self._completion_received = False
@@ -477,6 +486,8 @@ class AgentPanel(QWidget):
         self._worker = AgentWorker(
             workflow_key=workflow_key,
             source_path=str(item.path),
+            project_session=self.project_session if self._active_run_is_project else None,
+            source_item=item if self._active_run_is_project else None,
         )
         self._worker.moveToThread(self._thread)
 
@@ -518,9 +529,18 @@ class AgentPanel(QWidget):
         self.elapsed_timer.stop()
 
         if ok:
-            self.append_progress("Workflow completed successfully.")
-            self.append_progress(f"Saved output: {output_path}")
-            self.set_status(f"Workflow succeeded. Saved output: {output_path}")
+            if self._active_run_is_project:
+                self.append_progress(
+                    "Local model call completed; structured findings remain unvalidated."
+                )
+                self.append_progress(f"Saved project evidence: {output_path}")
+                self.set_status(
+                    f"Model call completed. Unvalidated project evidence saved: {output_path}"
+                )
+            else:
+                self.append_progress("Workflow completed successfully.")
+                self.append_progress(f"Saved output: {output_path}")
+                self.set_status(f"Workflow succeeded. Saved output: {output_path}")
             self.job_record_saved.emit(output_path)
             return
 
@@ -546,6 +566,7 @@ class AgentPanel(QWidget):
         self.set_running_controls(False)
         self._worker = None
         self._thread = None
+        self._active_run_is_project = False
 
     def set_status(self, message: str):
         self.status_label.setText(message)

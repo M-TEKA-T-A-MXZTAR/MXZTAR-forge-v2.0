@@ -1136,3 +1136,13 @@ Every merged milestone must add or update:
 
 No milestone may be marked `VERIFIED` solely because code was committed or a PR was merged.
 - T1700 verification exposed and isolated a verifier lifecycle race: intake could stop immediately before its queued Qt `finished` callback started discovery, creating a transient false-idle observation. The UI verifier now requires stable idle across consecutive event-loop turns; production intake and discovery behavior is unchanged.
+
+### Project-owned local-model run evidence — PR pending
+
+- Agent Workflows now shares the authoritative application project session.
+- A canonical active-project source routes through the existing off-main-thread worker into project-local run evidence.
+- Successful model calls save under `logs/`; failed model calls save under `diagnostics/`.
+- Saved records explicitly remain unvalidated, incomplete workflow evidence with no approval state and do not enter `current_artifact_ids`.
+- Project authority is rechecked after the model call and before any write; changed or revoked authority blocks the save.
+- Legacy workspace sources retain their existing legacy runner and storage path.
+- Structured findings, approval, Shape Library promotion, and Forge Pack export remain later gated milestones.

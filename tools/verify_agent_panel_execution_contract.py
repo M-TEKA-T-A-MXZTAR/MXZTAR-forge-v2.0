@@ -37,7 +37,14 @@ class FakeWorker(QObject):
     result = (True, "/tmp/mxztar-success.json", "")
     ran_off_main_thread = False
 
-    def __init__(self, workflow_key: str, source_path: str, user_notes: str = ""):
+    def __init__(
+        self,
+        workflow_key: str,
+        source_path: str,
+        user_notes: str = "",
+        project_session=None,
+        source_item=None,
+    ):
         super().__init__()
         self.workflow_key = workflow_key
         self.source_path = source_path

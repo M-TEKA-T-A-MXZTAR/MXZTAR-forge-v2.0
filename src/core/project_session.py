@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import itertools
 import stat
+import threading
+from contextlib import contextmanager
 from dataclasses import replace
 from dataclasses import dataclass
 from pathlib import Path
@@ -74,6 +76,7 @@ class ProjectSession:
         self.projects_root = Path(projects_root).expanduser().resolve()
         self._state: ProjectSessionState | None = None
         self._lease: ProjectLockLease | None = None
+        self._mutation_lock = threading.RLock()
 
     @property
     def state(self) -> ProjectSessionState | None:
@@ -116,51 +119,60 @@ class ProjectSession:
         return self._state
 
     def close(self) -> ProjectSessionCloseResult:
-        released_writer = self._lease is not None
-        if self._lease is not None:
-            try:
-                release_project_lock(self._lease)
-            except Exception as exc:
+        with self._mutation_lock:
+            released_writer = self._lease is not None
+            if self._lease is not None:
                 try:
-                    lock = read_project_lock(self._lease.project_dir)
-                except Exception:
-                    raise exc
-                if lock is not None:
-                    raise exc
-                self._lease = None
-                self._state = None
-                return ProjectSessionCloseResult(
-                    released_writer=True,
-                    warning=f"Writer lock was removed but directory durability could not be confirmed: {exc}",
-                )
-        self._lease = None
-        self._state = None
-        return ProjectSessionCloseResult(released_writer=released_writer)
+                    release_project_lock(self._lease)
+                except Exception as exc:
+                    try:
+                        lock = read_project_lock(self._lease.project_dir)
+                    except Exception:
+                        raise exc
+                    if lock is not None:
+                        raise exc
+                    self._lease = None
+                    self._state = None
+                    return ProjectSessionCloseResult(
+                        released_writer=True,
+                        warning=f"Writer lock was removed but directory durability could not be confirmed: {exc}",
+                    )
+            self._lease = None
+            self._state = None
+            return ProjectSessionCloseResult(released_writer=released_writer)
 
     def _require_detached(self) -> None:
         if self._state is not None or self._lease is not None:
             raise ProjectSessionError("Close the current project before opening another one.")
 
+    @contextmanager
+    def mutation_guard(self):
+        """Serialize authority changes with one bounded project mutation."""
+        with self._mutation_lock:
+            yield
+
     def update_manifest_snapshot(self, manifest: dict) -> None:
         """Refresh the in-memory manifest after a verified project transaction."""
-        if self._state is None or not self._state.writable:
-            raise ProjectSessionError("A writable project session is required.")
-        validated = validate_manifest(manifest)
-        if validated["project_id"] != self._state.assessment.manifest["project_id"]:
-            raise ProjectSessionError("Manifest project identity does not match the active session.")
-        assessment = replace(self._state.assessment, manifest=validated)
-        self._state = ProjectSessionState(assessment=assessment, writable=True)
+        with self._mutation_lock:
+            if self._state is None or not self._state.writable:
+                raise ProjectSessionError("A writable project session is required.")
+            validated = validate_manifest(manifest)
+            if validated["project_id"] != self._state.assessment.manifest["project_id"]:
+                raise ProjectSessionError("Manifest project identity does not match the active session.")
+            assessment = replace(self._state.assessment, manifest=validated)
+            self._state = ProjectSessionState(assessment=assessment, writable=True)
 
     def revoke_writable_authority(self, diagnostic: str) -> None:
         """Retain the lease for safe close while blocking every further mutation."""
-        if self._state is None:
-            return
-        assessment = replace(
-            self._state.assessment,
-            status=ProjectAccessStatus.READ_ONLY_RECOVERY,
-            diagnostics=self._state.assessment.diagnostics + (diagnostic,),
-        )
-        self._state = ProjectSessionState(assessment=assessment, writable=False)
+        with self._mutation_lock:
+            if self._state is None:
+                return
+            assessment = replace(
+                self._state.assessment,
+                status=ProjectAccessStatus.READ_ONLY_RECOVERY,
+                diagnostics=self._state.assessment.diagnostics + (diagnostic,),
+            )
+            self._state = ProjectSessionState(assessment=assessment, writable=False)
 
     def _validated_direct_child(self, project_dir: Path) -> Path:
         unresolved = Path(project_dir).expanduser()
