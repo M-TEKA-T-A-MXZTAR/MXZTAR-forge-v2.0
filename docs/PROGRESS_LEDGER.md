@@ -21,9 +21,9 @@ Status values:
 
 **Current planning era:** Level One operational Forge Pack foundation.
 
-**Current primary objective:** restore Jobs and Shape Library, establish durable project
-authority, formalise structured analysis and review, and export the first verified
-Forge Pack before beginning 2D-to-3D construction.
+**Current primary objective:** connect the verified project authority to asynchronous
+project-owned source intake and discovery, then formalise structured analysis, review,
+approved shapes, and the first verified Forge Pack before 2D-to-3D construction.
 
 **Current product promise:** turn source art into structured, inspectable, reusable
 production intelligence under human review, then package approved findings and shapes
@@ -59,10 +59,12 @@ accuracy, manufacturing safety, or finished CAD geometry.
 | Project state and data authority | MERGED | `docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`, PR #16 | Implement only after execution baseline is stable |
 | Level One master build plan | MERGED | `docs/product/MASTER_BUILD_PLAN.md`, initially PR #17 and comprehensively revised after PR #27 | Follow the revised operational MVP sequence |
 | Progress ledger | MERGED | This document, PR #17 | Update after every meaningful audit or implementation milestone |
-| Project manifest and self-contained project directory | PLANNED | Authority contract defines requirements | Phase 2 |
+| Project manifest and self-contained project directory | VERIFIED | PR #33; canonical manifest, directories, durable history, atomic creation, and collision refusal passed on the T1700 | Preserve authority during UI integration |
 | SQLite rebuild from durable artifacts | PLANNED | SQLite is derived index, not sole truth | Phase 2 exit test |
-| Project lock / one-writer rule | PLANNED | Architecture contract defined | Phase 2 |
-| Read-only recovery mode | PLANNED | Architecture contract defined | Phase 2 |
+| Project lock / one-writer rule | VERIFIED | PR #34; exclusive lease ownership and uncertain-lock containment passed on the T1700 | Prevent UI mutations outside the owning session |
+| Read-only recovery mode | VERIFIED | PRs #34–#36; invalid, uncertain, and interrupted source transactions reopen without writable authority | Recovery actions remain a later explicit workflow |
+| Project session and Start Here authority | VERIFIED | PR #35; create/open/close, bounded discovery, writer release, and recovery attachment passed on the T1700 | Block project switching during active mutations |
+| Project-contained source intake and processed lifecycle | VERIFIED | PR #36; copy/hash/preview, manifest/history transaction, rollback, duplicate identity, and explicit project-copy processing passed on the T1700 | Add asynchronous UI and project-aware discovery |
 | Source rights context | PLANNED | Gap and artifact contracts defined | Phase 3 |
 | Multi-view grouping | PLANNED | Required for honest spatial reasoning | Phase 3 |
 | Scale and unit anchors | PLANNED | Required before dimensional claims | Phase 3 |
@@ -910,7 +912,7 @@ by this entry.
 
 ## 2026-07-20 — Project-contained source intake branch
 
-Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+Status: `VERIFIED` on the T1700 after PR #36 merged at `9364c35`.
 
 Branch: `agent/build-project-source-intake`.
 
@@ -945,15 +947,23 @@ Exit gate: imported identity and bytes are durable inside the project, external 
 bytes remain unchanged, failed transactions do not drift manifest/history authority, and
 processed transition moves only the project-owned copy.
 
-Next permitted milestone after verification: asynchronous project-source intake UI and
+Next permitted milestone: asynchronous project-source intake UI and
 project-aware My Library discovery. Hashing, copying, preview generation, and scanning
 must remain off the Qt main thread with visible progress and safe shutdown.
 
-Backup status: no backup is claimed before merge and T1700 verification.
+Recorded result:
+
+- all 16 source-intake assertions passed on the T1700;
+- external bytes remained unchanged and only project-owned copies could transition to
+  processed;
+- interrupted or unconfirmed rollback state revoked writable authority.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
+by this entry.
 
 ## 2026-07-20 — Level Four platform priorities documentation branch
 
-Status: `PLANNED` until the documentation PR merges.
+Status: `MERGED` through PR #37 at `283919a`.
 
 Branch: `agent/define-level-four-platform-priorities`.
 
@@ -989,7 +999,7 @@ Backup status: no backup is claimed before merge and local verification.
 
 ## 2026-07-20 — Source-truth interpreter portability fix branch
 
-Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+Status: `VERIFIED` on the T1700 after PR #38 merged at `a621f71`.
 
 Branch: `agent/fix-source-truth-python-selection`.
 
@@ -1017,7 +1027,84 @@ bash scripts/verify_source_truth.sh
 Exit gate: the unmodified command passes from the canonical checkout without PATH
 manipulation and still compiles every current project-authority module.
 
-Backup status: no backup is claimed before merge and T1700 verification.
+Recorded result:
+
+- the unmodified source-truth command selected `.venv/bin/python` on the canonical
+  checkout and completed normally;
+- every required document was present, every listed Python source compiled, and all
+  seven prompt contracts passed.
+
+Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
+by this entry.
+
+## 2026-07-20 — Asynchronous project-source intake and discovery branch
+
+Status: `PARTIAL` on branch `agent/project-aware-source-intake-ui`; implementation and
+non-Qt contracts pass in the review workspace, while the Qt lifecycle contract still
+requires execution on the T1700 before merge.
+
+Purpose:
+
+- make My Library discover legacy workspace inputs and the active project's validated
+  source records outside the Qt main thread;
+- add one explicit copy-only intake action for an active writable project;
+- run hashing, copying, image validation, bounded preview creation, and authority
+  updates outside the Qt main thread;
+- distinguish active-project authority from legacy workspace inputs in every card;
+- use the project-owned copy and bounded project preview for downstream selection;
+- block project switching and application shutdown during the non-cancellable
+  transactional intake boundary;
+- report successful, duplicate, and failed intake states truthfully;
+- leave external and legacy files unchanged and never mark intake as analysis,
+  approval, extraction, or successful processing.
+
+Files in scope:
+
+- `src/core/source_library.py`;
+- `src/core/project_source_intake.py`;
+- `src/qt_panels/my_library_panel.py`;
+- `src/qt_panels/start_here_panel.py`;
+- `src/qt_app.py`;
+- `tools/verify_my_library_contract.py`;
+- `tools/verify_project_source_intake_ui_contract.py`;
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Recorded review-workspace evidence:
+
+- the 16-assertion project-source transaction contract passed;
+- the source-truth verifier passed all required documents, Python compilation, and
+  seven prompt contracts;
+- changed Python files and the new Qt verifier compile;
+- the review workspace could not execute PySide6 because its minimal runtime lacks
+  `libEGL.so.1`; this is an environment limitation, not recorded as a UI pass.
+
+T1700 verification commands:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+PYTHONPATH=src .venv/bin/python tools/verify_project_source_intake_contract.py
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_project_source_intake_ui_contract.py
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_my_library_contract.py
+bash scripts/verify_source_truth.sh
+```
+
+Exit gate:
+
+- Qt remains responsive during intake;
+- create/open/close and application shutdown cannot race an active transaction;
+- duplicate and invalid inputs remain truthful;
+- active-project cards reference canonical project copies and previews;
+- discovery follows project attach/detach and all panel threads stop safely;
+- no existing My Library, AgentPanel, project-session, or source-intake contract regresses.
+
+Next permitted milestone after merge and T1700 verification: make one workflow execute
+against a project-owned source and save a project-contained, schema-valid diagnostic or
+finding artifact before attempting the controlled Ollama compatibility smoke test.
+
+Backup status: no new VX12 backup is claimed by this unmerged branch.
 
 ## Ledger update contract
 
