@@ -406,6 +406,48 @@ Boundary:
 - AI-request image preflight remains a separate execution-path gate before large-source model testing;
 - the application does not raise Qt's global allocation limit.
 
+## 2026-07-19 — My Apps and Desktop launcher restoration branch
+
+Branch: `agent/restore-desktop-launchers`.
+
+Purpose:
+
+- provide one application-menu launcher and one Desktop launcher;
+- use the canonical MXZTAR Forge v2.0 name;
+- use a repository-owned gold star SVG icon;
+- target the checkout's relocatable `run_mxztar_forge.sh`;
+- back up existing launcher files before replacement;
+- validate the complete installation in an isolated temporary home.
+
+Files changed:
+
+- `assets/icons/mxztar-forge-star.svg`;
+- `tools/install_desktop_launchers.sh`;
+- `tools/verify_desktop_launchers.py`;
+- `README.md`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+python3 tools/verify_desktop_launchers.py
+bash -n tools/install_desktop_launchers.sh
+python3 -m py_compile tools/verify_desktop_launchers.py
+```
+
+Local installation command after merge:
+
+```bash
+bash tools/install_desktop_launchers.sh
+```
+
+Boundary:
+
+- the installer writes only the two named launcher files under the user's
+  application-menu and Desktop directories;
+- an existing target launcher is backed up before replacement;
+- the star icon remains repository-owned and versioned.
+
 ## Immediate next milestone after this ledger merges
 
 Milestone name: **Execution Baseline Audit**.
