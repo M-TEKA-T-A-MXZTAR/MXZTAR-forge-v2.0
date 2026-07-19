@@ -556,25 +556,74 @@ Planning artifacts:
 This milestone changes documentation only. It does not claim that Start Here, Review,
 Shape Library, Jobs, Forge Pack export, 2D-to-3D, or Modular Construct are implemented.
 
+## 2026-07-19 — Read-only Jobs panel baseline branch
+
+Status: `PLANNED` until the implementation PR merges and the T1700 verifier passes.
+
+Branch: `agent/restore-truthful-jobs-panel`.
+
+Purpose:
+
+- make previously saved workflow work findable without filesystem archaeology;
+- recover legacy success, saved-failure, and malformed JSON records truthfully;
+- scan record files outside the Qt main thread;
+- refresh after Agent Workflows saves an output or diagnostic;
+- remain a read-only evidence browser rather than a second execution authority;
+- expose no fake retry, cancel, delete, approval, or export actions.
+
+Files in scope:
+
+- `src/core/job_records.py`;
+- `src/qt_panels/jobs_panel.py`;
+- `src/qt_panels/agent_panel.py`;
+- `src/qt_app.py`;
+- `tools/verify_jobs_panel_contract.py`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_jobs_panel_contract.py
+
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_agent_panel_execution_contract.py
+
+PYTHONPATH=src .venv/bin/python -m py_compile \
+  src/core/job_records.py \
+  src/qt_panels/jobs_panel.py \
+  src/qt_panels/agent_panel.py \
+  src/qt_app.py \
+  tools/verify_jobs_panel_contract.py
+```
+
+Boundary:
+
+- legacy records remain in their current runner-owned directories;
+- this branch does not implement the future project manifest, job IDs, migration,
+  duration schema, retry, cancellation, deletion, approval, or Forge Pack export;
+- malformed records are displayed as `INVALID`, not silently discarded;
+- record reads are capped at 2 MiB and discovery is capped at 500 recent records.
+
+Backup status: no backup is claimed before merge and T1700 verification.
+
 ## Immediate next milestone after this ledger merges
 
-Milestone name: **Restore the Jobs panel baseline**.
+Milestone name: **Define and restore the Shape Library baseline**.
 
 Required branch scope:
 
-- inspect current job records, runner outputs, panel placeholders, and data authority;
-- show durable success, saved failure, and unsaved failure truthfully;
-- preserve one-active-heavy-job enforcement;
-- provide useful source, workflow, model, timestamps, elapsed time, status, and paths;
-- open existing result/diagnostic locations safely;
-- remain read-only where durable edit/approval authority is not implemented;
-- add no fake retry, cancel, delete, approval, or export controls;
-- verify empty, active, success, saved-failure, unsaved-failure, refresh, and restart
-  behaviour;
+- inspect existing shape placeholders, prompts, output records, and artifact authority;
+- define the minimum approved-shape record without inventing 3D geometry;
+- browse approved shape records and their source provenance;
+- preserve candidate/reviewed/approved/rejected/superseded distinctions;
+- add no extraction, correction, morph, Make 3D, delete, or export control until each
+  complete workflow exists;
+- verify empty, valid, invalid, missing-source, refresh, and restart behaviour;
 - update this ledger with exact evidence.
 
-Exit gate: the Jobs panel truthfully recovers and displays current durable job evidence
-without becoming a second execution authority or freezing the UI.
+Exit gate: Shape Library truthfully displays the durable shape evidence that actually
+exists without implying extraction, approval, or 3D construction is implemented.
 
 ## Ledger update contract
 
