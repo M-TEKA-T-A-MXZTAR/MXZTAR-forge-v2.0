@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify My Library discovery, preview, and exact AgentPanel handoff."""
+"""Verify the visible My Library grid and exact AgentPanel handoff."""
 
 from __future__ import annotations
 
@@ -33,77 +33,91 @@ def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def make_sources(temp_dir: str) -> list[SourceArtItem]:
+    items = []
+    for index in range(6):
+        path = Path(temp_dir) / f"source-{index + 1}.png"
+        image = QImage(80 + index, 60 + index, QImage.Format.Format_RGB32)
+        image.fill(0x223344 + index)
+        require(image.save(str(path)), f"could not create fixture {index + 1}")
+        items.append(
+            SourceArtItem(
+                label=f"input / {path.name}",
+                path=path,
+                folder_name="input",
+                suffix=".png",
+                size_bytes=path.stat().st_size,
+            )
+        )
+    return items
+
+
 def main() -> int:
     app = QApplication.instance() or QApplication([])
     original_scan = library_module.scan_source_art
 
     try:
         with tempfile.TemporaryDirectory(prefix="mxztar-library-") as temp_dir:
-            source_path = Path(temp_dir) / "known-source.png"
-            image = QImage(48, 32, QImage.Format.Format_RGB32)
-            image.fill(0x336699)
-            require(image.save(str(source_path)), "could not create preview fixture")
-
-            item = SourceArtItem(
-                label=f"input / {source_path.name}",
-                path=source_path,
-                folder_name="input",
-                suffix=".png",
-                size_bytes=source_path.stat().st_size,
-            )
-            before = digest(source_path)
-            library_module.scan_source_art = lambda: [item]
+            items = make_sources(temp_dir)
+            before = {item.path: digest(item.path) for item in items}
+            library_module.scan_source_art = lambda: items
 
             panel = library_module.MyLibraryPanel()
-            require(panel.source_combo.count() == 1, "library did not discover fixture")
-            require(panel.selected_source() == item, "library did not retain exact SourceArtItem")
-            require(panel.preview_label.pixmap() is not None, "library did not create preview")
-            require(not panel.preview_label.pixmap().isNull(), "library preview is empty")
+            app.processEvents()
+
+            require(panel.source_grid.count() == 6, "library did not show all six sources")
+            for index in range(panel.source_grid.count()):
+                card = panel.source_grid.item(index)
+                require(not card.icon().isNull(), f"source card {index + 1} has no thumbnail")
+            require(panel.selected_source() == items[0], "library did not select first source")
+            require(panel.preview_label.maximumHeight() <= 220, "selected preview is too tall")
+
+            panel.source_grid.setCurrentRow(4)
+            require(panel.selected_source() == items[4], "grid selection did not change source")
 
             emitted = []
             panel.source_selected.connect(emitted.append)
             panel.use_in_agent_workflows()
-            require(emitted == [item], "library did not emit exact selected SourceArtItem")
-            require(digest(source_path) == before, "library handoff modified source bytes")
+            require(emitted == [items[4]], "library did not emit exact selected SourceArtItem")
 
             window = qt_app.MXZTARForgeWindow()
-            window.library_panel.source_combo.clear()
-            window.library_panel.source_combo.addItem(item.label, item)
-            window.library_panel.source_combo.setCurrentIndex(0)
-            window.library_panel.update_selection()
+            window.library_panel.source_grid.setCurrentRow(2)
             window.library_panel.use_in_agent_workflows()
             app.processEvents()
 
             selected = window.agent_panel.source_combo.currentData()
             require(isinstance(selected, SourceArtItem), "AgentPanel received no source item")
-            require(selected.path == item.path, "AgentPanel received a different source path")
+            require(selected.path == items[2].path, "AgentPanel received a different source")
             require(window.pages.currentIndex() == 2, "handoff did not navigate to Agent Workflows")
-            require(window.sidebar.currentRow() == 2, "sidebar did not follow Agent Workflows navigation")
-            require(digest(source_path) == before, "window handoff modified source bytes")
+            require(window.sidebar.currentRow() == 2, "sidebar did not follow navigation")
 
             window.agent_panel._job_active = True
             require(
-                window.agent_panel.select_source_item(item) is False,
+                window.agent_panel.select_source_item(items[0]) is False,
                 "active job allowed source replacement",
             )
             window.agent_panel._job_active = False
             window.close()
 
+            for item in items:
+                require(digest(item.path) == before[item.path], "library modified source bytes")
+
             library_module.scan_source_art = lambda: []
             empty_panel = library_module.MyLibraryPanel()
-            require(not empty_panel.use_button.isEnabled(), "empty library enabled source handoff")
+            require(not empty_panel.use_button.isEnabled(), "empty library enabled handoff")
             require(
                 "No source art found" in empty_panel.status_label.text(),
-                "empty library did not explain next action",
+                "empty library did not explain the Desktop input action",
             )
 
-            print("PASS: My Library discovers and previews supported source art")
-            print("PASS: handoff emits the exact selected SourceArtItem")
+            print("PASS: all six source images appear as visible cards")
+            print("PASS: every source card has a thumbnail")
+            print("PASS: selected preview height is compact")
+            print("PASS: grid selection emits the exact SourceArtItem")
             print("PASS: handoff navigates to Agent Workflows")
             print("PASS: active AI job rejects source replacement")
-            print("PASS: discovery and handoff leave source bytes unchanged")
-            print("PASS: empty library has safe disabled actions")
-            print("PASS: My Library source baseline verified")
+            print("PASS: discovery and handoff leave all source bytes unchanged")
+            print("PASS: visible My Library grid verified")
     finally:
         library_module.scan_source_art = original_scan
 
