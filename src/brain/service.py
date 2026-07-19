@@ -36,7 +36,11 @@ class AgentResult:
 
 
 def encode_image_base64(path: Path) -> str:
-    return base64.b64encode(path.read_bytes()).decode("utf-8")
+    return encode_image_bytes_base64(path.read_bytes())
+
+
+def encode_image_bytes_base64(image_bytes: bytes) -> str:
+    return base64.b64encode(image_bytes).decode("utf-8")
 
 
 def run_vision_workflow(
@@ -45,6 +49,7 @@ def run_vision_workflow(
     user_notes: str = "",
     model: str = DEFAULT_MODEL,
     timeout_seconds: int = 600,
+    image_bytes: bytes | None = None,
 ) -> AgentResult:
     ai_policy = apply_local_ai_policy()
 
@@ -69,7 +74,11 @@ def run_vision_workflow(
     payload = {
         "model": model,
         "prompt": prompt,
-        "images": [encode_image_base64(source_path)],
+        "images": [
+            encode_image_bytes_base64(image_bytes)
+            if image_bytes is not None
+            else encode_image_base64(source_path)
+        ],
         "stream": False,
         "options": {
             "num_thread": ai_policy.ollama_num_thread,
