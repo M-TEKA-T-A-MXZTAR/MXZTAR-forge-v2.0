@@ -106,6 +106,17 @@ def main() -> int:
                 window.library_panel.import_button.isEnabled(),
                 "writable project did not enable intake",
             )
+            require(
+                window.next_step_button.isEnabled()
+                and "Import PNG or JPEG" in window.next_step_button.text(),
+                "guided flow did not identify project source intake as the next action",
+            )
+            pulse_before = window.next_step_button.styleSheet()
+            window.toggle_guided_pulse()
+            require(
+                window.next_step_button.styleSheet() != pulse_before,
+                "guided Next control did not provide a visible slow-pulse state",
+            )
 
             real_import = library_module.import_source_copy
 
@@ -154,6 +165,23 @@ def main() -> int:
             require(item.path != source, "library still points at the external source")
             require(item.path.read_bytes() == source_before, "project copy bytes drifted")
             require(item.preview_path is not None and item.preview_path.is_file(), "preview missing")
+            require(
+                window.pages.currentWidget() is window.agent_panel,
+                "successful intake did not navigate safely to Agent Workflows",
+            )
+            require(
+                window.agent_panel.source_combo.currentData() == item,
+                "successful intake did not hand off the canonical project source",
+            )
+            for index in range(window.agent_panel.workflow_combo.count()):
+                window.agent_panel.workflow_combo.setCurrentIndex(index)
+                app.processEvents()
+                require(
+                    window.next_step_button.text()
+                    == f"Next: Run {window.agent_panel.workflow_combo.currentText()}",
+                    "guided Next control did not follow the selected workflow",
+                )
+            window.agent_panel.workflow_combo.setCurrentIndex(0)
             window.library_panel.source_grid.setCurrentRow(-1)
             window.library_panel.source_grid.setCurrentRow(0)
             app.processEvents()
@@ -175,6 +203,7 @@ def main() -> int:
             print("PASS: project intake stays off the Qt main thread and external bytes remain unchanged")
             print("PASS: project previews use the bounded image decoder")
             print("PASS: import control remains visible and completed previews survive reselection")
+            print("PASS: guided Next flow navigates intake and all workflow selections")
 
             window.library_panel.source_selected.emit(item)
             app.processEvents()
