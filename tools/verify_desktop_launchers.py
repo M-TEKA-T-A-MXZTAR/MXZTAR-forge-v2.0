@@ -66,6 +66,15 @@ def main() -> int:
             home / "Desktop" / "MXZTAR-Forge-v2.0.desktop",
         )
         expected = expected_fields(checkout)
+        input_dir = checkout / "workspace" / "input"
+        input_link = home / "Desktop" / "MXZTAR-Forge-Input"
+
+        require(input_dir.is_dir(), "authoritative workspace/input was not created")
+        require(input_link.is_symlink(), "Desktop input folder-link was not created")
+        require(
+            input_link.resolve() == input_dir.resolve(),
+            "Desktop input folder-link targets the wrong directory",
+        )
 
         for launcher in launchers:
             require(launcher.exists(), f"launcher was not installed: {launcher}")
@@ -85,6 +94,7 @@ def main() -> int:
         print("PASS: both launchers are executable")
         print("PASS: both launchers target the canonical checkout runner")
         print("PASS: both launchers use the repository-owned star icon")
+        print("PASS: Desktop input folder-link targets workspace/input")
         print("PASS: reinstall backs up existing launcher files")
         print("PASS: desktop launcher installation contract verified")
     return 0
