@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import subprocess
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QImage, QImageIOHandler, QImageReader, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -24,12 +24,21 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.source_preview_cache import (
+    obsolete_source_preview_paths,
+    prune_source_preview_cache,
+    source_preview_cache_path,
+)
 from core.source_library import (
     SourceArtItem,
     format_size,
     known_source_dirs,
     scan_source_art,
 )
+
+
+PREVIEW_MAX_WIDTH = 1600
+PREVIEW_MAX_HEIGHT = 1200
 
 
 class MyLibraryPanel(QWidget):
@@ -39,6 +48,8 @@ class MyLibraryPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.source_items = []
+        self._preview_image = QImage()
+        self._preview_source_path = None
 
         title = QLabel("My Library")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
@@ -177,16 +188,101 @@ class MyLibraryPanel(QWidget):
         self.load_preview(item)
 
     def load_preview(self, item: SourceArtItem):
-        pixmap = QPixmap(str(item.path))
+        try:
+            cache_path = source_preview_cache_path(item.path)
+        except OSError as exc:
+            self.show_preview_error(f"Could not inspect source metadata: {exc}")
+            return
 
-        if pixmap.isNull():
-            self.preview_label.setPixmap(QPixmap())
-            self.preview_label.setText(
-                "Preview unavailable for this file.\nThe source remains selectable."
+        cached_image = QImage(str(cache_path))
+        if not cached_image.isNull():
+            self._preview_image = cached_image
+            self._preview_source_path = item.path
+            self.render_cached_preview()
+            return
+
+        reader = QImageReader(str(item.path))
+        reader.setAutoTransform(True)
+        source_size = reader.size()
+
+        if not source_size.isValid():
+            self.show_preview_error(
+                "Image dimensions are unavailable, so a safe decode cannot be confirmed."
             )
             return
 
+        requires_downscale = (
+            source_size.width() > PREVIEW_MAX_WIDTH
+            or source_size.height() > PREVIEW_MAX_HEIGHT
+        )
+
+        if requires_downscale:
+            supports_scaled_decode = reader.supportsOption(
+                QImageIOHandler.ImageOption.ScaledSize
+            )
+            if not supports_scaled_decode:
+                self.show_preview_error(
+                    f"{source_size.width()}×{source_size.height()} source: "
+                    "this format cannot prove a memory-bounded Qt preview decode."
+                )
+                return
+
+            bounded_size = source_size.scaled(
+                QSize(PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT),
+                Qt.AspectRatioMode.KeepAspectRatio,
+            )
+            reader.setScaledSize(bounded_size)
+
+        image = reader.read()
+
+        if image.isNull():
+            detail = reader.errorString() or "Qt could not decode this format."
+            self.show_preview_error(detail)
+            return
+
+        self._preview_image = image
+        self._preview_source_path = item.path
+        self.save_preview_cache(image, cache_path)
+        self.render_cached_preview()
+
+    def save_preview_cache(self, image: QImage, cache_path):
+        temporary_path = cache_path.with_name(f"{cache_path.name}.tmp")
+
+        try:
+            if not image.save(str(temporary_path), "PNG"):
+                return
+
+            temporary_path.replace(cache_path)
+
+            for obsolete_path in obsolete_source_preview_paths(
+                self._preview_source_path,
+                cache_path,
+            ):
+                try:
+                    obsolete_path.unlink()
+                except OSError:
+                    # Obsolete cache cleanup is best-effort and must not block preview use.
+                    pass
+
+            prune_source_preview_cache(keep_paths=(cache_path,))
+        except OSError:
+            # Cache failure must not block source selection or workflow handoff.
+            pass
+
+    def show_preview_error(self, detail: str):
+        self._preview_image = QImage()
+        self._preview_source_path = None
+        self.preview_label.setPixmap(QPixmap())
+        self.preview_label.setText(
+            f"Preview unavailable.\n{detail}\nThe original source remains selectable."
+        )
+
+    def render_cached_preview(self):
+        if self._preview_image.isNull():
+            return
+
         target = self.preview_label.size()
+        pixmap = QPixmap.fromImage(self._preview_image)
         scaled = pixmap.scaled(
             max(1, target.width() - 16),
             max(1, target.height() - 16),
@@ -198,13 +294,13 @@ class MyLibraryPanel(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        item = self.selected_source()
-        if item is not None:
-            self.load_preview(item)
+        self.render_cached_preview()
 
     def clear_selection(self):
         self.use_button.setEnabled(False)
         self.open_folder_button.setEnabled(False)
+        self._preview_image = QImage()
+        self._preview_source_path = None
         self.preview_label.setPixmap(QPixmap())
         self.preview_label.setText("No source preview available.")
         folders = "\n".join(f"- {path}" for path in known_source_dirs())

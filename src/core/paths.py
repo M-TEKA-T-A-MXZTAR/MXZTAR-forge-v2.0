@@ -34,6 +34,8 @@ DESIGN_ENGINE_STAGING_DIR = DATA_DIR / "design_engine_staging"
 MIGRATION_DIR = DATA_DIR / "migration"
 
 LOGS_DIR = WORKSPACE_ROOT / "logs"
+CACHE_DIR = WORKSPACE_ROOT / "cache"
+SOURCE_PREVIEW_CACHE_DIR = CACHE_DIR / "source_previews"
 
 ONBOARDING_PROFILE_PATH = USER_PROFILE_DIR / "onboarding_profile.json"
 SETTINGS_NOTES_PATH = USER_PROFILE_DIR / "settings_notes.txt"
@@ -55,5 +57,6 @@ def ensure_project_dirs() -> None:
         DESIGN_ENGINE_STAGING_DIR,
         MIGRATION_DIR,
         LOGS_DIR,
+        SOURCE_PREVIEW_CACHE_DIR,
     ]:
         path.mkdir(parents=True, exist_ok=True)
