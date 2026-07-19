@@ -112,7 +112,7 @@ def run_project_agent_job(
             raise ProjectWorkflowRunError(
                 "Project authority changed during the model run; no evidence was saved."
             )
-    
+
         completed_at = utc_now_iso()
         run_id = f"run_{uuid.uuid4().hex}"
         status = "model_call_succeeded" if result.ok else "failed"
