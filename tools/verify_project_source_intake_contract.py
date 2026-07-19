@@ -19,6 +19,7 @@ from core.project_source_intake import (
     SourceIntakeError,
     import_source_copy,
     mark_source_processed,
+    scan_project_source_art,
 )
 
 
@@ -53,7 +54,13 @@ def main() -> None:
         require(manifest["source_asset_ids"] == [record["asset_id"]], "manifest source ID missing")
         history = (project_dir / manifest["history_path"]).read_text(encoding="utf-8")
         require('"event": "source_imported"' in history, "intake history event missing")
+        discovered = scan_project_source_art(session)
+        require(len(discovered) == 1, "project discovery omitted imported source")
+        require(discovered[0].path == project_dir / record["project_relative_path"], "discovery path drifted")
+        require(discovered[0].preview_path == project_dir / record["preview_relative_path"], "preview path drifted")
+        require(discovered[0].authority == "active_project", "project authority was not explicit")
         print("PASS: source intake copies bytes, hashes identity, and creates a bounded preview")
+        print("PASS: active-project discovery resolves canonical source and preview authority")
 
         history_before = history
         duplicate = import_source_copy(session, source)
@@ -69,6 +76,11 @@ def main() -> None:
         require(processed["project_relative_path"].startswith("source/processed/"), "source not moved")
         require((project_dir / processed["project_relative_path"]).read_bytes() == source_before, "move changed bytes")
         require(source.read_bytes() == source_before, "processed transition moved external source")
+        processed_discovery = scan_project_source_art(session)
+        require(
+            processed_discovery[0].path == project_dir / processed["project_relative_path"],
+            "processed project source was not rediscovered",
+        )
         print("PASS: explicit processed transition moves only the project-owned copy")
 
         symlink = external / "link.png"
