@@ -757,6 +757,12 @@ Purpose:
 - construct in a hidden staging directory and rename only after all durable files are
   written;
 - reject unsafe names, malformed manifests, and existing-project overwrite;
+- preserve Unicode letters in Māori and international project slugs;
+- require every contracted manifest state field and the canonical project-contained
+  history path;
+- fsync file and directory entries before reporting project creation;
+- Git-ignore `workspace/projects/` so private runtime projects cannot be staged by a
+  routine repository add;
 - leave SQLite, locking, open/recovery, source import/move, approval, and workflow
   integration to separately verified milestones.
 
