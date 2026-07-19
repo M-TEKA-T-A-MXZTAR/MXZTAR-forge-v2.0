@@ -58,6 +58,8 @@ class FakeLargeImageReader:
     def read(self) -> QImage:
         type(self).read_calls += 1
         size = type(self).requested_scaled_size
+        if not size.isValid():
+            size = type(self).source_size
         image = QImage(size, QImage.Format.Format_RGB32)
         image.fill(0x335577)
         return image
