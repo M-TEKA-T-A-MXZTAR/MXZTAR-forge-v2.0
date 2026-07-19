@@ -7,6 +7,7 @@ import hashlib
 import os
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -52,6 +53,22 @@ def make_sources(temp_dir: str) -> list[SourceArtItem]:
     return items
 
 
+def wait_for_thumbnails(app: QApplication, panel, timeout: float = 10) -> None:
+    deadline = time.monotonic() + timeout
+    while (
+        panel._thumbnail_loader is not None
+        and panel._thumbnail_loader.isRunning()
+        and time.monotonic() < deadline
+    ):
+        app.processEvents()
+        time.sleep(0.01)
+    app.processEvents()
+    require(
+        panel._thumbnail_loader is None or not panel._thumbnail_loader.isRunning(),
+        "background thumbnail loading did not finish",
+    )
+
+
 def main() -> int:
     app = QApplication.instance() or QApplication([])
     original_scan = library_module.scan_source_art
@@ -63,12 +80,24 @@ def main() -> int:
             library_module.scan_source_art = lambda: items
 
             panel = library_module.MyLibraryPanel()
-            app.processEvents()
+            wait_for_thumbnails(app, panel)
 
             require(panel.source_grid.count() == 6, "library did not show all six sources")
             for index in range(panel.source_grid.count()):
                 card = panel.source_grid.item(index)
                 require(not card.icon().isNull(), f"source card {index + 1} has no thumbnail")
+                require(
+                    all(
+                        size.width() <= library_module.CARD_ICON_SIZE.width()
+                        and size.height() <= library_module.CARD_ICON_SIZE.height()
+                        for size in card.icon().availableSizes()
+                    ),
+                    f"source card {index + 1} retained an oversized pixmap",
+                )
+                require(
+                    card.text() == items[index].label,
+                    f"source card {index + 1} omitted its folder-qualified label",
+                )
             require(panel.selected_source() == items[0], "library did not select first source")
             require(panel.preview_label.maximumHeight() <= 220, "selected preview is too tall")
 
@@ -81,6 +110,7 @@ def main() -> int:
             require(emitted == [items[4]], "library did not emit exact selected SourceArtItem")
 
             window = qt_app.MXZTARForgeWindow()
+            wait_for_thumbnails(app, window.library_panel)
             window.library_panel.source_grid.setCurrentRow(2)
             window.library_panel.use_in_agent_workflows()
             app.processEvents()
@@ -112,6 +142,8 @@ def main() -> int:
 
             print("PASS: all six source images appear as visible cards")
             print("PASS: every source card has a thumbnail")
+            print("PASS: card icons retain only card-sized pixmaps")
+            print("PASS: source cards retain folder-qualified labels")
             print("PASS: selected preview height is compact")
             print("PASS: grid selection emits the exact SourceArtItem")
             print("PASS: handoff navigates to Agent Workflows")
