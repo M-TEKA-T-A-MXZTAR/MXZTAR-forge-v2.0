@@ -51,16 +51,25 @@ def main() -> int:
         source = scan_project_source_art(session)[0]
         project_dir = session.project_dir
 
+        expected_image_bytes = source.path.read_bytes()
+        observed_image_bytes = []
+
+        def successful_model_call(source_path, workflow_key, image_bytes, **_):
+            observed_image_bytes.append(image_bytes)
+            return fake_result(source_path, workflow_key)
+
         with patch.object(
             workflow_module,
             "run_vision_workflow",
-            side_effect=lambda source_path, workflow_key, **_: fake_result(
-                source_path, workflow_key
-            ),
+            side_effect=successful_model_call,
         ):
             success = workflow_module.run_project_agent_job(
                 session, source, "source_art_intelligence"
             )
+        require(
+            observed_image_bytes == [expected_image_bytes],
+            "model did not receive the exact verified source bytes",
+        )
 
         record = json.loads(success.evidence_path.read_text(encoding="utf-8"))
         require(success.evidence_path.parent == project_dir / "logs", "success evidence escaped logs")
@@ -72,6 +81,7 @@ def main() -> int:
         require(record["validation"]["structured_findings_validated"] is False, "raw text became validated")
         require(not session.state.assessment.manifest["current_artifact_ids"], "run evidence entered project truth")
         print("PASS: successful model call saves unvalidated project-owned evidence without approval")
+        print("PASS: model input bytes exactly match recorded source provenance")
 
         with patch.object(
             workflow_module,
