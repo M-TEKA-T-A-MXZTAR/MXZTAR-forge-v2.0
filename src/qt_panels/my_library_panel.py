@@ -261,6 +261,7 @@ class MyLibraryPanel(QWidget):
                 try:
                     obsolete_path.unlink()
                 except OSError:
+                    # Obsolete cache cleanup is best-effort and must not block preview use.
                     pass
 
             prune_source_preview_cache(keep_paths=(cache_path,))
