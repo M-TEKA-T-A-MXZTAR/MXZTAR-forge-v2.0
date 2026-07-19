@@ -12,7 +12,7 @@ from __future__ import annotations
 import subprocess
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QImage, QImageReader, QPixmap
+from PySide6.QtGui import QImage, QImageIOHandler, QImageReader, QPixmap
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -24,7 +24,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from core.source_preview_cache import source_preview_cache_path
+from core.source_preview_cache import (
+    obsolete_source_preview_paths,
+    prune_source_preview_cache,
+    source_preview_cache_path,
+)
 from core.source_library import (
     SourceArtItem,
     format_size,
@@ -201,7 +205,28 @@ class MyLibraryPanel(QWidget):
         reader.setAutoTransform(True)
         source_size = reader.size()
 
-        if source_size.isValid():
+        if not source_size.isValid():
+            self.show_preview_error(
+                "Image dimensions are unavailable, so a safe decode cannot be confirmed."
+            )
+            return
+
+        requires_downscale = (
+            source_size.width() > PREVIEW_MAX_WIDTH
+            or source_size.height() > PREVIEW_MAX_HEIGHT
+        )
+
+        if requires_downscale:
+            supports_scaled_decode = reader.supportsOption(
+                QImageIOHandler.ImageOption.ScaledSize
+            )
+            if not supports_scaled_decode:
+                self.show_preview_error(
+                    f"{source_size.width()}×{source_size.height()} source: "
+                    "this format cannot prove a memory-bounded Qt preview decode."
+                )
+                return
+
             bounded_size = source_size.scaled(
                 QSize(PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT),
                 Qt.AspectRatioMode.KeepAspectRatio,
@@ -224,8 +249,21 @@ class MyLibraryPanel(QWidget):
         temporary_path = cache_path.with_name(f"{cache_path.name}.tmp")
 
         try:
-            if image.save(str(temporary_path), "PNG"):
-                temporary_path.replace(cache_path)
+            if not image.save(str(temporary_path), "PNG"):
+                return
+
+            temporary_path.replace(cache_path)
+
+            for obsolete_path in obsolete_source_preview_paths(
+                self._preview_source_path,
+                cache_path,
+            ):
+                try:
+                    obsolete_path.unlink()
+                except OSError:
+                    pass
+
+            prune_source_preview_cache(keep_paths=(cache_path,))
         except OSError:
             # Cache failure must not block source selection or workflow handoff.
             pass
