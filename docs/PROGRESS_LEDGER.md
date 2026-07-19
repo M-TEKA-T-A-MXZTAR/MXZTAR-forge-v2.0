@@ -951,6 +951,42 @@ must remain off the Qt main thread with visible progress and safe shutdown.
 
 Backup status: no backup is claimed before merge and T1700 verification.
 
+## 2026-07-20 — Level Four platform priorities documentation branch
+
+Status: `PLANNED` until the documentation PR merges.
+
+Branch: `agent/define-level-four-platform-priorities`.
+
+Purpose:
+
+- define the long-term MXZTAR identity as a human-first creative civilisation builder;
+- record the shallow-or-heavy, portable-authorship, hardware-access, living-system, and
+  generational-history market gaps;
+- establish a gated Level Four MVP no earlier than approximately one year from this
+  planning date, subject to verified Levels One through Three;
+- define honest browser/tablet, mobile/AR, VR, and desktop product contracts;
+- define operator jobs as durable human-input and approval assets;
+- preserve portable personal archives independently of shared-world service continuity;
+- bound authorship-economy, educational, reflective, and wellbeing claims;
+- define authorised cross-device deltas, rig-efficient delivery, and proof gates;
+- retain the immediate Level One engineering sequence unchanged.
+
+Files in scope:
+
+- `docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md`;
+- `docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md`;
+- `docs/product/MASTER_BUILD_PLAN.md`;
+- `README.md`;
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Boundary: no browser, AR, VR, cloud collaboration, operator-job runtime, economy,
+persistent region, or world simulation is claimed as implemented.
+
+Verification: documentation source-truth verification and Markdown whitespace checks.
+
+Backup status: no backup is claimed before merge and local verification.
+
 ## Ledger update contract
 
 Every merged milestone must add or update:
