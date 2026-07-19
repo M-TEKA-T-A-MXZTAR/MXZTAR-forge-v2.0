@@ -237,7 +237,7 @@ class MXZTARForgeWindow(QMainWindow):
         self.start_here_panel = StartHerePanel(self.project_session)
         self.start_here_panel.status_changed.connect(self.set_status)
 
-        self.agent_panel = AgentPanel()
+        self.agent_panel = AgentPanel(self.project_session)
         self.agent_panel.status_changed.connect(self.set_status)
         self.agent_panel.job_active_changed.connect(
             lambda active: self.start_here_panel.set_project_mutation_active(
