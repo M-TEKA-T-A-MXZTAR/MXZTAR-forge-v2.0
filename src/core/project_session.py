@@ -151,6 +151,17 @@ class ProjectSession:
         assessment = replace(self._state.assessment, manifest=validated)
         self._state = ProjectSessionState(assessment=assessment, writable=True)
 
+    def revoke_writable_authority(self, diagnostic: str) -> None:
+        """Retain the lease for safe close while blocking every further mutation."""
+        if self._state is None:
+            return
+        assessment = replace(
+            self._state.assessment,
+            status=ProjectAccessStatus.READ_ONLY_RECOVERY,
+            diagnostics=self._state.assessment.diagnostics + (diagnostic,),
+        )
+        self._state = ProjectSessionState(assessment=assessment, writable=False)
+
     def _validated_direct_child(self, project_dir: Path) -> Path:
         unresolved = Path(project_dir).expanduser()
         if not unresolved.is_absolute():
