@@ -8,7 +8,7 @@ Known-good shell wiring:
 - Agent Workflows page wired to AgentPanel
 - My Library source-art browser wired to Agent Workflows
 - Shape Library placeholder
-- Jobs placeholder
+- read-only Jobs record browser
 - collapsible sidebar with icon-only state
 - screen-safe resizable main window
 - saved window size and position
@@ -41,6 +41,7 @@ from core.paths import ensure_project_dirs
 from qt_panels.start_here_panel import StartHerePanel
 from qt_panels.agent_panel import AgentPanel
 from qt_panels.my_library_panel import MyLibraryPanel
+from qt_panels.jobs_panel import JobsPanel
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -79,8 +80,8 @@ NAV_ITEMS = [
     },
     {
         "icon": "⏱",
-        "label": "Jobs — planned",
-        "tooltip": "Planned: running jobs, elapsed time, logs, failures, retry options.",
+        "label": "Jobs",
+        "tooltip": "Jobs: inspect saved successes, failure diagnostics, and invalid legacy records.",
     },
 ]
 
@@ -265,10 +266,9 @@ class MXZTARForgeWindow(QMainWindow):
             "Planned: extract shapes, layers, structures, visual systems, reusable modules, and component candidates."
         )
 
-        self.jobs_panel = PlaceholderPanel(
-            "Jobs",
-            "Planned: visible job state, elapsed time, logs, failures, retry options, and completed output records."
-        )
+        self.jobs_panel = JobsPanel()
+        self.jobs_panel.status_changed.connect(self.set_status)
+        self.agent_panel.job_record_saved.connect(self.jobs_panel.refresh_jobs)
 
         self.pages.addWidget(self.dashboard_panel)
         self.pages.addWidget(self.start_here_panel)
