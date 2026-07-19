@@ -257,6 +257,15 @@ class MyLibraryPanel(QWidget):
             return
         self.set_status(f"Showing all {len(self.source_items)} source-art file(s).")
 
+    def shutdown_thumbnail_loading(self, timeout_ms: int = 5000) -> bool:
+        """Stop thumbnail decoding before this panel and its QThread are destroyed."""
+        loader = self._thumbnail_loader
+        if loader is None or not loader.isRunning():
+            return True
+        self._refresh_pending = False
+        loader.requestInterruption()
+        return loader.wait(timeout_ms)
+
     def update_selection(self, *_):
         item = self.selected_source()
 
