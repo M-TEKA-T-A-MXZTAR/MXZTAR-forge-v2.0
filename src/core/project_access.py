@@ -322,6 +322,7 @@ def acquire_project_lock(project_dir: Path, writer_id: str | None = None) -> Pro
                     lock_path.unlink()
                     fsync_directory(assessment.project_dir)
             except OSError:
+                # Best-effort cleanup must not mask the original acquisition failure.
                 pass
         raise
     return ProjectLockLease(
