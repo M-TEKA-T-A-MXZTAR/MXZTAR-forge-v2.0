@@ -12,6 +12,7 @@ workspace/input/
 workspace/test_inputs/*.png
 workspace/test_inputs/*.jpg
 workspace/test_inputs/*.jpeg
+workspace/cache/
 
 # Logs/temp/cache
 *.log
