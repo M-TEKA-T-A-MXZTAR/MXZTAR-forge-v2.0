@@ -7,7 +7,7 @@ Known-good shell wiring:
 - Start Here page
 - Agent Workflows page wired to AgentPanel
 - My Library source-art browser wired to Agent Workflows
-- Shape Library placeholder
+- read-only Shape Library evidence browser
 - read-only Jobs record browser
 - collapsible sidebar with icon-only state
 - screen-safe resizable main window
@@ -42,6 +42,7 @@ from qt_panels.start_here_panel import StartHerePanel
 from qt_panels.agent_panel import AgentPanel
 from qt_panels.my_library_panel import MyLibraryPanel
 from qt_panels.jobs_panel import JobsPanel
+from qt_panels.shape_library_panel import ShapeLibraryPanel
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -75,8 +76,8 @@ NAV_ITEMS = [
     },
     {
         "icon": "◇",
-        "label": "Shape Library — planned",
-        "tooltip": "Planned: extracted shapes, structures, layers, reusable components.",
+        "label": "Shape Library",
+        "tooltip": "Shape Library: inspect raw shape-harvest evidence and its approval boundary.",
     },
     {
         "icon": "⏱",
@@ -212,27 +213,6 @@ class DashboardPanel(QWidget):
         self.status_label.setText(guidance.get("status", "Status: unknown."))
 
 
-class PlaceholderPanel(QWidget):
-    def __init__(self, title: str, detail: str):
-        super().__init__()
-
-        title_label = QLabel(title)
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("font-size: 24px; font-weight: 700;")
-
-        detail_label = QLabel(detail)
-        detail_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        detail_label.setWordWrap(True)
-        detail_label.setStyleSheet("font-size: 14px; color: #cfcfcf;")
-
-        layout = QVBoxLayout()
-        layout.addStretch(1)
-        layout.addWidget(title_label)
-        layout.addWidget(detail_label)
-        layout.addStretch(1)
-        self.setLayout(layout)
-
-
 class MXZTARForgeWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -263,10 +243,9 @@ class MXZTARForgeWindow(QMainWindow):
         self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
         self.library_panel.background_idle.connect(self.finish_deferred_close)
 
-        self.shape_panel = PlaceholderPanel(
-            "Shape / Structure Extraction",
-            "Planned: extract shapes, layers, structures, visual systems, reusable modules, and component candidates."
-        )
+        self.shape_panel = ShapeLibraryPanel()
+        self.shape_panel.status_changed.connect(self.set_status)
+        self.shape_panel.background_idle.connect(self.finish_deferred_close)
 
         self.jobs_panel = JobsPanel()
         self.jobs_panel.status_changed.connect(self.set_status)
@@ -288,7 +267,7 @@ class MXZTARForgeWindow(QMainWindow):
         self.sidebar = QListWidget()
         self.sidebar.setFixedWidth(220)
         self.sidebar.setToolTip("Navigation. Planned panels are marked clearly.")
-        self.sidebar.currentRowChanged.connect(self.pages.setCurrentIndex)
+        self.sidebar.currentRowChanged.connect(self.open_page)
 
         for nav in NAV_ITEMS:
             item = QListWidgetItem(f"{nav['icon']}  {nav['label']}")
@@ -345,6 +324,11 @@ class MXZTARForgeWindow(QMainWindow):
             self.sidebar.setCurrentRow(2)
             self.set_status(f"Opened library source in Agent Workflows: {item.path.name}")
 
+    def open_page(self, index: int):
+        self.pages.setCurrentIndex(index)
+        if index == 4:
+            self.shape_panel.ensure_loaded()
+
     def closeEvent(self, event):
         if self.agent_panel.has_active_job():
             self.set_status(
@@ -356,10 +340,12 @@ class MXZTARForgeWindow(QMainWindow):
         if (
             self.jobs_panel.has_active_scan()
             or self.library_panel.has_active_thumbnail_loading()
+            or self.shape_panel.has_active_scan()
         ):
             self._close_when_background_idle = True
             self.jobs_panel.request_scan_shutdown()
             self.library_panel.request_thumbnail_shutdown()
+            self.shape_panel.request_scan_shutdown()
             self.set_status(
                 "Stopping background library scans before closing. The interface remains responsive."
             )
@@ -373,7 +359,11 @@ class MXZTARForgeWindow(QMainWindow):
     def finish_deferred_close(self):
         if not self._close_when_background_idle:
             return
-        if self.jobs_panel.has_active_scan() or self.library_panel.has_active_thumbnail_loading():
+        if (
+            self.jobs_panel.has_active_scan()
+            or self.library_panel.has_active_thumbnail_loading()
+            or self.shape_panel.has_active_scan()
+        ):
             return
         self._close_when_background_idle = False
         QTimer.singleShot(0, self.close)
