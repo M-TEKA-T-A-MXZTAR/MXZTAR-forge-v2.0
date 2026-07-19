@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -65,6 +66,31 @@ def main() -> int:
             write_record(success_path, True, "source_art_intelligence", "useful result")
             write_record(failure_path, False, "shape_structure_harvest", "model failure")
             invalid_path.write_text("{not-json", encoding="utf-8")
+            project = root / "project"
+            (project / "logs").mkdir(parents=True)
+            (project / "diagnostics").mkdir()
+            project_evidence = project / "logs" / "run.workflow-run.json"
+            project_evidence.write_text(
+                json.dumps(
+                    {
+                        "schema_name": "mxztar_forge_workflow_run_evidence",
+                        "schema_version": "1.0.0",
+                        "run_id": "run_fixture",
+                        "project_id": "project_fixture",
+                        "workflow_key": "source_art_intelligence",
+                        "status": "model_call_succeeded",
+                        "workflow_complete": False,
+                        "approval_state": "not_applicable",
+                        "started_at_utc": "2026-07-19T12:00:00+00:00",
+                        "completed_at_utc": "2026-07-19T12:00:01+00:00",
+                        "execution": {"model_name": "fixture-model"},
+                        "provenance": {"source_path": "source/originals/fixture.png"},
+                        "raw_model_output": "unvalidated model evidence",
+                        "error": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
 
             agent_runner.WORKFLOW_OUTPUT_DIRS.clear()
             agent_runner.WORKFLOW_OUTPUT_DIRS["fixture"] = root
@@ -73,14 +99,14 @@ def main() -> int:
             require(read_job_record(failure_path).status == "FAILED", "failure misclassified")
             require(read_job_record(invalid_path).status == "INVALID", "invalid record hidden")
 
-            scan = scan_job_records()
-            require(len(scan.records) == 3, "scanner did not recover every record")
-            require({record.status for record in scan.records} == {"SUCCESS", "FAILED", "INVALID"},
+            scan = scan_job_records(project_dir=project)
+            require(len(scan.records) == 4, "scanner did not recover every record")
+            require({record.status for record in scan.records} == {"SUCCESS", "MODEL_OK", "FAILED", "INVALID"},
                     "scanner collapsed truthful record states")
 
-            panel = JobsPanel()
+            panel = JobsPanel(SimpleNamespace(project_dir=project))
             wait_for_scan(app, panel)
-            require(panel.job_list.count() == 3, "Jobs panel did not show every record")
+            require(panel.job_list.count() == 4, "Jobs panel did not show every record")
             require(not hasattr(panel, "retry_button"), "Jobs panel exposed an unimplemented retry")
             require(not hasattr(panel, "delete_button"), "Jobs panel exposed destructive delete")
 
@@ -99,6 +125,7 @@ def main() -> int:
             success_path.unlink()
             failure_path.unlink()
             invalid_path.unlink()
+            project_evidence.unlink()
             panel.refresh_jobs()
             wait_for_scan(app, panel)
             require(panel.job_list.count() == 0, "empty state retained stale jobs")
@@ -119,7 +146,7 @@ def main() -> int:
 
             original_scan = jobs_module.scan_job_records
 
-            def slow_scan(should_stop):
+            def slow_scan(should_stop, **_):
                 while not should_stop():
                     time.sleep(0.01)
                 return JobScanResult(())
@@ -133,7 +160,7 @@ def main() -> int:
             jobs_module.scan_job_records = original_scan
 
             print("PASS: saved success, failure, and invalid records remain distinct")
-            print("PASS: Jobs scans existing records outside the Qt main thread")
+            print("PASS: Jobs scans legacy and active-project records outside the Qt main thread")
             print("PASS: Jobs shows every recovered record and its truthful detail")
             print("PASS: Jobs exposes no fake retry, delete, cancel, or approval action")
             print("PASS: empty Jobs state is safe and disables record actions")
