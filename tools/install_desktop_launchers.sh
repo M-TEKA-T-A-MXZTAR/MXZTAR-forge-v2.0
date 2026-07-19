@@ -11,6 +11,8 @@ APPS_DIR="$HOME_DIR/.local/share/applications"
 DESKTOP_DIR="$HOME_DIR/Desktop"
 APP_LAUNCHER="$APPS_DIR/mxztar-forge-v2.desktop"
 DESKTOP_LAUNCHER="$DESKTOP_DIR/MXZTAR-Forge-v2.0.desktop"
+INPUT_DIR="$CHECKOUT_DIR/workspace/input"
+INPUT_LINK="$DESKTOP_DIR/MXZTAR-Forge-Input"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
 if [ ! -x "$RUNNER" ]; then
@@ -23,7 +25,7 @@ if [ ! -f "$ICON" ]; then
     exit 1
 fi
 
-mkdir -p "$APPS_DIR" "$DESKTOP_DIR"
+mkdir -p "$APPS_DIR" "$DESKTOP_DIR" "$INPUT_DIR"
 
 backup_existing() {
     local target="$1"
@@ -57,6 +59,19 @@ write_launcher() {
     echo "Installed: $target"
 }
 
+if [ -L "$INPUT_LINK" ]; then
+    if [ "$(readlink -f -- "$INPUT_LINK")" != "$(readlink -f -- "$INPUT_DIR")" ]; then
+        echo "STOP: Desktop input link points somewhere else: $INPUT_LINK" >&2
+        exit 1
+    fi
+elif [ -e "$INPUT_LINK" ]; then
+    echo "STOP: Desktop input target already exists and was not replaced: $INPUT_LINK" >&2
+    exit 1
+else
+    ln -s -- "$INPUT_DIR" "$INPUT_LINK"
+    echo "Installed: $INPUT_LINK -> $INPUT_DIR"
+fi
+
 backup_existing "$APP_LAUNCHER"
 backup_existing "$DESKTOP_LAUNCHER"
 write_launcher "$APP_LAUNCHER"
@@ -74,3 +89,4 @@ fi
 echo "PASS: My Apps launcher installed"
 echo "PASS: Desktop launcher installed"
 echo "PASS: both launchers use the MXZTAR Forge star icon"
+echo "PASS: Desktop input folder-link targets workspace/input"
