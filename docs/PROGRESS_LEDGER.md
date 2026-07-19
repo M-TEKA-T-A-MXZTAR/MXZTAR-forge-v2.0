@@ -55,7 +55,7 @@ accuracy, manufacturing safety, or finished CAD geometry.
 | Failure diagnostics | PARTIAL | Runner can save JSON; durable schema and UI truth not proven | Implement shared failure artifact after baseline audit |
 | Historical first rentable release definition | MERGED | `docs/product/FIRST_RENTABLE_RELEASE.md`, PR #14; its access section now records the superseding free-access decision | Retain filename only as historical continuity or rename in a dedicated link-migration PR |
 | Workflow compatibility matrix | MERGED | `docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`, PR #14 | Implement encoded assessor in Phase 4 |
-| Output artifact contracts | MERGED | `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, PR #15 | Implement schemas and validators in Phase 5 |
+| Output artifact contracts | MERGED | `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, PR #15 | Implement schemas and validators in Phase 4 |
 | Project state and data authority | MERGED | `docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`, PR #16 | Implement only after execution baseline is stable |
 | Level One master build plan | MERGED | `docs/product/MASTER_BUILD_PLAN.md`, initially PR #17 and comprehensively revised after PR #27 | Follow the revised operational MVP sequence |
 | Progress ledger | MERGED | This document, PR #17 | Update after every meaningful audit or implementation milestone |
@@ -67,22 +67,22 @@ accuracy, manufacturing safety, or finished CAD geometry.
 | Multi-view grouping | PLANNED | Required for honest spatial reasoning | Phase 3 |
 | Scale and unit anchors | PLANNED | Required before dimensional claims | Phase 3 |
 | READY / CAUTION / BLOCKED assessor | PLANNED | Matrix exists | Phase 4 |
-| Shared artifact envelope and schema validation | PLANNED | Contracts exist | Phase 5 |
-| Explicit approval / rejection / supersession | PLANNED | Contracts exist | Phase 5 |
-| Source-art intelligence v1 | PARTIAL | Prompt and runner exist; production-grade structured contract and review are not proven | Phase 6 |
-| Schematic line-network intelligence | PLANNED | Known market/product gap | Phase 7 |
-| Shape and contour graph | PLANNED | Required intermediate evidence | Phase 7 |
-| Layer, depth, and occlusion graph | PLANNED | Required spatial bridge | Phase 8 |
-| 2.5D stacked representation | PLANNED | Core bridge between 2D evidence and later 3D | Phase 8 |
-| Modular design grammar | PARTIAL | Prompt-level modular analysis exists | Phase 9 structured representation and approval |
-| Concept brief translator | PARTIAL | Prompt contract exists | Phase 10 validated translator |
-| Render prompt pack translator | PARTIAL | Prompt contract exists | Phase 10 validated translator |
-| Blender blockout handoff | PLANNED | Defined as initial specialist-tool bridge | Phase 10 after spatial contract |
-| Layered SVG handoff | PLANNED | Useful 2D/vector output | Phase 10 after line/shape contracts |
-| OBJ/GLB blockout export | DEFERRED | Must not precede proven spatial and export contracts | Later Phase 10 |
-| CAD exchange | DEFERRED | Requires units, dimensional confidence, and geometry contracts | Later Phase 10 |
-| Benchmark corpus | PARTIAL | Simple generated shapes test exists | Phase 11 expanded corpus |
-| Progressive learning ledger | PLANNED | Must record approved observations, decisions, reasons, and downstream use | Phase 11 |
+| Shared artifact envelope and schema validation | PLANNED | Contracts exist | Phase 4 |
+| Explicit approval / rejection / supersession | PLANNED | Contracts exist | Phase 4 |
+| Source-art intelligence v1 | PARTIAL | Prompt and runner exist; production-grade structured contract and review are not proven | Phase 5 |
+| Schematic line-network intelligence | PLANNED | Known market/product gap | Phase 6 |
+| Shape and contour graph | PLANNED | Required intermediate evidence | Phase 6 |
+| Layer, depth, and occlusion graph | PLANNED | Required spatial bridge | Phase 7 |
+| 2.5D stacked representation | PLANNED | Core bridge between 2D evidence and later 3D | Phase 7 |
+| Modular design grammar | PARTIAL | Prompt-level modular analysis exists | Phase 7 structured representation and approval |
+| Concept brief translator | PARTIAL | Prompt contract exists | Phase 8 validated translator |
+| Render prompt pack translator | PARTIAL | Prompt contract exists | Phase 8 validated translator |
+| Blender blockout handoff | PLANNED | Defined as initial specialist-tool bridge | Phase 8 after spatial contract |
+| Layered SVG handoff | PLANNED | Useful 2D/vector output | Phase 8 after line/shape contracts |
+| OBJ/GLB blockout export | DEFERRED | Must not precede proven spatial, construction-recipe, and export contracts | Phase 10 |
+| CAD exchange | DEFERRED | Requires units, dimensional confidence, and geometry contracts | Phase 12 |
+| Benchmark corpus | PARTIAL | Simple generated shapes test exists | Expand continuously through Phases 4–12 |
+| Progressive learning ledger | PLANNED | Must record approved observations, decisions, reasons, and downstream use | Add with approval in Phase 4 and extend continuously |
 | Level One cockpit | PLANNED | Start Here, My Library, Agent Workflows, Review, Shape Library, Jobs, and Export are the governed workspaces | Master plan Phases 1–9 |
 | Free-of-charge software access | PLANNED REQUIRED | Founder confirmed no timed trial, subscription, or feature paywall | Public-release acceptance gate |
 | Voluntary founder support | PLANNED | `https://buymeacoffee.com/mxztar`; donation must not alter core access | Add truthful non-intrusive release/UI link |
@@ -458,6 +458,17 @@ Boundary:
 
 Status: `VERIFIED` on the T1700 after merge at `9167bf5`.
 
+Branch: `agent/library-grid-desktop-input`.
+
+Files changed:
+
+- `README.md`;
+- `docs/PROGRESS_LEDGER.md`;
+- `src/qt_panels/my_library_panel.py`;
+- `tools/install_desktop_launchers.sh`;
+- `tools/verify_desktop_launchers.py`;
+- `tools/verify_my_library_contract.py`.
+
 Established:
 
 - every discovered source appears as a visible card rather than a hidden selector;
@@ -470,7 +481,21 @@ Established:
 - source bytes remain unchanged;
 - the Desktop Input link exposes the canonical input folder.
 
-Recorded T1700 verification:
+Reproduction commands used by the branch and local verification contracts:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_my_library_contract.py
+
+python3 tools/verify_desktop_launchers.py
+python3 -m py_compile \
+  src/qt_panels/my_library_panel.py \
+  tools/verify_my_library_contract.py \
+  tools/verify_desktop_launchers.py
+```
+
+Recorded T1700 My Library verification result after merge:
 
 ```text
 PASS: all six source images appear as visible cards
@@ -490,6 +515,15 @@ Remaining boundary:
 - the grid is source intake, not yet the durable project/processed-source lifecycle;
 - Shape Library and Jobs still require restoration around current authority contracts;
 - source analysis, approval, and Forge Pack export remain incomplete.
+
+Status changes:
+
+- My Library visible-card baseline: `MERGED` → `VERIFIED` on the T1700;
+- Desktop Input link: `MERGED` with repository installer-contract verification; live
+  presence remains a local installation fact rather than repository state.
+
+Backup status: no new VX12 backup was recorded for this UI verification; no backup is
+claimed by this ledger entry.
 
 ## 2026-07-19 — Level One product-definition planning
 
