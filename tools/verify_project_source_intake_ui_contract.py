@@ -18,7 +18,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from PIL import Image  # noqa: E402
-from PySide6.QtCore import QTimer  # noqa: E402
+from PySide6.QtCore import QPoint, QTimer  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from core.project_session import ProjectSession  # noqa: E402
@@ -87,9 +87,20 @@ def main() -> int:
             window.resize(760, 520)
             window.show()
             wait_for_library(app, window.library_panel)
+            window.pages.setCurrentWidget(window.library_panel)
+            window.sidebar.setCurrentRow(3)
+            app.processEvents()
+            viewport = window.page_scroll.viewport()
+            import_top_left = window.library_panel.import_button.mapTo(
+                viewport, QPoint(0, 0)
+            )
+            import_rect = window.library_panel.import_button.rect().translated(
+                import_top_left
+            )
             require(
-                window.library_panel.import_button.isVisibleTo(window.library_panel),
-                "project intake control is not visible at the minimum window size",
+                window.library_panel.import_button.isVisible()
+                and viewport.rect().intersects(import_rect),
+                "project intake control is outside the minimum-size page viewport",
             )
             require(
                 window.library_panel.import_button.isEnabled(),
