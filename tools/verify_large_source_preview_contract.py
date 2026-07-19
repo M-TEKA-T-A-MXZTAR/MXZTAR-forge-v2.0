@@ -17,9 +17,10 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from PySide6.QtCore import QSize  # noqa: E402
-from PySide6.QtGui import QImage  # noqa: E402
+from PySide6.QtGui import QImage, QImageIOHandler  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
+from core import source_preview_cache as cache_module  # noqa: E402
 from core.source_library import SourceArtItem  # noqa: E402
 from qt_panels import my_library_panel as library_module  # noqa: E402
 
@@ -32,6 +33,8 @@ def require(condition: bool, message: str) -> None:
 class FakeLargeImageReader:
     requested_scaled_size = QSize()
     read_calls = 0
+    source_size = QSize(50000, 40000)
+    supports_scaled_decode = True
 
     def __init__(self, path: str):
         self.path = path
@@ -40,7 +43,14 @@ class FakeLargeImageReader:
         require(enabled, "preview reader did not enable image orientation")
 
     def size(self) -> QSize:
-        return QSize(50000, 40000)
+        return type(self).source_size
+
+    def supportsOption(self, option) -> bool:
+        require(
+            option == QImageIOHandler.ImageOption.ScaledSize,
+            "panel checked the wrong decoder capability",
+        )
+        return type(self).supports_scaled_decode
 
     def setScaledSize(self, size: QSize) -> None:
         type(self).requested_scaled_size = size
@@ -65,9 +75,13 @@ def main() -> int:
     original_reader = library_module.QImageReader
     original_scan = library_module.scan_source_art
     original_cache_path = library_module.source_preview_cache_path
+    original_cache_dir = cache_module.SOURCE_PREVIEW_CACHE_DIR
 
     try:
         with tempfile.TemporaryDirectory(prefix="mxztar-large-preview-") as temp_dir:
+            cache_module.SOURCE_PREVIEW_CACHE_DIR = Path(temp_dir) / "preview-cache"
+            cache_module.SOURCE_PREVIEW_CACHE_DIR.mkdir()
+
             source_path = Path(temp_dir) / "very-large-source.png"
             source_path.write_bytes(b"untouched-large-source-fixture")
             before = digest(source_path)
@@ -130,10 +144,42 @@ def main() -> int:
                 "cached thumbnail could not be rendered",
             )
 
+            thumbnail_path.unlink()
+            FakeLargeImageReader.supports_scaled_decode = False
+            reads_before_unsafe = FakeLargeImageReader.read_calls
+            unsafe_panel = library_module.MyLibraryPanel()
+            app.processEvents()
+            require(
+                FakeLargeImageReader.read_calls == reads_before_unsafe,
+                "unsupported large format was decoded",
+            )
+            require(
+                "cannot prove a memory-bounded" in unsafe_panel.preview_label.text(),
+                "unsafe decoder did not explain the preview boundary",
+            )
+
+            FakeLargeImageReader.supports_scaled_decode = True
+            FakeLargeImageReader.source_size = QSize(800, 600)
+            FakeLargeImageReader.requested_scaled_size = QSize()
+            small_thumbnail = Path(temp_dir) / "small-preview.png"
+            library_module.source_preview_cache_path = lambda _: small_thumbnail
+            small_panel = library_module.MyLibraryPanel()
+            app.processEvents()
+            require(
+                not FakeLargeImageReader.requested_scaled_size.isValid(),
+                "small source was unnecessarily upscaled",
+            )
+            require(
+                small_panel._preview_image.size() == QSize(800, 600),
+                "small source dimensions were not preserved",
+            )
+
             print("PASS: 50000x40000 source requests a bounded preview decode")
             print(
                 f"PASS: preview decode bound = {requested.width()}x{requested.height()}"
             )
+            print("PASS: unsupported large decoder is rejected before read")
+            print("PASS: small source is not upscaled")
             print("PASS: bounded thumbnail is cached and reused")
             print("PASS: source changes invalidate thumbnail cache identity")
             print("PASS: resize rendering uses the cached bounded preview")
@@ -143,6 +189,7 @@ def main() -> int:
         library_module.QImageReader = original_reader
         library_module.scan_source_art = original_scan
         library_module.source_preview_cache_path = original_cache_path
+        cache_module.SOURCE_PREVIEW_CACHE_DIR = original_cache_dir
 
     return 0
 
