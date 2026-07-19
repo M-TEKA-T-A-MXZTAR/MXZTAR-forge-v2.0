@@ -38,6 +38,7 @@ from PySide6.QtWidgets import (
 
 from core.hardware_profile import apply_local_ai_policy, policy_summary
 from core.paths import ensure_project_dirs
+from core.project_session import ProjectSession
 from qt_panels.start_here_panel import StartHerePanel
 from qt_panels.agent_panel import AgentPanel
 from qt_panels.my_library_panel import MyLibraryPanel
@@ -214,7 +215,7 @@ class DashboardPanel(QWidget):
 
 
 class MXZTARForgeWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
 
         ensure_project_dirs()
@@ -223,6 +224,7 @@ class MXZTARForgeWindow(QMainWindow):
         self.settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.sidebar_collapsed = False
         self._close_when_background_idle = False
+        self.project_session = project_session or ProjectSession()
 
         self.setWindowTitle("MXZTAR Forge v2.0")
         self.setMinimumSize(MINIMUM_WINDOW_SIZE)
@@ -232,7 +234,7 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.dashboard_panel = DashboardPanel()
 
-        self.start_here_panel = StartHerePanel()
+        self.start_here_panel = StartHerePanel(self.project_session)
         self.start_here_panel.status_changed.connect(self.set_status)
 
         self.agent_panel = AgentPanel()
@@ -353,6 +355,12 @@ class MXZTARForgeWindow(QMainWindow):
             return
 
         self._close_when_background_idle = False
+        try:
+            self.project_session.close()
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.set_status(f"Could not safely release the current project lock: {exc}")
+            event.ignore()
+            return
         self.settings.setValue("main_window/geometry", self.saveGeometry())
         super().closeEvent(event)
 
