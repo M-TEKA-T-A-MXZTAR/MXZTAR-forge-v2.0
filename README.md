@@ -50,3 +50,16 @@ Default fallback policy:
 - one heavy local job at a time by default.
 
 Adaptive detection may recommend more CPU threads on capable rigs and may record GPU presence, but GPU detection must not silently enable multiple heavy local jobs or trigger model downloads.
+
+## Desktop launchers
+
+Install or safely refresh both the Linux application-menu launcher and the
+Desktop launcher:
+
+```bash
+bash tools/install_desktop_launchers.sh
+```
+
+Both launchers use the repository-owned star icon and target the checkout's
+relocatable `run_mxztar_forge.sh`. Existing launcher files are backed up before
+replacement.
