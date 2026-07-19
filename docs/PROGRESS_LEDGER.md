@@ -742,6 +742,54 @@ Authority:
 Boundary: no 3D editor, renderer, world simulation, virtual ownership, cloud service,
 engineering validation, or future-product feature is claimed as implemented.
 
+## 2026-07-20 — Core project manifest foundation branch
+
+Status: `PLANNED` until the implementation PR merges and passes on the T1700.
+
+Branch: `agent/build-project-manifest-foundation`.
+
+Purpose:
+
+- create the canonical self-contained project directory without exposing premature UI;
+- generate a stable project ID, validated `project.json`, project README, and singular
+  `project_created` history event;
+- establish every contracted first-release artifact directory;
+- construct in a hidden staging directory and rename only after all durable files are
+  written;
+- reject unsafe names, malformed manifests, and existing-project overwrite;
+- preserve Unicode letters in Māori and international project slugs;
+- require every contracted manifest state field and the canonical project-contained
+  history path;
+- fsync file and directory entries before reporting project creation;
+- Git-ignore `workspace/projects/` so private runtime projects cannot be staged by a
+  routine repository add;
+- leave SQLite, locking, open/recovery, source import/move, approval, and workflow
+  integration to separately verified milestones.
+
+Files in scope:
+
+- `src/core/paths.py`;
+- `src/core/project_manifest.py`;
+- `tools/verify_project_manifest_contract.py`;
+- `scripts/verify_source_truth.sh`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification command:
+
+```bash
+cd /home/michael/MXZTAR-forge-v2.0
+PYTHONPATH=src .venv/bin/python tools/verify_project_manifest_contract.py
+```
+
+Exit gate: a copied project contains its identity, initial event, and canonical folder
+structure; invalid or colliding creation cannot become a visible partial project.
+
+Next permitted milestone after verification: project locking plus validated open and
+read-only recovery classification. No project-creation UI is permitted before that
+writer/recovery boundary exists.
+
+Backup status: no backup is claimed before merge and T1700 verification.
+
 ## Ledger update contract
 
 Every merged milestone must add or update:

@@ -12,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = PROJECT_ROOT / "src"
 WORKSPACE_ROOT = PROJECT_ROOT / "workspace"
 ASSETS_ROOT = PROJECT_ROOT / "assets"
+PROJECTS_DIR = WORKSPACE_ROOT / "projects"
 
 INPUT_DIR = WORKSPACE_ROOT / "input"
 IMPORTS_DIR = WORKSPACE_ROOT / "imports"
@@ -45,6 +46,7 @@ def ensure_project_dirs() -> None:
     """Create the standard MXZTAR Forge folders if missing."""
     for path in [
         INPUT_DIR,
+        PROJECTS_DIR,
         IMPORTS_DIR,
         TEST_INPUTS_DIR,
         CONCEPT_FOLDERS_DIR,
