@@ -448,6 +448,57 @@ Boundary:
 - an existing target launcher is backed up before replacement;
 - the star icon remains repository-owned and versioned.
 
+## 2026-07-19 — Visible library grid and Desktop intake branch
+
+Branch: `agent/library-grid-desktop-input`.
+
+Observed UI defect:
+
+- six discovered sources were hidden behind one dropdown;
+- only the selected source had a visible image;
+- the selected preview occupied an oversized region with large black bands.
+
+Purpose:
+
+- show every discovered source as a visible, selectable thumbnail card;
+- keep the selected preview within a compact 360×220 maximum region;
+- retain the exact original `SourceArtItem` handoff;
+- create a Desktop `MXZTAR-Forge-Input` folder-link to authoritative
+  `workspace/input`;
+- leave source bytes and locations unchanged.
+
+Repository inspection:
+
+- no files under `workspace/input`, `workspace/imports`, or
+  `workspace/test_inputs` are tracked on `main`;
+- therefore the six sources observed on the T1700 are local/runtime files, not
+  images shipped by the Git repository.
+
+Files changed:
+
+- `src/qt_panels/my_library_panel.py`;
+- `tools/verify_my_library_contract.py`;
+- `tools/install_desktop_launchers.sh`;
+- `tools/verify_desktop_launchers.py`;
+- `README.md`;
+- `docs/PROGRESS_LEDGER.md`.
+
+Verification commands:
+
+```bash
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
+  .venv/bin/python tools/verify_my_library_contract.py
+
+python3 tools/verify_desktop_launchers.py
+bash -n tools/install_desktop_launchers.sh
+```
+
+Boundary:
+
+- this PR changes presentation and intake access only;
+- workflow success does not yet move a source;
+- Jobs and Shape Library remain separate panels with separate data contracts.
+
 ## Immediate next milestone after this ledger merges
 
 Milestone name: **Execution Baseline Audit**.
