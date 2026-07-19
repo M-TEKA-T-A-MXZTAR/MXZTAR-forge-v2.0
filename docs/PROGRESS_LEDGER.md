@@ -364,7 +364,8 @@ Observed defect:
 Purpose:
 
 - retain the original source file and exact workflow handoff path;
-- decode at most a 1600×1200 UI derivative;
+- decode at most a 1600×1200 UI derivative when the Qt handler reports scaled-decode support;
+- reject unsafe large preview decoding before image read while keeping the source selectable;
 - cache the bounded thumbnail under `workspace/cache/source_previews`;
 - invalidate cache identity when source path, byte size, or modification time changes;
 - rerender window resizes from the bounded in-memory image rather than decoding the source again;
@@ -376,6 +377,8 @@ Files changed:
 - `src/core/source_preview_cache.py`;
 - `src/qt_panels/my_library_panel.py`;
 - `tools/verify_large_source_preview_contract.py`;
+- `tools/verify_source_preview_cache_contract.py`;
+- `.gitignore`;
 - `docs/PROGRESS_LEDGER.md`.
 
 Verification commands:
@@ -384,16 +387,21 @@ Verification commands:
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
   .venv/bin/python tools/verify_large_source_preview_contract.py
 
+PYTHONPATH=src .venv/bin/python tools/verify_source_preview_cache_contract.py
+
+git check-ignore workspace/cache/source_previews/private-source.png
+
 PYTHONPATH=src .venv/bin/python -m py_compile \
   src/core/paths.py \
   src/core/source_preview_cache.py \
   src/qt_panels/my_library_panel.py \
-  tools/verify_large_source_preview_contract.py
+  tools/verify_large_source_preview_contract.py \
+  tools/verify_source_preview_cache_contract.py
 ```
 
 Boundary:
 
-- thumbnail files are rebuildable cache, not project truth;
+- thumbnail files are rebuildable, Git-ignored, count/byte-bounded cache, not project truth;
 - this PR does not resize or overwrite original source art;
 - AI-request image preflight remains a separate execution-path gate before large-source model testing;
 - the application does not raise Qt's global allocation limit.
