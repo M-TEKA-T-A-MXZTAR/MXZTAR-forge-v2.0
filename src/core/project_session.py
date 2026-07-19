@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import itertools
 import stat
+from dataclasses import replace
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from core.project_access import (
     release_project_lock,
 )
 from core.project_manifest import create_project
+from core.project_manifest import validate_manifest
 
 
 class ProjectSessionError(RuntimeError):
@@ -138,6 +140,16 @@ class ProjectSession:
     def _require_detached(self) -> None:
         if self._state is not None or self._lease is not None:
             raise ProjectSessionError("Close the current project before opening another one.")
+
+    def update_manifest_snapshot(self, manifest: dict) -> None:
+        """Refresh the in-memory manifest after a verified project transaction."""
+        if self._state is None or not self._state.writable:
+            raise ProjectSessionError("A writable project session is required.")
+        validated = validate_manifest(manifest)
+        if validated["project_id"] != self._state.assessment.manifest["project_id"]:
+            raise ProjectSessionError("Manifest project identity does not match the active session.")
+        assessment = replace(self._state.assessment, manifest=validated)
+        self._state = ProjectSessionState(assessment=assessment, writable=True)
 
     def _validated_direct_child(self, project_dir: Path) -> Path:
         unresolved = Path(project_dir).expanduser()
