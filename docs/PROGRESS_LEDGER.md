@@ -1062,20 +1062,26 @@ Files in scope:
 
 - `src/core/source_library.py`;
 - `src/core/project_source_intake.py`;
+- `src/qt_panels/agent_panel.py`;
 - `src/qt_panels/my_library_panel.py`;
 - `src/qt_panels/start_here_panel.py`;
 - `src/qt_app.py`;
 - `tools/verify_my_library_contract.py`;
+- `tools/verify_project_source_intake_contract.py`;
 - `tools/verify_project_source_intake_ui_contract.py`;
 - `scripts/verify_source_truth.sh`;
 - `docs/PROGRESS_LEDGER.md`.
 
 Recorded review-workspace evidence:
 
-- the 16-assertion project-source transaction contract passed;
+- the project-source transaction and discovery contract passed;
 - the source-truth verifier passed all required documents, Python compilation, and
   seven prompt contracts;
 - changed Python files and the new Qt verifier compile;
+- PR #39 review findings were patched to rehash project sources, enforce record size
+  and project identity, preserve independent legacy discovery, bound project-preview
+  decoding, invalidate former-project Agent Workflows selections, cooperate with
+  discovery interruption, and refresh revoked writable authority;
 - the review workspace could not execute PySide6 because its minimal runtime lacks
   `libEGL.so.1`; this is an environment limitation, not recorded as a UI pass.
 
