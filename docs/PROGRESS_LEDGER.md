@@ -603,7 +603,11 @@ Boundary:
 - this branch does not implement the future project manifest, job IDs, migration,
   duration schema, retry, cancellation, deletion, approval, or Forge Pack export;
 - malformed records are displayed as `INVALID`, not silently discarded;
-- record reads are capped at 2 MiB and discovery is capped at 500 recent records.
+- individual record reads are capped at 2 MiB, retained recent candidates are capped
+  at 500, and decoded record bodies are capped at 16 MiB per refresh;
+- inaccessible directories and record-stat failures surface as scan warnings;
+- application close interrupts and waits for the Jobs scan before destroying its
+  `QThread`.
 
 Backup status: no backup is claimed before merge and T1700 verification.
 
