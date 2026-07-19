@@ -117,6 +117,7 @@ class MyLibraryPanel(QWidget):
     background_idle = Signal()
     intake_active_changed = Signal(bool)
     project_authority_changed = Signal(object)
+    project_source_ready = Signal(object)
 
     def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
@@ -395,6 +396,19 @@ class MyLibraryPanel(QWidget):
             self.refresh_library()
             return
         message = self._pending_intake_message
+        ready_source = None
+        if message and (
+            message.startswith("Imported project source")
+            or message.startswith("Already present project source")
+        ):
+            selected = self.selected_source()
+            if (
+                selected is not None
+                and selected.authority == "active_project"
+                and selected.project_id
+                == self.project_session.state.assessment.manifest["project_id"]
+            ):
+                ready_source = selected
         if message is None and self._discovery_diagnostic:
             message = (
                 f"Showing {len(self.source_items)} safe source-art file(s). "
@@ -406,6 +420,8 @@ class MyLibraryPanel(QWidget):
         self._discovery_diagnostic = None
         self.set_status(message)
         self.background_idle.emit()
+        if ready_source is not None:
+            self.project_source_ready.emit(ready_source)
 
     def has_active_thumbnail_loading(self) -> bool:
         loader = self._thumbnail_loader
