@@ -149,6 +149,7 @@ WORKFLOWS = {
 
 class AgentPanel(QWidget):
     status_changed = Signal(str)
+    job_record_saved = Signal(str)
 
     def __init__(self):
         super().__init__()
@@ -482,11 +483,13 @@ class AgentPanel(QWidget):
             self.append_progress("Workflow completed successfully.")
             self.append_progress(f"Saved output: {output_path}")
             self.set_status(f"Workflow succeeded. Saved output: {output_path}")
+            self.job_record_saved.emit(output_path)
             return
 
         if output_path:
             self.append_progress(f"Workflow failed. Diagnostic saved: {output_path}")
             self.set_status(f"Workflow failed. Diagnostic saved: {output_path}. {error}")
+            self.job_record_saved.emit(output_path)
             return
 
         self.append_progress(f"Workflow failed before a result was saved: {error}")
