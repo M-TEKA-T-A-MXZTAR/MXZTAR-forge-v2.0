@@ -1135,3 +1135,4 @@ Every merged milestone must add or update:
 - backup status where relevant.
 
 No milestone may be marked `VERIFIED` solely because code was committed or a PR was merged.
+- T1700 verification exposed and isolated a verifier lifecycle race: intake could stop immediately before its queued Qt `finished` callback started discovery, creating a transient false-idle observation. The UI verifier now requires stable idle across consecutive event-loop turns; production intake and discovery behavior is unchanged.
