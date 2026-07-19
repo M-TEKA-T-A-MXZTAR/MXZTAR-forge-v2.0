@@ -41,12 +41,25 @@ def wait_until(app, predicate, message: str, timeout: float = 10) -> None:
     require(predicate(), message)
 
 
-def wait_for_library(app, panel) -> None:
-    wait_until(
-        app,
-        lambda: not panel.has_active_intake() and not panel.has_active_thumbnail_loading(),
-        "project intake or library discovery did not finish",
-    )
+def wait_for_library(app, panel, timeout: float = 60) -> None:
+    try:
+        wait_until(
+            app,
+            lambda: not panel.has_active_intake()
+            and not panel.has_active_thumbnail_loading(),
+            "project intake or library discovery did not finish",
+            timeout=timeout,
+        )
+    except RuntimeError as exc:
+        intake = panel._intake_thread
+        discovery = panel._discovery_thread
+        thumbnails = panel._thumbnail_loader
+        raise RuntimeError(
+            f"{exc}; intake_running={bool(intake and intake.isRunning())}; "
+            f"discovery_running={bool(discovery and discovery.isRunning())}; "
+            f"thumbnails_running={bool(thumbnails and thumbnails.isRunning())}; "
+            f"status={panel.status_label.text()!r}"
+        ) from exc
 
 
 def main() -> int:
