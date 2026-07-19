@@ -278,8 +278,9 @@ class AgentPanel(QWidget):
         next_title.setStyleSheet("font-size: 18px; font-weight: 700;")
 
         next_body = QLabel(
-            "The safe baseline runs one QThread workflow with elapsed time, heartbeat, truthful "
-            "completion state, and output saved under workspace/data/brain. Cooperative cancellation "
+            "The safe baseline runs one QThread workflow with elapsed time, heartbeat, and truthful "
+            "completion state. Project-source runs save unvalidated evidence under the active project's "
+            "logs or diagnostics; legacy sources retain workspace/data/brain. Cooperative cancellation "
             "and large-image preflight remain separate verified milestones."
         )
         next_body.setWordWrap(True)
