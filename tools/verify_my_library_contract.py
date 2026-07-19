@@ -150,7 +150,11 @@ def main() -> int:
             panel._thumbnail_loader = slow_loader
             slow_loader.start()
             require(slow_loader.isRunning(), "shutdown fixture thumbnail thread did not start")
-            require(panel.shutdown_thumbnail_loading(), "library thumbnail thread did not stop")
+            panel.request_thumbnail_shutdown()
+            deadline = time.monotonic() + 2
+            while slow_loader.isRunning() and time.monotonic() < deadline:
+                app.processEvents()
+                time.sleep(0.01)
             require(not slow_loader.isRunning(), "thumbnail thread survived panel shutdown")
 
             print("PASS: all six source images appear as visible cards")
