@@ -651,9 +651,10 @@ Root cause:
 
 Required fix:
 
-- My Library exposes bounded interruption-and-wait shutdown for thumbnail loading;
-- main-window close stops both Jobs and My Library background scans before acceptance;
-- close remains rejected if either scan cannot stop within the bounded wait;
+- My Library and Jobs expose non-blocking interruption requests and idle signals;
+- main-window close requests both background scans to stop, rejects the current close
+  event immediately, and keeps the Qt event loop responsive;
+- the window closes automatically only after both panels report idle;
 - AgentPanel and My Library verifiers assert no panel-owned thread remains running.
 
 Verification commands:
