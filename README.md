@@ -62,4 +62,6 @@ bash tools/install_desktop_launchers.sh
 
 Both launchers use the repository-owned star icon and target the checkout's
 relocatable `run_mxztar_forge.sh`. Existing launcher files are backed up before
-replacement.
+replacement. The installer also creates a Desktop folder-link named
+`MXZTAR-Forge-Input` that points directly to the authoritative
+`workspace/input` intake directory.
