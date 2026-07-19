@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title description">
+  <title id="title">MXZTAR Forge star</title>
+  <desc id="description">A gold five-point star on a dark circular field.</desc>
+  <circle cx="128" cy="128" r="116" fill="#202020" stroke="#d6c27a" stroke-width="12"/>
+  <path fill="#f0d56b" stroke="#fff1a8" stroke-width="6" stroke-linejoin="round"
+        d="M128 38l21.2 55.1 58.9 3.2-45.8 37.2 15.2 57-49.5-32.2-49.5 32.2 15.2-57-45.8-37.2 58.9-3.2z"/>
+</svg>
