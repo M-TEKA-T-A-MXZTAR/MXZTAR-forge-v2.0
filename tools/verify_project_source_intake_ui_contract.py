@@ -41,12 +41,25 @@ def wait_until(app, predicate, message: str, timeout: float = 10) -> None:
     require(predicate(), message)
 
 
-def wait_for_library(app, panel) -> None:
-    wait_until(
-        app,
-        lambda: not panel.has_active_intake() and not panel.has_active_thumbnail_loading(),
-        "project intake or library discovery did not finish",
-    )
+def wait_for_library(app, panel, timeout: float = 60) -> None:
+    try:
+        wait_until(
+            app,
+            lambda: not panel.has_active_intake()
+            and not panel.has_active_thumbnail_loading(),
+            "project intake or library discovery did not finish",
+            timeout=timeout,
+        )
+    except RuntimeError as exc:
+        intake = panel._intake_thread
+        discovery = panel._discovery_thread
+        thumbnails = panel._thumbnail_loader
+        raise RuntimeError(
+            f"{exc}; intake_running={bool(intake and intake.isRunning())}; "
+            f"discovery_running={bool(discovery and discovery.isRunning())}; "
+            f"thumbnails_running={bool(thumbnails and thumbnails.isRunning())}; "
+            f"status={panel.status_label.text()!r}"
+        ) from exc
 
 
 def main() -> int:
@@ -78,7 +91,7 @@ def main() -> int:
                 time.sleep(0.2)
                 return real_import(active_session, source_path)
 
-            ticks = []
+            ticks = [time.monotonic()]
             timer = QTimer()
             timer.timeout.connect(lambda: ticks.append(time.monotonic()))
             timer.start(10)
@@ -100,8 +113,16 @@ def main() -> int:
                 )
                 wait_for_library(app, window.library_panel)
             timer.stop()
+            ticks.append(time.monotonic())
 
             require(len(ticks) >= 3, "Qt event loop did not remain responsive during intake")
+            maximum_tick_gap = max(
+                later - earlier for earlier, later in zip(ticks, ticks[1:])
+            )
+            require(
+                maximum_tick_gap <= 0.5,
+                f"Qt event loop stalled for {maximum_tick_gap:.3f} seconds during intake",
+            )
             require(source.read_bytes() == source_before, "external source bytes changed")
             require(session.is_writable, "successful intake lost writable authority")
             require(window.library_panel.source_grid.count() == 1, "project source was not discovered")
