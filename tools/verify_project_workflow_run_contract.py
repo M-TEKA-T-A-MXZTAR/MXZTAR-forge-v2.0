@@ -68,6 +68,7 @@ def main() -> int:
         require(record["workflow_complete"] is False, "unvalidated output became completed workflow")
         require(record["approval_state"] == "not_applicable", "run evidence gained approval")
         require(record["provenance"]["source_asset_id"] == imported.record["asset_id"], "source provenance drifted")
+        require(record["provenance"]["source_sha256"] == imported.record["sha256"], "source hash provenance drifted")
         require(record["validation"]["structured_findings_validated"] is False, "raw text became validated")
         require(not session.state.assessment.manifest["current_artifact_ids"], "run evidence entered project truth")
         print("PASS: successful model call saves unvalidated project-owned evidence without approval")
