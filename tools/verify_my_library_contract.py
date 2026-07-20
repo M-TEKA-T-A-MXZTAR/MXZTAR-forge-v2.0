@@ -54,19 +54,52 @@ def make_sources(temp_dir: str) -> list[SourceArtItem]:
     return items
 
 
-def wait_for_thumbnails(app: QApplication, panel, timeout: float = 10) -> None:
+def wait_until(app: QApplication, predicate, message: str, timeout: float = 60) -> None:
     deadline = time.monotonic() + timeout
-    while (
-        panel.has_active_thumbnail_loading()
-        and time.monotonic() < deadline
-    ):
+    while time.monotonic() < deadline:
         app.processEvents()
+        if predicate():
+            # Require idle across another event-loop turn. A queued discovery-finished
+            # callback may otherwise start thumbnail loading after a false-idle result.
+            app.processEvents()
+            if predicate():
+                return
         time.sleep(0.01)
     app.processEvents()
-    require(
-        not panel.has_active_thumbnail_loading(),
-        "background discovery or thumbnail loading did not finish",
-    )
+    require(predicate(), message)
+
+
+def wait_for_thumbnails(app: QApplication, panel, timeout: float = 60) -> None:
+    try:
+        wait_until(
+            app,
+            lambda: not panel.has_active_thumbnail_loading(),
+            "background discovery or thumbnail loading did not finish",
+            timeout=timeout,
+        )
+    except RuntimeError as exc:
+        discovery = panel._discovery_thread
+        thumbnails = panel._thumbnail_loader
+        raise RuntimeError(
+            f"{exc}; discovery_running={bool(discovery and discovery.isRunning())}; "
+            f"thumbnails_running={bool(thumbnails and thumbnails.isRunning())}; "
+            f"status={panel.status_label.text()!r}"
+        ) from exc
+
+
+def stop_panel_background(app: QApplication, panel, timeout: float = 5) -> None:
+    """Best-effort verifier cleanup so a failed assertion cannot destroy live QThreads."""
+    panel.request_thumbnail_shutdown()
+    deadline = time.monotonic() + timeout
+    while panel.has_active_thumbnail_loading() and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(0.01)
+
+    for thread in (panel._discovery_thread, panel._thumbnail_loader):
+        if thread is not None and thread.isRunning():
+            thread.requestInterruption()
+            thread.wait(5000)
+    app.processEvents()
 
 
 class SlowThumbnailThread(QThread):
@@ -78,6 +111,8 @@ class SlowThumbnailThread(QThread):
 def main() -> int:
     app = QApplication.instance() or QApplication([])
     original_scan = library_module.scan_source_art
+    panels = []
+    window = None
 
     try:
         with tempfile.TemporaryDirectory(prefix="mxztar-library-") as temp_dir:
@@ -86,6 +121,7 @@ def main() -> int:
             library_module.scan_source_art = lambda _interrupted=None: items
 
             panel = library_module.MyLibraryPanel()
+            panels.append(panel)
             wait_for_thumbnails(app, panel)
 
             require(panel.source_grid.count() == 6, "library did not show all six sources")
@@ -140,6 +176,8 @@ def main() -> int:
 
             library_module.scan_source_art = lambda _interrupted=None: []
             empty_panel = library_module.MyLibraryPanel()
+            panels.append(empty_panel)
+            wait_for_thumbnails(app, empty_panel)
             require(not empty_panel.use_button.isEnabled(), "empty library enabled handoff")
             require(
                 "No source art found" in empty_panel.status_label.text(),
@@ -169,6 +207,13 @@ def main() -> int:
             print("PASS: visible My Library grid verified")
     finally:
         library_module.scan_source_art = original_scan
+        if window is not None:
+            stop_panel_background(app, window.library_panel)
+            window.close()
+        for panel in panels:
+            stop_panel_background(app, panel)
+            panel.deleteLater()
+        app.processEvents()
 
     return 0
 
