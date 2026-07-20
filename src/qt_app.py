@@ -39,6 +39,7 @@ from PySide6.QtWidgets import (
 from core.hardware_profile import apply_local_ai_policy, policy_summary
 from core.paths import ensure_project_dirs
 from core.project_session import ProjectSession
+from core.source_library import SourceArtItem
 from qt_panels.start_here_panel import StartHerePanel
 from qt_panels.agent_panel import AgentPanel
 from qt_panels.my_library_panel import MyLibraryPanel
@@ -224,6 +225,15 @@ class MXZTARForgeWindow(QMainWindow):
         self.settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
         self.sidebar_collapsed = False
         self._close_when_background_idle = False
+        self._guided_action = None
+        self._guided_target = None
+        self._guided_target_style = ""
+        self._guided_pulse_on = False
+        self._guided_evidence_ready = False
+        self._guided_project_name_edited = False
+        self._awaiting_project_resume = bool(
+            project_session is not None and project_session.state is not None
+        )
         self.project_session = project_session or ProjectSession()
 
         self.setWindowTitle("MXZTAR Forge v2.0")
@@ -236,6 +246,12 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.start_here_panel = StartHerePanel(self.project_session)
         self.start_here_panel.status_changed.connect(self.set_status)
+        self.start_here_panel.profile_fields["project_name"].textChanged.connect(
+            self.handle_guided_project_name_edited
+        )
+        self.start_here_panel.project_selector.currentIndexChanged.connect(
+            lambda _index: self.refresh_guided_next_step()
+        )
 
         self.agent_panel = AgentPanel(self.project_session)
         self.agent_panel.status_changed.connect(self.set_status)
@@ -249,6 +265,19 @@ class MXZTARForgeWindow(QMainWindow):
         self.library_panel.status_changed.connect(self.set_status)
         self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
         self.library_panel.background_idle.connect(self.finish_deferred_close)
+        self.library_panel.background_idle.connect(self.refresh_guided_next_step)
+        self.library_panel.background_active.connect(
+            lambda: self.set_guidance("Preparing My Library…", None)
+        )
+        self.library_panel.intake_active_changed.connect(
+            self.handle_guided_intake_active
+        )
+        self.library_panel.project_source_ready.connect(
+            self.accept_guided_project_source
+        )
+        self.library_panel.project_sources_discovered.connect(
+            self.accept_reopened_project_sources
+        )
         self.library_panel.intake_active_changed.connect(
             self.start_here_panel.set_project_mutation_active
         )
@@ -257,6 +286,7 @@ class MXZTARForgeWindow(QMainWindow):
         )
         self.start_here_panel.project_changed.connect(self.library_panel.set_project_state)
         self.start_here_panel.project_changed.connect(self.agent_panel.set_project_state)
+        self.start_here_panel.project_changed.connect(self.handle_guided_project_changed)
         self.agent_panel.set_project_state(self.project_session.state)
 
         self.shape_panel = ShapeLibraryPanel()
@@ -267,6 +297,11 @@ class MXZTARForgeWindow(QMainWindow):
         self.jobs_panel.status_changed.connect(self.set_status)
         self.jobs_panel.background_idle.connect(self.finish_deferred_close)
         self.agent_panel.job_record_saved.connect(self.jobs_panel.refresh_jobs)
+        self.agent_panel.job_record_saved.connect(self.guide_to_saved_evidence)
+        self.agent_panel.job_active_changed.connect(self.handle_guided_job_active)
+        self.agent_panel.workflow_combo.currentTextChanged.connect(
+            lambda _text: self.refresh_guided_next_step()
+        )
         self.start_here_panel.project_changed.connect(self.jobs_panel.set_project_state)
 
         self.pages.addWidget(self.dashboard_panel)
@@ -316,13 +351,26 @@ class MXZTARForgeWindow(QMainWindow):
         )
         self.status_label.setStyleSheet("padding: 8px; color: #d6c27a;")
 
+        self.next_step_button = QPushButton("Next: Start Here")
+        self.next_step_button.setToolTip(
+            "Guided next action. Heavy AI work still requires this explicit click."
+        )
+        self.next_step_button.clicked.connect(self.perform_guided_next_step)
+        self.guided_pulse_timer = QTimer(self)
+        self.guided_pulse_timer.setInterval(800)
+        self.guided_pulse_timer.timeout.connect(self.toggle_guided_pulse)
+        self.guided_pulse_timer.start()
+
         main_row = QHBoxLayout()
         main_row.addWidget(self.side_container)
         main_row.addWidget(self.page_scroll, 1)
 
         main_column = QVBoxLayout()
         main_column.addLayout(main_row, 1)
-        main_column.addWidget(self.status_label)
+        guidance_row = QHBoxLayout()
+        guidance_row.addWidget(self.status_label, 1)
+        guidance_row.addWidget(self.next_step_button)
+        main_column.addLayout(guidance_row)
 
         root = QWidget()
         root.setLayout(main_column)
@@ -334,12 +382,197 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.setCentralWidget(root)
         self.restore_window_geometry()
+        QTimer.singleShot(0, self.library_panel.refresh_library)
+        QTimer.singleShot(0, self.refresh_guided_next_step)
+
+    def _open_guided_page(self, page_index: int) -> None:
+        self.pages.setCurrentIndex(page_index)
+        self.sidebar.setCurrentRow(page_index)
+
+    def set_guidance(self, text: str, action=None, target=None) -> None:
+        if self._guided_target is not None:
+            self._guided_target.setStyleSheet(self._guided_target_style)
+        self._guided_target = target
+        self._guided_target_style = target.styleSheet() if target is not None else ""
+        if target is not None:
+            target.setStyleSheet(
+                self._guided_target_style
+                + " border: 2px solid #d6c27a; font-weight: 700;"
+            )
+        self._guided_action = action
+        self.next_step_button.setText(text)
+        self.next_step_button.setEnabled(action is not None)
+
+    def toggle_guided_pulse(self) -> None:
+        if not self.next_step_button.isEnabled():
+            self.next_step_button.setStyleSheet("")
+            return
+        self._guided_pulse_on = not self._guided_pulse_on
+        if self._guided_pulse_on:
+            self.next_step_button.setStyleSheet(
+                "background-color: #6b5b24; border: 3px solid #f0d76b; "
+                "font-weight: 800; padding: 8px 14px;"
+            )
+        else:
+            self.next_step_button.setStyleSheet(
+                "background-color: #3a3420; border: 2px solid #9f8d49; "
+                "font-weight: 700; padding: 8px 14px;"
+            )
+
+    def perform_guided_next_step(self) -> None:
+        action = self._guided_action
+        if action is not None:
+            action()
+
+    def focus_project_name(self) -> None:
+        self._open_guided_page(1)
+        self.start_here_panel.profile_fields["project_name"].setFocus()
+        self.set_status("Enter a project name, then use the pulsing Next control.")
+
+    def open_guided_import(self) -> None:
+        self._open_guided_page(3)
+        QTimer.singleShot(0, self.library_panel.choose_project_source)
+
+    def run_guided_workflow(self) -> None:
+        self._open_guided_page(2)
+        self.agent_panel.start_selected_workflow()
+
+    def open_guided_jobs(self) -> None:
+        self._guided_evidence_ready = False
+        self._open_guided_page(5)
+        self.jobs_panel.refresh_jobs()
+        self.refresh_guided_next_step()
+
+    def handle_guided_project_name_edited(self, _text: str) -> None:
+        self._guided_project_name_edited = True
+        self.refresh_guided_next_step()
+
+    def handle_guided_project_changed(self, state) -> None:
+        self._guided_evidence_ready = False
+        self._guided_project_name_edited = False
+        self._awaiting_project_resume = bool(state is not None and state.writable)
+        self.refresh_guided_next_step()
+
+    def handle_guided_intake_active(self, active: bool) -> None:
+        if active:
+            self.set_guidance("Importing project source…", None)
+        else:
+            self.refresh_guided_next_step()
+
+    def handle_guided_job_active(self, active: bool) -> None:
+        if active:
+            self._guided_evidence_ready = False
+            self.set_guidance("Working locally…", None)
+        elif self._guided_evidence_ready:
+            self.guide_to_saved_evidence()
+        else:
+            self.refresh_guided_next_step()
+
+    def guide_to_saved_evidence(self, *_args) -> None:
+        self._guided_evidence_ready = True
+        self.set_guidance(
+            "Next: Inspect saved evidence",
+            self.open_guided_jobs,
+            self.sidebar,
+        )
+
+    def accept_reopened_project_sources(self, sources) -> None:
+        if not self._awaiting_project_resume:
+            return
+        self._awaiting_project_resume = False
+        if not sources:
+            self.refresh_guided_next_step()
+            return
+        item = sources[0]
+        if self.agent_panel.select_source_item(item):
+            self._open_guided_page(2)
+            self.refresh_guided_next_step()
+            self.set_status(
+                f"Resumed project source in Agent Workflows: {item.path.name}."
+            )
+
+    def accept_guided_project_source(self, item) -> None:
+        if self.agent_panel.select_source_item(item):
+            self._guided_evidence_ready = False
+            self._open_guided_page(2)
+            self.refresh_guided_next_step()
+            self.set_status(
+                f"Imported source selected in Agent Workflows: {item.path.name}. "
+                "Choose any workflow, then use the pulsing Next control."
+            )
+
+    def refresh_guided_next_step(self) -> None:
+        if self.agent_panel.has_active_job():
+            self.set_guidance("Working locally…", None)
+            return
+        if self._guided_evidence_ready:
+            self.guide_to_saved_evidence()
+            return
+        state = self.project_session.state
+        if state is None:
+            typed_name = self.start_here_panel.profile_fields["project_name"].text().strip()
+            if self._guided_project_name_edited and typed_name:
+                self.set_guidance(
+                    "Next: Create project",
+                    self.start_here_panel.create_current_project,
+                    self.start_here_panel.create_project_button,
+                )
+            elif self.start_here_panel.project_selector.currentData():
+                self.set_guidance(
+                    "Next: Open selected project",
+                    self.start_here_panel.open_selected_project,
+                    self.start_here_panel.open_project_button,
+                )
+            elif typed_name:
+                self.set_guidance(
+                    "Next: Create project",
+                    self.start_here_panel.create_current_project,
+                    self.start_here_panel.create_project_button,
+                )
+            else:
+                self.set_guidance(
+                    "Next: Enter project name",
+                    self.focus_project_name,
+                    self.start_here_panel.profile_fields["project_name"],
+                )
+            return
+        if not state.writable:
+            self.set_guidance(
+                "Next: Review project status",
+                lambda: self._open_guided_page(1),
+                self.sidebar,
+            )
+            return
+        if self.library_panel.has_active_intake() or self.library_panel.has_active_thumbnail_loading():
+            self.set_guidance("Preparing My Library…", None)
+            return
+        project_id = state.assessment.manifest["project_id"]
+        selected = self.agent_panel.source_combo.currentData()
+        if (
+            isinstance(selected, SourceArtItem)
+            and selected.authority == "active_project"
+            and selected.project_id == project_id
+        ):
+            workflow = self.agent_panel.workflow_combo.currentText()
+            self.set_guidance(
+                f"Next: Run {workflow}",
+                self.run_guided_workflow,
+                self.agent_panel.run_button,
+            )
+            return
+        self.set_guidance(
+            "Next: Import PNG or JPEG",
+            self.open_guided_import,
+            self.library_panel.import_button,
+        )
 
     def open_library_source_in_agent_panel(self, item):
         if self.agent_panel.select_source_item(item):
+            self._guided_evidence_ready = False
             self.pages.setCurrentIndex(2)
             self.sidebar.setCurrentRow(2)
             self.set_status(f"Opened library source in Agent Workflows: {item.path.name}")
+            self.refresh_guided_next_step()
 
     def open_page(self, index: int):
         self.pages.setCurrentIndex(index)

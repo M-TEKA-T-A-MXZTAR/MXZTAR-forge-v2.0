@@ -1153,3 +1153,11 @@ No milestone may be marked `VERIFIED` solely because code was committed or a PR 
 - Completed bounded thumbnails and their truthful decode errors are retained for later card selection.
 - Reselecting a project source no longer falls back permanently to a stale `Thumbnail loading…` message after its worker has finished.
 - Selecting a filename now produces visible status guidance while preserving the exact-source handoff boundary.
+
+### Guided Next Step workflow — PR pending
+
+- The application now exposes one always-visible, slow-pulsing Next control instead of requiring users to infer navigation order.
+- Guidance follows project creation/opening, source import, all seven workflow selections, active local work, and saved evidence inspection.
+- A successfully imported canonical project source is handed safely to Agent Workflows and the workspace navigates there automatically.
+- Safe navigation and selection are automated; starting a heavy Ollama workflow remains an explicit human click.
+- Active discovery, thumbnail work, intake, and AI execution suppress misleading next actions until their truthful terminal state.

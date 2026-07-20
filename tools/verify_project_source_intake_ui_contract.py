@@ -106,6 +106,17 @@ def main() -> int:
                 window.library_panel.import_button.isEnabled(),
                 "writable project did not enable intake",
             )
+            require(
+                window.next_step_button.isEnabled()
+                and "Import PNG or JPEG" in window.next_step_button.text(),
+                "guided flow did not identify project source intake as the next action",
+            )
+            pulse_before = window.next_step_button.styleSheet()
+            window.toggle_guided_pulse()
+            require(
+                window.next_step_button.styleSheet() != pulse_before,
+                "guided Next control did not provide a visible slow-pulse state",
+            )
 
             real_import = library_module.import_source_copy
 
@@ -154,6 +165,42 @@ def main() -> int:
             require(item.path != source, "library still points at the external source")
             require(item.path.read_bytes() == source_before, "project copy bytes drifted")
             require(item.preview_path is not None and item.preview_path.is_file(), "preview missing")
+            require(
+                window.pages.currentWidget() is window.agent_panel,
+                "successful intake did not navigate safely to Agent Workflows",
+            )
+            require(
+                window.agent_panel.source_combo.currentData() == item,
+                "successful intake did not hand off the canonical project source",
+            )
+            for index in range(window.agent_panel.workflow_combo.count()):
+                window.agent_panel.workflow_combo.setCurrentIndex(index)
+                app.processEvents()
+                require(
+                    window.next_step_button.text()
+                    == f"Next: Run {window.agent_panel.workflow_combo.currentText()}",
+                    "guided Next control did not follow the selected workflow",
+                )
+            window.agent_panel.workflow_combo.setCurrentIndex(0)
+            window.handle_guided_project_changed(session.state)
+            window.library_panel.project_sources_discovered.emit((item,))
+            app.processEvents()
+            require(
+                window.agent_panel.source_combo.currentData() == item
+                and window.next_step_button.text().startswith("Next: Run "),
+                "reopened project did not resume its existing canonical source",
+            )
+            window.guide_to_saved_evidence()
+            require(
+                window.next_step_button.text() == "Next: Inspect saved evidence",
+                "saved evidence did not become the guided next step",
+            )
+            window.open_guided_jobs()
+            require(
+                not window._guided_evidence_ready
+                and window.next_step_button.text().startswith("Next: Run "),
+                "viewed evidence remained stuck as the guided next step",
+            )
             window.library_panel.source_grid.setCurrentRow(-1)
             window.library_panel.source_grid.setCurrentRow(0)
             app.processEvents()
@@ -175,6 +222,32 @@ def main() -> int:
             print("PASS: project intake stays off the Qt main thread and external bytes remain unchanged")
             print("PASS: project previews use the bounded image decoder")
             print("PASS: import control remains visible and completed previews survive reselection")
+            print("PASS: guided Next flow navigates intake and all workflow selections")
+
+            second_source = external / "operator-source-second.png"
+            Image.new("RGB", (96, 64), (84, 42, 18)).save(second_source)
+            require(
+                window.library_panel.start_project_intake(second_source),
+                "second project intake did not start",
+            )
+            app.processEvents()
+            require(
+                not window.next_step_button.isEnabled()
+                and "Importing project source" in window.next_step_button.text(),
+                "guided action remained enabled during source intake",
+            )
+            wait_for_library(app, window.library_panel)
+            second_item = window.agent_panel.source_combo.currentData()
+            require(
+                isinstance(second_item, SourceArtItem)
+                and second_item.path.name.endswith("operator-source-second.png"),
+                "guided handoff selected an older project source instead of the new import",
+            )
+            require(
+                second_item.asset_id != item.asset_id,
+                "second intake did not hand off its exact asset identity",
+            )
+            print("PASS: guided handoff tracks the exact newly imported asset")
 
             window.library_panel.source_selected.emit(item)
             app.processEvents()
@@ -203,7 +276,7 @@ def main() -> int:
 
             require(window.library_panel.start_project_intake(source), "duplicate intake did not start")
             wait_for_library(app, window.library_panel)
-            require(window.library_panel.source_grid.count() == 1, "duplicate intake created another card")
+            require(window.library_panel.source_grid.count() == 2, "duplicate intake created another card")
             require("Already present" in window.library_panel.status_label.text(), "duplicate was not truthful")
             print("PASS: duplicate project intake remains idempotent and visibly classified")
 
@@ -215,7 +288,7 @@ def main() -> int:
                 "failed; no success is claimed" in window.library_panel.status_label.text(),
                 "failed intake was not reported truthfully",
             )
-            require(window.library_panel.source_grid.count() == 1, "failed intake created project truth")
+            require(window.library_panel.source_grid.count() == 2, "failed intake created project truth")
             print("PASS: failed intake remains failure and creates no project source")
 
             session.revoke_writable_authority("rollback verification fixture")
@@ -230,6 +303,14 @@ def main() -> int:
             window.start_here_panel.close_project()
             app.processEvents()
             wait_for_library(app, window.library_panel)
+            window.start_here_panel.profile_fields["project_name"].setText(
+                "Guided Fresh Project"
+            )
+            app.processEvents()
+            require(
+                window.next_step_button.text() == "Next: Create project",
+                "typed project name did not override the existing-project selection",
+            )
             require(
                 not window.library_panel.import_button.isEnabled(),
                 "detached session allowed intake",
