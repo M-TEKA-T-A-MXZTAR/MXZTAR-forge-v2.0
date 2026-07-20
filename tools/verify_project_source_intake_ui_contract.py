@@ -205,6 +205,31 @@ def main() -> int:
             print("PASS: import control remains visible and completed previews survive reselection")
             print("PASS: guided Next flow navigates intake and all workflow selections")
 
+            second_source = external / "operator-source-second.png"
+            Image.new("RGB", (96, 64), (84, 42, 18)).save(second_source)
+            require(
+                window.library_panel.start_project_intake(second_source),
+                "second project intake did not start",
+            )
+            app.processEvents()
+            require(
+                not window.next_step_button.isEnabled()
+                and "Importing project source" in window.next_step_button.text(),
+                "guided action remained enabled during source intake",
+            )
+            wait_for_library(app, window.library_panel)
+            second_item = window.agent_panel.source_combo.currentData()
+            require(
+                isinstance(second_item, SourceArtItem)
+                and second_item.path.name.endswith("operator-source-second.png"),
+                "guided handoff selected an older project source instead of the new import",
+            )
+            require(
+                second_item.asset_id != item.asset_id,
+                "second intake did not hand off its exact asset identity",
+            )
+            print("PASS: guided handoff tracks the exact newly imported asset")
+
             window.library_panel.source_selected.emit(item)
             app.processEvents()
             require(
@@ -232,7 +257,7 @@ def main() -> int:
 
             require(window.library_panel.start_project_intake(source), "duplicate intake did not start")
             wait_for_library(app, window.library_panel)
-            require(window.library_panel.source_grid.count() == 1, "duplicate intake created another card")
+            require(window.library_panel.source_grid.count() == 2, "duplicate intake created another card")
             require("Already present" in window.library_panel.status_label.text(), "duplicate was not truthful")
             print("PASS: duplicate project intake remains idempotent and visibly classified")
 
@@ -244,7 +269,7 @@ def main() -> int:
                 "failed; no success is claimed" in window.library_panel.status_label.text(),
                 "failed intake was not reported truthfully",
             )
-            require(window.library_panel.source_grid.count() == 1, "failed intake created project truth")
+            require(window.library_panel.source_grid.count() == 2, "failed intake created project truth")
             print("PASS: failed intake remains failure and creates no project source")
 
             session.revoke_writable_authority("rollback verification fixture")
@@ -259,6 +284,14 @@ def main() -> int:
             window.start_here_panel.close_project()
             app.processEvents()
             wait_for_library(app, window.library_panel)
+            window.start_here_panel.profile_fields["project_name"].setText(
+                "Guided Fresh Project"
+            )
+            app.processEvents()
+            require(
+                window.next_step_button.text() == "Next: Create project",
+                "typed project name did not override the existing-project selection",
+            )
             require(
                 not window.library_panel.import_button.isEnabled(),
                 "detached session allowed intake",
