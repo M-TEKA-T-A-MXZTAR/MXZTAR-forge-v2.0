@@ -118,6 +118,8 @@ class MyLibraryPanel(QWidget):
     intake_active_changed = Signal(bool)
     project_authority_changed = Signal(object)
     project_source_ready = Signal(object)
+    project_sources_discovered = Signal(object)
+    background_active = Signal()
 
     def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
@@ -129,6 +131,7 @@ class MyLibraryPanel(QWidget):
         self._discovery_thread = None
         self._intake_thread = None
         self._pending_intake_message = None
+        self._pending_intake_asset_id = None
         self._discovery_diagnostic = None
         self._refresh_pending = False
         self._thumbnail_images = OrderedDict()
@@ -268,6 +271,7 @@ class MyLibraryPanel(QWidget):
             return
 
         self.set_status("Discovering legacy and active-project sources…")
+        self.background_active.emit()
         self._discovery_thread = LibraryDiscoveryThread(self.discover_sources, self)
         self._discovery_thread.discovered.connect(self._discovery_finished)
         self._discovery_thread.finished.connect(self._discovery_thread_finished)
@@ -302,6 +306,13 @@ class MyLibraryPanel(QWidget):
         self.source_grid.blockSignals(True)
         self.source_grid.clear()
         self.source_items = list(sources)
+        self.project_sources_discovered.emit(
+            tuple(
+                source
+                for source in self.source_items
+                if source.authority == "active_project"
+            )
+        )
         self._thumbnail_images = OrderedDict()
         self._thumbnail_errors = {}
 
@@ -397,20 +408,23 @@ class MyLibraryPanel(QWidget):
             return
         message = self._pending_intake_message
         ready_source = None
-        if message and (
+        pending_asset_id = self._pending_intake_asset_id
+        if message and pending_asset_id and (
             message.startswith("Imported project source")
             or message.startswith("Already present project source")
         ):
-            selected = self.selected_source()
             state = self.project_session.state
-            if (
-                selected is not None
-                and state is not None
-                and selected.authority == "active_project"
-                and selected.project_id
-                == state.assessment.manifest["project_id"]
-            ):
-                ready_source = selected
+            for index, candidate in enumerate(self.source_items):
+                if (
+                    state is not None
+                    and candidate.authority == "active_project"
+                    and candidate.asset_id == pending_asset_id
+                    and candidate.project_id
+                    == state.assessment.manifest["project_id"]
+                ):
+                    ready_source = candidate
+                    self.source_grid.setCurrentRow(index)
+                    break
         if message is None and self._discovery_diagnostic:
             message = (
                 f"Showing {len(self.source_items)} safe source-art file(s). "
@@ -419,6 +433,7 @@ class MyLibraryPanel(QWidget):
         if message is None:
             message = f"Showing all {len(self.source_items)} source-art file(s)."
         self._pending_intake_message = None
+        self._pending_intake_asset_id = None
         self._discovery_diagnostic = None
         self.set_status(message)
         self.background_idle.emit()
@@ -482,6 +497,7 @@ class MyLibraryPanel(QWidget):
         if self.has_active_thumbnail_loading():
             self.set_status("Wait for source discovery and thumbnail loading to finish first.")
             return False
+        self._pending_intake_asset_id = None
         self._intake_thread = SourceIntakeThread(
             self.project_session, source_path, self
         )
@@ -498,12 +514,14 @@ class MyLibraryPanel(QWidget):
 
     def _intake_completed(self, result, error):
         if error:
+            self._pending_intake_asset_id = None
             self._pending_intake_message = (
                 f"Source intake failed; no success is claimed: {error}"
             )
             self.set_status(self._pending_intake_message)
             return
         action = "Already present" if result.duplicate else "Imported"
+        self._pending_intake_asset_id = result.record["asset_id"]
         self._pending_intake_message = (
             f"{action} project source {result.record['original_filename']} "
             f"as {result.record['asset_id']}."
