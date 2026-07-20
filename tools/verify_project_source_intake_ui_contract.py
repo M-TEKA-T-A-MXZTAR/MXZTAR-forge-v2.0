@@ -182,6 +182,25 @@ def main() -> int:
                     "guided Next control did not follow the selected workflow",
                 )
             window.agent_panel.workflow_combo.setCurrentIndex(0)
+            window.handle_guided_project_changed(session.state)
+            window.library_panel.project_sources_discovered.emit((item,))
+            app.processEvents()
+            require(
+                window.agent_panel.source_combo.currentData() == item
+                and window.next_step_button.text().startswith("Next: Run "),
+                "reopened project did not resume its existing canonical source",
+            )
+            window.guide_to_saved_evidence()
+            require(
+                window.next_step_button.text() == "Next: Inspect saved evidence",
+                "saved evidence did not become the guided next step",
+            )
+            window.open_guided_jobs()
+            require(
+                not window._guided_evidence_ready
+                and window.next_step_button.text().startswith("Next: Run "),
+                "viewed evidence remained stuck as the guided next step",
+            )
             window.library_panel.source_grid.setCurrentRow(-1)
             window.library_panel.source_grid.setCurrentRow(0)
             app.processEvents()
