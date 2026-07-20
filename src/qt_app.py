@@ -230,6 +230,10 @@ class MXZTARForgeWindow(QMainWindow):
         self._guided_target_style = ""
         self._guided_pulse_on = False
         self._guided_evidence_ready = False
+        self._guided_project_name_edited = False
+        self._awaiting_project_resume = bool(
+            project_session is not None and project_session.state is not None
+        )
         self.project_session = project_session or ProjectSession()
 
         self.setWindowTitle("MXZTAR Forge v2.0")
@@ -243,7 +247,7 @@ class MXZTARForgeWindow(QMainWindow):
         self.start_here_panel = StartHerePanel(self.project_session)
         self.start_here_panel.status_changed.connect(self.set_status)
         self.start_here_panel.profile_fields["project_name"].textChanged.connect(
-            lambda _text: self.refresh_guided_next_step()
+            self.handle_guided_project_name_edited
         )
         self.start_here_panel.project_selector.currentIndexChanged.connect(
             lambda _index: self.refresh_guided_next_step()
@@ -262,8 +266,15 @@ class MXZTARForgeWindow(QMainWindow):
         self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
         self.library_panel.background_idle.connect(self.finish_deferred_close)
         self.library_panel.background_idle.connect(self.refresh_guided_next_step)
+        self.library_panel.background_active.connect(self.refresh_guided_next_step)
+        self.library_panel.intake_active_changed.connect(
+            lambda _active: self.refresh_guided_next_step()
+        )
         self.library_panel.project_source_ready.connect(
             self.accept_guided_project_source
+        )
+        self.library_panel.project_sources_discovered.connect(
+            self.accept_reopened_project_sources
         )
         self.library_panel.intake_active_changed.connect(
             self.start_here_panel.set_project_mutation_active
@@ -424,11 +435,19 @@ class MXZTARForgeWindow(QMainWindow):
         self.agent_panel.start_selected_workflow()
 
     def open_guided_jobs(self) -> None:
+        self._guided_evidence_ready = False
         self._open_guided_page(5)
         self.jobs_panel.refresh_jobs()
+        self.refresh_guided_next_step()
 
-    def handle_guided_project_changed(self, _state) -> None:
+    def handle_guided_project_name_edited(self, _text: str) -> None:
+        self._guided_project_name_edited = True
+        self.refresh_guided_next_step()
+
+    def handle_guided_project_changed(self, state) -> None:
         self._guided_evidence_ready = False
+        self._guided_project_name_edited = False
+        self._awaiting_project_resume = bool(state is not None and state.writable)
         self.refresh_guided_next_step()
 
     def handle_guided_job_active(self, active: bool) -> None:
@@ -447,6 +466,21 @@ class MXZTARForgeWindow(QMainWindow):
             self.open_guided_jobs,
             self.sidebar,
         )
+
+    def accept_reopened_project_sources(self, sources) -> None:
+        if not self._awaiting_project_resume:
+            return
+        self._awaiting_project_resume = False
+        if not sources:
+            self.refresh_guided_next_step()
+            return
+        item = sources[0]
+        if self.agent_panel.select_source_item(item):
+            self._open_guided_page(2)
+            self.refresh_guided_next_step()
+            self.set_status(
+                f"Resumed project source in Agent Workflows: {item.path.name}."
+            )
 
     def accept_guided_project_source(self, item) -> None:
         if self.agent_panel.select_source_item(item):
@@ -467,13 +501,20 @@ class MXZTARForgeWindow(QMainWindow):
             return
         state = self.project_session.state
         if state is None:
-            if self.start_here_panel.project_selector.currentData():
+            typed_name = self.start_here_panel.profile_fields["project_name"].text().strip()
+            if self._guided_project_name_edited and typed_name:
+                self.set_guidance(
+                    "Next: Create project",
+                    self.start_here_panel.create_current_project,
+                    self.start_here_panel.create_project_button,
+                )
+            elif self.start_here_panel.project_selector.currentData():
                 self.set_guidance(
                     "Next: Open selected project",
                     self.start_here_panel.open_selected_project,
                     self.start_here_panel.open_project_button,
                 )
-            elif self.start_here_panel.profile_fields["project_name"].text().strip():
+            elif typed_name:
                 self.set_guidance(
                     "Next: Create project",
                     self.start_here_panel.create_current_project,
