@@ -380,6 +380,7 @@ class MXZTARForgeWindow(QMainWindow):
 
         self.setCentralWidget(root)
         self.restore_window_geometry()
+        QTimer.singleShot(0, self.library_panel.refresh_library)
         QTimer.singleShot(0, self.refresh_guided_next_step)
 
     def _open_guided_page(self, page_index: int) -> None:
