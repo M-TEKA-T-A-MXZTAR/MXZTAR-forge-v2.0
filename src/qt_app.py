@@ -266,9 +266,11 @@ class MXZTARForgeWindow(QMainWindow):
         self.library_panel.source_selected.connect(self.open_library_source_in_agent_panel)
         self.library_panel.background_idle.connect(self.finish_deferred_close)
         self.library_panel.background_idle.connect(self.refresh_guided_next_step)
-        self.library_panel.background_active.connect(self.refresh_guided_next_step)
+        self.library_panel.background_active.connect(
+            lambda: self.set_guidance("Preparing My Library…", None)
+        )
         self.library_panel.intake_active_changed.connect(
-            lambda _active: self.refresh_guided_next_step()
+            self.handle_guided_intake_active
         )
         self.library_panel.project_source_ready.connect(
             self.accept_guided_project_source
@@ -450,6 +452,12 @@ class MXZTARForgeWindow(QMainWindow):
         self._guided_project_name_edited = False
         self._awaiting_project_resume = bool(state is not None and state.writable)
         self.refresh_guided_next_step()
+
+    def handle_guided_intake_active(self, active: bool) -> None:
+        if active:
+            self.set_guidance("Importing project source…", None)
+        else:
+            self.refresh_guided_next_step()
 
     def handle_guided_job_active(self, active: bool) -> None:
         if active:
