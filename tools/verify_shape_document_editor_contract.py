@@ -51,6 +51,8 @@ def main() -> int:
         created = create_blank_shape_document(session)
         document_id = created.document["document_id"]
         canonical_path = created.canonical_path
+        second = create_blank_shape_document(session, title="Second Shape")
+        second_document_id = second.document["document_id"]
         autosave_path = (
             session.project_dir
             / "structures"
@@ -70,9 +72,18 @@ def main() -> int:
 
         panel = EditorPanel(session)
         panel.set_project_state(session.state)
-        require(panel.document_selector.count() == 1, "Editor discovers the project-owned document")
-        require(panel.document is not None, "Editor opens the discovered native document")
+        require(panel.document_selector.count() == 2, "Editor discovers both project-owned documents")
+        require(panel.document is not None, "Editor opens a discovered native document")
 
+        current_document_id = panel.document_selector.currentData()
+        selection_target = (
+            second_document_id if current_document_id != second_document_id else document_id
+        )
+        require(
+            panel.document_selector.findData(selection_target)
+            != panel.document_selector.currentIndex(),
+            "Editor refresh verifier targets a non-current document",
+        )
         original_panel_load = editor_panel_module.load_shape_document
         panel_load_count = 0
 
@@ -83,12 +94,18 @@ def main() -> int:
 
         editor_panel_module.load_shape_document = count_panel_load
         try:
-            panel.refresh_documents(document_id)
+            panel.refresh_documents(selection_target)
         finally:
             editor_panel_module.load_shape_document = original_panel_load
         require(
-            panel_load_count == 1,
-            "Editor refresh loads and renders the selected document exactly once",
+            panel_load_count == 1
+            and panel.document_selector.currentData() == selection_target,
+            "Editor refresh selects, loads, and renders a non-first document exactly once",
+        )
+        panel.refresh_documents(document_id)
+        require(
+            panel.document is not None and panel.document["document_id"] == document_id,
+            "Editor returns to the primary document for command verification",
         )
         require(
             not any(
