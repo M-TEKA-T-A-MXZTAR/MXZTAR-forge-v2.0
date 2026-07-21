@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Shared Qt-panel runtime bootstrap for every supported Forge entrypoint.
+"""Side-effect-free Qt panel package for MXZTAR Forge.
 
-Importing any ``qt_panels`` submodule installs the panel-level runtime contracts
-before a panel instance can be constructed. This keeps direct ``qt_app.py``
-execution aligned with the official launcher.
+Runtime compatibility contracts are installed explicitly by supported
+application entrypoints before a window is constructed. Importing a panel
+submodule must remain inert so startup guards can import panel classes without
+recursively re-importing themselves through this package initializer.
 """
 
 from __future__ import annotations
 
 
 def install_panel_runtime_contracts() -> None:
-    """Install idempotent panel contracts without recursive package bootstrap."""
+    """Install the idempotent panel contracts after package initialization."""
 
     if getattr(install_panel_runtime_contracts, "_bootstrapping", False):
         return
@@ -27,4 +28,3 @@ def install_panel_runtime_contracts() -> None:
 
 
 install_panel_runtime_contracts._bootstrapping = False
-install_panel_runtime_contracts()
