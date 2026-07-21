@@ -1,92 +1,123 @@
 # MXZTAR Forge v2.0
 
-MXZTAR Forge v2.0 is a local-first, human-governed creative
+MXZTAR Forge v2.0 is a local-first, human-governed creative asset editor and
 concept-engineering forge from [MXZTAR Projects](https://www.mxztar.co.nz).
 
-It helps concept artists, indie game and environment artists, Blender and 3D
-blockout creators, small film/animation teams, modular-design builders, and makers
-turn visual source material into structured, inspectable, reusable production
-intelligence.
+The **Forge Editor** is the product centre. It helps concept, vector, game, environment,
+Blender, 3D blockout, maker, and small production teams turn source images or blank
+canvases into editable reusable shapes, governed constructions, and portable assets.
 
-Forge closes the gap between an image and productive downstream work:
+The active creator path is:
 
 ```text
-source image
-→ safe local analysis
-→ observed evidence and explicit uncertainty
-→ human-reviewed shapes, layers, components, and modular grammar
-→ reusable Shape Library assets
-→ durable Forge Pack
-→ Blender, 2D, game-engine, CAD, print, and later 3D handoffs
+source image or blank canvas
+→ extract a shape candidate or create one from scratch
+→ edit paths, nodes, layers, transforms, and construction properties
+→ save a reusable Shape Library asset
+→ assemble or derive components in a reversible 3D environment
+→ export through a validated profile for another workflow or program
 ```
 
 Forge is not merely an image captioner, automatic art generator, or magic one-click
 2D-to-production-3D converter. It preserves source authority, distinguishes evidence
-from inference, keeps the user in control, and prepares work for specialist tools.
+from inference, keeps the user in control, and prepares assets for specialist tools.
 
-## Level One MVP
+AI is optional assistance. Core editing, saving, reopening, and export must remain useful
+without an AI model or network connection.
 
-The first operational release is complete when a user can:
+## Active product levels
 
-1. create or open a local project;
-2. describe their role, intent, target program, units, and required output;
-3. add source images through the Desktop Input folder;
-4. browse every supported source through bounded thumbnails;
-5. run one compatible local vision workflow without freezing the UI;
-6. receive schema-valid structured findings or a truthful diagnostic;
-7. inspect observations, inference, confidence, and unknowns;
-8. correct, reject, approve, and supersede findings;
-9. save approved shapes into the Shape Library;
-10. inspect durable Jobs records and outputs;
-11. export a Forge Pack containing readable JSON, Markdown, PNG, and SVG assets;
-12. reopen the project and recover its state.
+### Level One — Shape Editor and portable 2D assets
+
+The first operational editor release is complete when a user can:
+
+1. create, open, close, and safely recover a local project;
+2. import a supported source image without modifying external bytes, or create a blank
+   shape document;
+3. browse source art through bounded previews;
+4. extract a candidate shape through a manual, algorithmic, or optional AI-assisted path;
+5. create shapes from scratch using primitives and path tools;
+6. edit nodes, handles, contours, holes, fill, stroke, transforms, layers, groups,
+   snapping, symmetry, and explicit 2D boolean results;
+7. use undo/redo and durable editor history;
+8. correct, reject, approve, version, and supersede shapes;
+9. save and reopen editable Shape Library assets;
+10. inspect truthful Jobs and diagnostic records;
+11. export validated SVG and PNG derivatives plus a durable Forge Pack;
+12. reopen the project and continue editing without relying on terminal history.
 
 Level One does not promise production-ready meshes, engineering-grade dimensions,
-manufacturing safety, finished CAD solids, automatic rigging, or perfect AI
-interpretation.
+manufacturing safety, finished CAD solids, automatic rigging, or perfect extraction or
+AI interpretation.
+
+### Level Two — 3D Construct and portable blockouts
+
+After Level One is verified, Level Two adds:
+
+- reversible extrude, bevel, revolve, sweep, loft, relief, and shell operations;
+- editable 3D components with parent-shape provenance;
+- a governed 3D Construct workspace with axes, cameras, units, transforms, snapping,
+  anchors, hierarchy, instances, arrays, and undo/redo;
+- explicit distinctions between group, assembly, contact, stitch/weld, join mesh,
+  boolean, separate, and bake;
+- validated GLB/glTF and fallback 3D export profiles.
+
+Level Two remains a planned active product level. It does not claim engineering
+certification, finished topology, automatic repair, or universal compatibility.
+
+### Levels Three and Four — deferred
+
+Product Levels Three and Four remain deferred until a separate future founder decision
+and source-of-truth revision. No date is assigned.
+
+Future infrastructure, distributed regions, cross-device clients, operator jobs,
+collaboration, immersive systems, economy, persistent regions, and world simulation are
+vision only and are not current implementation instructions.
 
 ## What Forge creates
 
-A Forge Pack is a versioned local project package containing:
+A Forge project and portable Forge Pack may contain:
 
 - source identity, hashes, origin, and rights notes;
-- user and project intent;
-- structured design brief;
-- observed and inferred findings;
-- confidence, uncertainty, and missing evidence;
-- annotated source images;
-- approved masks, silhouettes, and vector shapes;
-- component hierarchy, layer/depth information, and modular relationships;
-- construction and blockout guidance;
+- native editable shape documents;
+- source-derived and scratch-built shapes;
+- masks, silhouettes, vectors, layers, groups, anchors, and construction guides;
+- approved reusable Shape Library records;
+- component hierarchy and reversible construction history;
 - job, model, validation, approval, and provenance records;
-- target-specific exports.
+- target-specific exports and limitation reports.
 
-The canonical package remains readable outside Forge. There is no single universal 3D
-format, so Forge uses target profiles. JSON, Markdown, PNG, and SVG form the initial
-Level One package. GLB is planned as the first general 3D blockout adapter; DXF, 3MF,
-STEP, and OpenUSD follow only when their geometry and validation contracts are honest.
+No single industry file is universal. Forge uses named target profiles.
+
+Core Level One outputs are native Forge records, JSON, Markdown, SVG, and PNG. Validated
+JPEG, WebP, TIFF, PDF, and DXF profiles may follow after their specific gates pass.
+
+Core Level Two outputs are planned around GLB/glTF and OBJ. STL, 3MF, STEP, FBX, and
+OpenUSD remain later format-specific milestones and are not exposed merely because they
+are named.
+
+## Source-image compatibility
+
+Accepted source originals currently include PNG, JPEG/JPG, WebP, BMP, TIFF/TIF, and GIF
+with first-frame previewing. Originals remain unchanged and authoritative.
+
+PNG, JPEG, and WebP are currently model-ready. BMP, TIFF, and GIF may be imported and
+previewed but remain blocked from Ollama until a separately verified normalized model
+input preserves provenance.
 
 ## Automation with control
 
-Forge is designed to automate repetitive workflows while keeping authority with the
-user. Guided Automatic is the intended default: Forge runs visible stages, reports its
-assumptions, and pauses at approval gates.
+Forge supports manual, assisted, guided automatic, and later batch-automatic workflows.
+Manual and assisted modes are first-class because the editor must work without AI.
 
 Heavy operations must provide elapsed time, heartbeat, truthful status, a defined
-cancellation boundary, saved outputs, and useful failure information. No AI runs on
-the Qt main thread. No model downloads silently. One heavy local job runs at a time by
+cancellation boundary, saved outputs, and useful failure information. No AI runs on the
+Qt main thread. No model downloads silently. One heavy local job runs at a time by
 default.
 
-## Future construction direction
-
-Approved Shape Library assets will later support reversible 2D-to-3D operations such
-as extrude, bevel, revolve, sweep, loft, relief, shell, and AI-assisted morph. A later
-Modular Construct workspace will allow users to position components on three axes,
-snap and align them, create instances and arrays, and deliberately group, assemble,
-join, boolean, separate, or export them.
-
-These capabilities are architected in the data model now but are outside the Level One
-MVP implementation boundary.
+The guided Next control may automate safe navigation and exact-source selection. It must
+not silently start a heavy model call, approve a shape, apply an irreversible join,
+delete an asset, switch projects, or export.
 
 ## Adaptive machine policy
 
@@ -115,9 +146,9 @@ From the repository checkout:
 bash tools/install_desktop_launchers.sh
 ```
 
-This installs or refreshes the MXZTAR Forge application-menu and Desktop launchers,
-uses the repository star icon, and creates the Desktop Input link. Existing launcher
-files are backed up before replacement.
+This installs or refreshes the MXZTAR Forge application-menu and Desktop launchers, uses
+the repository star icon, and creates the Desktop Input link. Existing launcher files
+are backed up before replacement.
 
 ## Access, releases, and support
 
@@ -125,23 +156,23 @@ MXZTAR Forge software use is free of charge. There is no confirmed timed trial,
 subscription, or feature paywall. Users who find it valuable may voluntarily support
 the founder at [buymeacoffee.com/mxztar](https://buymeacoffee.com/mxztar).
 
-Developers may collaborate through the public GitHub repository. Ordinary users will
-be directed to versioned official releases so application code, schemas, compatible
-models, and migrations remain synchronized.
+Developers may collaborate through the public GitHub repository. Ordinary users will be
+directed to versioned official releases so application code, schemas, compatible models,
+and migrations remain synchronized.
 
-A formal recognised open-source `LICENSE` and contributor policy must be selected by
-the founder before the first public release. Free-of-charge access does not by itself
-define permission to modify or redistribute the source code.
+A formal recognised open-source `LICENSE` and contributor policy must be selected by the
+founder before the first public release. Free-of-charge access does not by itself define
+permission to modify or redistribute the source code.
 
 ## Product authority
 
 - [Master build plan](docs/product/MASTER_BUILD_PLAN.md)
-- [Future Construct and World vision](docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md)
 - [Progress ledger](docs/PROGRESS_LEDGER.md)
 - [Output artifact contracts](docs/product/OUTPUT_ARTIFACT_CONTRACTS.md)
-- [Level Four platform priorities](docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md)
-- [Workflow compatibility matrix](docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md)
 - [Project state and data authority](docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md)
+- [Workflow compatibility matrix](docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md)
+- [Future Construct and World vision](docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md)
+- [Level Four platform priorities](docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md)
 - [Source-of-truth policy](docs/SOURCE_OF_TRUTH.md)
 
 Git history is the leading project source of truth. Local project files are the user's

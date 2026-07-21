@@ -2,1162 +2,297 @@
 
 ## Ledger purpose
 
-This ledger records what has actually been planned, implemented, verified, observed, deferred, or left unresolved.
+This ledger records what has actually been planned, implemented, merged, verified,
+observed, deferred, blocked, or rejected.
 
-It is not a wish list and it must not be used to imply that planned functionality already exists.
+It is not a wish list and it must not imply that planned functionality already exists.
 
 Status values:
 
 - `VERIFIED` — implemented and supported by recorded verification evidence;
 - `MERGED` — source or documentation is present on `main` through a merged PR;
 - `PARTIAL` — some path exists, but the complete contract is not yet proven;
-- `OBSERVED` — behaviour was seen but not yet reproduced or classified;
+- `OBSERVED` — behaviour was seen but is not yet fully reproduced or classified;
 - `PLANNED` — defined in source-of-truth documentation but not implemented;
+- `PLANNED REQUIRED` — required for the active product level but not implemented;
 - `BLOCKED` — cannot proceed until a named prerequisite is satisfied;
-- `DEFERRED` — intentionally outside the current milestone;
+- `DEFERRED` — intentionally outside the current active product levels;
 - `REJECTED` — deliberately excluded from the current product boundary.
+
+## Ledger consolidation note
+
+This ledger was consolidated on 22 July 2026 as part of the editor-first roadmap
+realignment. Detailed pre-realignment branch notes, verification commands, and historical
+entries remain preserved in Git history through merged `main` commit `0923276`.
+
+The consolidation removes stale “PR pending” statements and superseded next-gate text. It
+does not erase repository history or convert planned functionality into verified work.
 
 ## Current product state
 
-**Current planning era:** Level One operational Forge Pack foundation.
+**Current planning era:** active Product Levels One and Two.
 
-**Current primary objective:** connect the verified project authority to asynchronous
-project-owned source intake and discovery, then formalise structured analysis, review,
-approved shapes, and the first verified Forge Pack before 2D-to-3D construction.
+**Current primary objective:** establish the Forge Editor as the primary daily workspace,
+beginning with a native editable shape document, scratch-built 2D shape creation, source-
+derived extraction, Shape Library lifecycle, and verified SVG/PNG export.
 
-**Current product promise:** turn source art into structured, inspectable, reusable
-production intelligence under human review, then package approved findings and shapes
-for immediate continuation in specialist tools.
+**Current Level One promise:** a creator can import a source image or open a blank shape
+document, create or extract shapes, edit them manually, save reusable assets, and export
+validated 2D derivatives without requiring AI.
 
-**Current non-promise:** automatic production-ready 3D reconstruction, engineering
-accuracy, manufacturing safety, or finished CAD geometry.
+**Current Level Two promise:** after Level One is verified, a creator can convert shapes
+into reversible 3D components, assemble or stitch them in a governed 3D environment, and
+export validated blockouts.
 
-## Milestone ledger
+**Current non-promise:** production-ready automatic 3D reconstruction, engineering
+accuracy, manufacturing safety, finished CAD solids, finished topology, or universal
+format compatibility.
+
+**Deferred product levels:** Product Level Three and Product Level Four remain `DEFERRED`
+until a separate future founder decision and source-of-truth revision. No delivery date
+is assigned.
+
+## Product-level ledger
+
+| Product level | Status | Current boundary | Activation gate |
+|---|---|---|---|
+| Level One — Shape Editor and portable 2D assets | ACTIVE / PARTIAL FOUNDATION | Project authority, source intake, previews, guided navigation, and evidence paths exist; the native editor and approved shape lifecycle do not yet exist | Complete the editor-first milestones and Level One acceptance journey |
+| Level Two — 3D Construct and portable blockouts | PLANNED | Product contract is defined; no Construct workspace or verified 3D export is claimed | Verified Level One editor, shape lifecycle, and 2D interoperability |
+| Level Three | DEFERRED | Infrastructure relationships, regional state, distributed deltas, and advanced system-scale construction are future-only | Separate future founder decision after Levels One and Two |
+| Level Four | DEFERRED | Cross-device platform, operator jobs, collaboration, immersive clients, economy, persistent regions, and world simulation are future-only | Separate future founder decision after preceding levels |
+
+## Current implementation ledger
 
 | Area | Status | Evidence / present state | Next gate |
 |---|---|---|---|
-| Repository source-of-truth policy | VERIFIED | `docs/SOURCE_OF_TRUTH.md`; Git history leads, terminal scrollback does not | Keep verifier aligned with new required documents |
-| Relocatable repository launcher | PARTIAL | Branch launcher derives its checkout path from `BASH_SOURCE`, uses checkout-local `.venv` when present, and has a relocation verifier | Run verifier locally and update external desktop launchers after merge |
-| Coding-practice principles | VERIFIED | Existing source-truth document and controlled-change rules | Apply to every runtime milestone |
-| CPU-safe local policy | VERIFIED | Two-thread, one-parallel-job policy documented; CPU-only target established | Confirm runtime uses policy in every execution path |
-| Ollama HTTP service path | VERIFIED | Prior text and vision probes passed through `http://127.0.0.1:11434/api/generate` | Re-run against current installation and record exact versions |
-| Default local vision model | VERIFIED historically | `qwen2.5vl:3b` passed simple-image vision probe | Reconfirm model availability and current digest/version |
-| Seven prompt contracts | VERIFIED historically | `source_art_intelligence`, `modular_set_perspective`, `prototype_imagination`, `shape_structure_harvest`, `concept_brief`, `render_prompt_pack`, `recommend_next_step` | Re-run verifier on current `main` |
-| Agent runner JSON save path | VERIFIED historically | Simple-image source-art intelligence probe saved JSON output | Validate against new artifact-contract expectations |
-| Agent worker / QThread path | PARTIAL | Worker is wired to `AgentPanel` through a dedicated `QThread`; deterministic panel verifier covers lifecycle and final-state behaviour | Run verifier and manual Ollama smoke test locally before merge |
-| Agent Workflows source selector | VERIFIED manually | User selected an image and workflow | Reproduce in controlled compatibility test |
-| My Library source-art baseline | MERGED | Read-only source discovery, preview, facts, open-folder action, and exact `SourceArtItem` handoff merged in PR #23 | Verify bounded thumbnails and manual library-to-workflow path on large real source art |
-| UI run control | PARTIAL | Selected source/workflow can launch one background job with locked controls, elapsed time, heartbeat, progress, and saved path feedback | Verify against a known-compatible local source/model pair |
-| Random workflow run | OBSERVED | A saved output was shown alongside an `AgentResult(ok=False)` / Ollama HTTP 400; later audit confirmed saved-failure records are valid and worker success semantics were defective | Keep OBS-001 open until UI final-state wiring is verified |
-| Workflow success semantics | MERGED | `AgentWorker` unpacks `(AgentResult, Path)` and emits success only when `AgentResult.ok` is true; worker verifier covers success, saved failure, and exception paths | Preserve distinction in panel and artifact contracts |
-| Cancellation | PLANNED | No misleading cancel control is exposed; active jobs prevent unsafe window close and retain the service timeout boundary | Define cooperative request/model cancellation contract before adding a button |
-| Timeout handling | PARTIAL | Service has timeout concepts; complete UI/artifact behaviour not proven | Add deterministic timeout fixture and final-state test |
-| Failure diagnostics | PARTIAL | Runner can save JSON; durable schema and UI truth not proven | Implement shared failure artifact after baseline audit |
-| Historical first rentable release definition | MERGED | `docs/product/FIRST_RENTABLE_RELEASE.md`, PR #14; its access section now records the superseding free-access decision | Retain filename only as historical continuity or rename in a dedicated link-migration PR |
-| Workflow compatibility matrix | MERGED | `docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`, PR #14 | Implement encoded assessor in Phase 4 |
-| Output artifact contracts | MERGED | `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`, PR #15 | Implement schemas and validators in Phase 4 |
-| Project state and data authority | MERGED | `docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`, PR #16 | Implement only after execution baseline is stable |
-| Level One master build plan | MERGED | `docs/product/MASTER_BUILD_PLAN.md`, initially PR #17 and comprehensively revised after PR #27 | Follow the revised operational MVP sequence |
-| Progress ledger | MERGED | This document, PR #17 | Update after every meaningful audit or implementation milestone |
-| Project manifest and self-contained project directory | VERIFIED | PR #33; canonical manifest, directories, durable history, atomic creation, and collision refusal passed on the T1700 | Preserve authority during UI integration |
-| SQLite rebuild from durable artifacts | PLANNED | SQLite is derived index, not sole truth | Phase 2 exit test |
-| Project lock / one-writer rule | VERIFIED | PR #34; exclusive lease ownership and uncertain-lock containment passed on the T1700 | Prevent UI mutations outside the owning session |
-| Read-only recovery mode | VERIFIED | PRs #34–#36; invalid, uncertain, and interrupted source transactions reopen without writable authority | Recovery actions remain a later explicit workflow |
-| Project session and Start Here authority | VERIFIED | PR #35; create/open/close, bounded discovery, writer release, and recovery attachment passed on the T1700 | Block project switching during active mutations |
-| Project-contained source intake and processed lifecycle | VERIFIED | PR #36; copy/hash/preview, manifest/history transaction, rollback, duplicate identity, and explicit project-copy processing passed on the T1700 | Add asynchronous UI and project-aware discovery |
-| Source rights context | PLANNED | Gap and artifact contracts defined | Phase 3 |
-| Multi-view grouping | PLANNED | Required for honest spatial reasoning | Phase 3 |
-| Scale and unit anchors | PLANNED | Required before dimensional claims | Phase 3 |
-| READY / CAUTION / BLOCKED assessor | PLANNED | Matrix exists | Phase 4 |
-| Shared artifact envelope and schema validation | PLANNED | Contracts exist | Phase 4 |
-| Explicit approval / rejection / supersession | PLANNED | Contracts exist | Phase 4 |
-| Source-art intelligence v1 | PARTIAL | Prompt and runner exist; production-grade structured contract and review are not proven | Phase 5 |
-| Schematic line-network intelligence | PLANNED | Known market/product gap | Phase 6 |
-| Shape and contour graph | PLANNED | Required intermediate evidence | Phase 6 |
-| Layer, depth, and occlusion graph | PLANNED | Required spatial bridge | Phase 7 |
-| 2.5D stacked representation | PLANNED | Core bridge between 2D evidence and later 3D | Phase 7 |
-| Modular design grammar | PARTIAL | Prompt-level modular analysis exists | Phase 7 structured representation and approval |
-| Concept brief translator | PARTIAL | Prompt contract exists | Phase 8 validated translator |
-| Render prompt pack translator | PARTIAL | Prompt contract exists | Phase 8 validated translator |
-| Blender blockout handoff | PLANNED | Defined as initial specialist-tool bridge | Phase 8 after spatial contract |
-| Layered SVG handoff | PLANNED | Useful 2D/vector output | Phase 8 after line/shape contracts |
-| OBJ/GLB blockout export | DEFERRED | Must not precede proven spatial, construction-recipe, and export contracts | Phase 10 |
-| CAD exchange | DEFERRED | Requires units, dimensional confidence, and geometry contracts | Phase 12 |
-| Benchmark corpus | PARTIAL | Simple generated shapes test exists | Expand continuously through Phases 4–12 |
-| Progressive learning ledger | PLANNED | Must record approved observations, decisions, reasons, and downstream use | Add with approval in Phase 4 and extend continuously |
-| Level One cockpit | PLANNED | Start Here, My Library, Agent Workflows, Review, Shape Library, Jobs, and Export are the governed workspaces | Master plan Phases 1–9 |
-| Free-of-charge software access | PLANNED REQUIRED | Founder confirmed no timed trial, subscription, or feature paywall | Public-release acceptance gate |
-| Voluntary founder support | PLANNED | `https://buymeacoffee.com/mxztar`; donation must not alter core access | Add truthful non-intrusive release/UI link |
-| Formal open-source licence | BLOCKED | Repository is public but the founder has not selected a recognised `LICENSE` | Founder selects licence before public release |
-| User access to local files | PLANNED REQUIRED | Local-first authority requires uninterrupted access independent of support/donation | Level One acceptance gate |
+| Repository source-of-truth policy | VERIFIED | `docs/SOURCE_OF_TRUTH.md`; Git history is authoritative | Keep required-document verifier aligned |
+| Coding-practice and controlled-change rules | VERIFIED | Repository instructions and source-truth verification | Apply to every PR |
+| Modest-hardware runtime policy | VERIFIED | CPU-only target, conservative threads, one heavy job by default | Preserve in editor and geometry operations |
+| Relocatable repository launcher | VERIFIED historically | Checkout-relative launcher and verifier were merged and exercised during relocation | Preserve during release packaging |
+| Desktop and application-menu launchers | VERIFIED historically | Repository installer and T1700 use established | Revalidate for official release packaging |
+| Project manifest and self-contained directory | VERIFIED | PR #33; durable manifest, required directories, history, atomic creation, collision refusal | Extend only through versioned editor schema migration |
+| Project one-writer lock and recovery classification | VERIFIED | PR #34; exclusive ownership and uncertain-state containment | Preserve for editor autosave and recovery |
+| Project session and Start Here authority | VERIFIED | PR #35; create/open/close, writer release, read-only recovery attachment | Keep editor mutations session-owned |
+| Project-contained source intake and processed lifecycle | VERIFIED | PR #36; copy/hash/preview, atomic authority updates, duplicate identity, explicit project-copy processing | Preserve external-byte immutability |
+| Asynchronous project-source intake and discovery | VERIFIED | PRs #39–#41 and later deterministic reruns; Qt remains responsive and worker shutdown is cooperative | Reuse safe worker patterns for extraction |
+| My Library visible source grid | VERIFIED | Visible cards, bounded thumbnails, exact source handoff, unchanged source bytes, safe shutdown | Add editor handoff without replacing source authority |
+| Guided Next workflow | VERIFIED | PR #44 and project-source intake UI contract; safe navigation and exact-source handoff are covered | Extend guidance to Editor without silent heavy actions |
+| My Library verifier lifecycle | VERIFIED | PR #45; stable idle detection and safe thread cleanup | Preserve in future asynchronous panels |
+| Live My Library startup refresh guard | VERIFIED | PR #46; focused guard verifier and isolated deterministic rerun passed | Preserve worker ownership boundary |
+| Accepted source-image compatibility | MERGED / DETERMINISTICALLY VERIFIED | PR #47; PNG, JPEG, WebP, BMP, TIFF, and GIF accepted for intake/preview under the documented boundary | Natural live confirmation when representative user files are available |
+| Current model-ready image boundary | VERIFIED CONTRACT | PNG, JPEG, and WebP are model-ready; BMP, TIFF, and GIF are blocked before Ollama pending normalized derivatives | Implement provenance-preserving normalization before widening model support |
+| Agent worker success/failure distinction | VERIFIED historically | Failed `AgentResult` records no longer become UI success merely because diagnostics were saved | Preserve in editor-assisted jobs |
+| Project-owned model-call evidence | MERGED | PR #42; logs/diagnostics remain incomplete evidence, not approved artifacts | Define structured finding and review schema only when needed by editor assistance |
+| Jobs evidence browser | VERIFIED historically | Read-only success/failure/invalid distinction and safe asynchronous shutdown | Add project-native editor and extraction job records |
+| Shape Library evidence browser | VERIFIED historically | Raw shape-harvest evidence remains distinct from approved shapes; approved count truthfully zero | Replace evidence-only baseline with editable approved shape lifecycle |
+| Native editable shape document | PLANNED REQUIRED | Editor-first contract defined in the master plan; no runtime schema exists | Next active milestone |
+| Blank document creation | PLANNED REQUIRED | Required for AI-independent editing | Native shape document and project-owned save path |
+| Scratch-built primitives and paths | PLANNED REQUIRED | Required Level One creator workflow | Editor command and undo/redo foundation |
+| Node, handle, transform, layer, snapping, group, and boolean editing | PLANNED REQUIRED | Defined in Level One Editor contract | Incremental verified editor tools |
+| Source-region selection and manual tracing | PLANNED REQUIRED | Required extraction baseline independent of AI | Editor canvas and source overlay model |
+| Algorithmic contour/mask extraction | PLANNED | No approved extraction engine exists | Manual trace and editable candidate schema first |
+| AI-assisted extraction proposals | PLANNED OPTIONAL | Prompt-level shape analysis exists; no approved editable-shape output | Candidate schema, source coordinates, and human correction path |
+| Review, approval, rejection, versioning, and supersession | PLANNED REQUIRED | Artifact concepts exist; no approved shape runtime path | Editable shape schema and Shape Library write authority |
+| SVG export profile | PLANNED REQUIRED | SVG is named as a core Level One output; no verified adapter is claimed | Native shape document and round-trip fixture |
+| PNG export profile | PLANNED REQUIRED | PNG is named as a core Level One derivative; no editor export adapter is claimed | Native shape rendering and metadata contract |
+| JPEG/WebP/TIFF/PDF derived profiles | PLANNED | Expose only after format-specific validation | Core SVG/PNG profiles first |
+| Reversible 2D-to-3D component generation | PLANNED LEVEL TWO | No production component schema or operation history exists | Verified Level One shapes and construction-recipe schema |
+| Construct 3D workspace | PLANNED LEVEL TWO | No viewport, assembly, stitch, or construction history is claimed | Reversible components first |
+| GLB/glTF export | PLANNED LEVEL TWO | Named first general 3D adapter; not implemented | Construct scene contract and downstream import test |
+| OBJ export | PLANNED LEVEL TWO | Named fallback profile; not implemented | Mesh and limitation contract |
+| STL/3MF/DXF adapters | PLANNED LATER | Require format-specific units and validation | Core Level Two profiles first |
+| STEP/OpenUSD/FBX adapters | DEFERRED ADAPTERS | Require mature solid, assembly, legal, and round-trip contracts | Separate verified adapter milestones |
+| Formal software licence | BLOCKED | Public repository has no founder-selected recognised `LICENSE` | Founder decision before official public release |
+| Free-of-charge core access | PLANNED REQUIRED | Confirmed product policy; no timed trial, subscription, or core feature paywall | Release acceptance and UI wording |
+| Voluntary founder support | PLANNED | `https://buymeacoffee.com/mxztar`; cannot alter file access or core features | Truthful non-intrusive release/UI link |
 
-## Merged planning milestones
+## Verified foundation summary
 
-### PR #14 — First rentable release and workflow compatibility
+### Planning and authority foundations
 
-Status: `MERGED`.
+- PR #14 established the historical first-release workflow and compatibility concepts.
+- PR #15 established artifact-envelope, status, provenance, validation, and failure
+  concepts.
+- PR #16 established durable project files as authority and SQLite as a rebuildable
+  derivative.
+- PR #17 established the original master plan and progress-ledger governance.
+- PRs #33–#36 established the current verified project manifest, locking, session, source
+  intake, and processed-source authority.
 
-Established:
+### Operational shell and source workflow
 
-- first rentable-release boundary;
-- core user journey;
-- first-release workflow set;
-- READY / CAUTION / BLOCKED compatibility states;
-- workflow inputs, dependencies, outputs, and failure expectations.
+- My Library evolved from a selector into a visible bounded-thumbnail grid with exact
+  source handoff and safe shutdown.
+- Jobs and Shape Library provide truthful read-only evidence baselines without inventing
+  approval or extraction.
+- Agent Workflows execute outside the Qt main thread and preserve success, saved failure,
+  and unsaved failure distinctions.
+- Project-owned sources save model-call evidence under project logs or diagnostics while
+  remaining explicitly incomplete and unapproved.
 
-### PR #15 — Output artifact contracts
+### Recent merged sequence
 
-Status: `MERGED`.
+| PR | Merged result | Recorded boundary |
+|---|---|---|
+| #39 | Asynchronous project-aware source intake and discovery | Intake is not analysis, extraction, approval, or processing |
+| #40 | Hardware-kind project-intake UI verifier deadline | Production behaviour unchanged |
+| #41 | Stable Qt idle detection for intake/discovery handoff | Verifier-only lifecycle correction |
+| #42 | Project-owned workflow run evidence | Successful model call is not completed workflow or approved artifact |
+| #43 | My Library minimum-layout and retained preview correction | Source authority unchanged |
+| #44 | Guided Next workflow | Heavy Ollama execution remains explicit human action |
+| #45 | My Library verifier lifecycle correction | Production behaviour unchanged |
+| #46 | Live startup refresh guard | Worker ownership prevents QThread replacement race |
+| #47 | Broadened source image compatibility and PNG thumbnail fix | BMP/TIFF/GIF accepted for preview but blocked from model execution |
 
-Established:
+## 22 July 2026 deterministic verification record
 
-- durable artifact envelope;
-- statuses and approval states;
-- provenance and validation;
-- success/failure separation;
-- atomic-save expectations;
-- diagnostics, logs, history, supersession, and migration concepts.
+Repository state at verification:
 
-### PR #16 — Project state and data authority
+- local branch: `main` only;
+- remote branch: `origin/main` only;
+- working tree: clean;
+- merged head: `0923276`.
 
-Status: `MERGED`.
-
-Established:
-
-- durable project files as authority;
-- SQLite as rebuildable index and acceleration layer;
-- project manifest responsibilities;
-- write ordering and atomicity;
-- one-writer project lock;
-- read-only recovery;
-- corruption detection;
-- manual-edit handling;
-- backup, restore, and reconciliation boundaries.
-
-### PR #17 — Master build plan and progress ledger
-
-Status: `MERGED`.
-
-Established:
-
-- source-art-to-spatial-design intelligence product definition;
-- gap map;
-- phased build plan;
-- progress-ledger governance;
-- next permitted milestone: Execution Baseline Audit.
-
-## Historical verified value path
-
-The earlier implementation proved this basic backend chain at least once:
+Isolated persistent-log results:
 
 ```text
-selected image
-→ prompt contract
-→ Ollama HTTP API
-→ qwen2.5vl:3b
-→ constrained local execution
-→ agent result
-→ saved JSON output
+source-image-compatibility  0
+live-startup-refresh-guard  0
+my-library-contract         0
+project-source-intake       0
+guided-workflow-discovery   127
+source-truth                0
 ```
 
-This proof is important, but it does not yet prove:
+Interpretation:
 
-- every workflow/source combination is valid;
-- failures are classified correctly;
-- saved JSON conforms to the new artifact contracts;
-- the UI always reports final state honestly;
-- cancellation, timeout, and storage failures are safe;
-- source art becomes a validated spatial representation;
-- any production-ready 3D export exists.
+- source-image compatibility contract passed;
+- live startup refresh guard passed;
+- My Library contract passed;
+- project-source intake UI contract passed;
+- guided Next behaviour passed inside the project-source intake UI contract;
+- `guided-workflow-discovery 127` means no separately named guided verifier was found,
+  not that guided behaviour failed;
+- source-truth, Python compilation, required documents, and all seven prompt contracts
+  passed.
+
+Live acceptance boundary:
+
+- no representative user PNG, BMP, or TIFF was available for a separate manual visual
+  acceptance run;
+- PR #47 is therefore deterministically verified and provisionally accepted;
+- live confirmation may occur naturally when those formats enter a real workflow;
+- no live-format failure is currently recorded.
 
 ## Unresolved observation register
 
-### OBS-001 — Random workflow produced HTTP 400 and confusing success text
+### OBS-001 — Historical Ollama HTTP 400 and confusing completion text
 
-Observed behaviour:
+Status: `PARTIAL RESOLUTION`.
 
-- a source and workflow were selected at random;
-- output text indicated a saved path and completion;
-- the displayed result also contained `AgentResult(ok=False)` and an Ollama HTTP 400 error.
+Resolved portions:
 
-Current interpretation:
+- worker success semantics distinguish successful result, saved failure diagnostic, and
+  exception;
+- project-owned model evidence distinguishes `model_call_succeeded` from completed,
+  validated, or approved workflow output;
+- non-model-ready formats are blocked before Ollama under PR #47.
 
-- the runner correctly saves both success records and failure diagnostic records;
-- the former large JPEG source still reproduces an Ollama HTTP 400 with the current vision request path;
-- the worker previously treated any returned `(AgentResult, output_path)` tuple as success because no Python exception was raised;
-- therefore storage success and workflow success were conflated at the worker-signal boundary.
+Still open:
 
-Required resolution:
+- the historically failing large JPEG/model combination requires current controlled
+  reproduction before being classified closed;
+- full structured findings and editor-assisted extraction output remain unimplemented;
+- cancellation and timeout artifact behaviour remain incomplete.
 
-1. inspect current contracts — completed;
-2. reproduce with a known compatible pair — completed;
-3. reproduce with the former failing source — completed;
-4. assert exact worker signal values — pending PR verifier;
-5. assert final UI label — pending future panel wiring;
-6. assert saved artifact status — pending artifact-contract implementation;
-7. add regression coverage — pending PR verifier.
+Do not close OBS-001 solely because the editor-first roadmap reduces AI centrality.
 
-Do not close OBS-001 until evidence proves final UI state, saved artifact status, and worker/panel wiring.
+### OBS-002 — Live representative PNG/BMP/TIFF acceptance not performed
 
-## Execution baseline audit notes
+Status: `OBSERVED ABSENCE`, not a defect.
 
-### 2026-07-06 — AgentWorker success semantics fix branch
+- deterministic fixtures exercised portrait PNG, BMP, TIFF, and GIF paths;
+- no suitable user file was available for a manual visual acceptance run;
+- the system is provisionally accepted until natural live use supplies evidence.
 
-Branch: `fix-agent-worker-success-semantics`.
+## 22 July 2026 — Editor-first roadmap realignment
 
-Purpose:
-
-- prevent failed `AgentResult` records from being reported to the UI as successful workflows;
-- preserve the saved diagnostic path for failed-but-saved results;
-- distinguish runner exceptions from saved failure diagnostics.
-
-Files changed:
-
-- `src/qt_panels/agent_worker.py`;
-- `tools/verify_agent_worker_contract.py`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification command after local sync:
-
-```bash
-cd "$HOME/MXZTAR-forge-v2.0" || exit 1
-PYTHONPATH=src .venv/bin/python tools/verify_agent_worker_contract.py
-PYTHONPATH=src .venv/bin/python -m py_compile src/qt_panels/agent_worker.py tools/verify_agent_worker_contract.py
-```
-
-Expected result:
-
-- success result emits `finished(True, saved_path, "")`;
-- saved failure result emits `finished(False, diagnostic_path, error)`;
-- exception before saved result emits `finished(False, "", error)`.
-
-Remaining blockers:
-
-- `AgentPanel` still has no live run button, QThread lifecycle, elapsed timer, cancellation, or completion handler;
-- the large JPEG source still triggers Ollama HTTP 400 and needs image-size/preflight handling before repeated full-resolution vision requests;
-- swap configuration has been observed at 4 GiB and should be handled in a separate system-maintenance side quest after this PR.
-
-## 2026-07-19 — Safe AgentPanel execution branch
-
-Branch: `agent/restore-safe-ai-runner`.
-
-Purpose:
-
-- restore one honest, user-visible source-art workflow without placing AI work on the Qt main thread;
-- enforce one active heavy job through the only execution panel;
-- show elapsed time, heartbeat, progress, final result, and saved output/diagnostic path;
-- prevent unsafe application close while the worker is active.
-
-Files changed:
-
-- `src/qt_panels/agent_panel.py`;
-- `src/qt_app.py`;
-- `tools/verify_agent_panel_execution_contract.py`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification commands:
-
-```bash
-PYTHONPATH=src .venv/bin/python tools/verify_agent_worker_contract.py
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src .venv/bin/python tools/verify_agent_panel_execution_contract.py
-PYTHONPATH=src .venv/bin/python -m py_compile \
-  src/qt_panels/agent_panel.py \
-  src/qt_app.py \
-  tools/verify_agent_panel_execution_contract.py
-```
-
-Expected evidence:
-
-- worker runs outside the Qt main thread;
-- a second launch is rejected while active;
-- success, saved failure, and unsaved failure remain distinct;
-- timer and controls return to idle after every final state;
-- application close is rejected while a job is active.
-
-Remaining boundary:
-
-- this PR does not claim cooperative cancellation;
-- the existing 600-second service timeout remains the hard request boundary;
-- the former large-JPEG HTTP 400 still requires a separate source-image preflight milestone;
-- a known-compatible manual Ollama run remains required before marking the end-to-end path VERIFIED.
-
-## 2026-07-19 — My Library source-art baseline branch
-
-Branch: `agent/build-my-library-source-baseline`.
-
-Purpose:
-
-- replace the My Library placeholder with a useful read-only source-art browser;
-- preview supported images and display their path, type, size, and library section;
-- hand the exact selected `SourceArtItem` to Agent Workflows;
-- navigate to the workflow panel without copying, moving, renaming, or modifying the source;
-- keep workflow outputs and approved artifacts explicitly deferred until durable project contracts exist.
-
-Files changed:
-
-- `src/qt_panels/my_library_panel.py`;
-- `src/qt_panels/agent_panel.py`;
-- `src/qt_app.py`;
-- `tools/verify_my_library_contract.py`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification commands:
-
-```bash
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_my_library_contract.py
-
-PYTHONPATH=src .venv/bin/python -m py_compile \
-  src/qt_panels/my_library_panel.py \
-  src/qt_panels/agent_panel.py \
-  src/qt_app.py \
-  tools/verify_my_library_contract.py
-```
-
-Expected evidence:
-
-- supported source art is discovered and previewed;
-- the exact selected source reaches Agent Workflows;
-- source replacement is rejected while an AI job is active;
-- source bytes remain unchanged through discovery and handoff;
-- an empty library disables actions and explains where source art belongs.
-
-Remaining boundary:
-
-- My Library currently represents the Source Art stage only;
-- durable workflow-output browsing, approvals, prompts, and concept folders depend on later project and artifact contracts;
-- no ownership or licence verification is inferred from file discovery.
-
-## 2026-07-19 — Relocatable launcher branch
-
-Branch: `agent/make-launcher-relocatable`.
-
-Purpose:
-
-- remove the hard-coded checkout directory from `run_mxztar_forge.sh`;
-- make the launcher derive the repository directory from its own file location;
-- prefer the checkout-local virtual-environment interpreter;
-- keep execution correct after an intentional directory rename;
-- verify relocation without starting the Qt application.
-
-Files changed:
-
-- `run_mxztar_forge.sh`;
-- `tools/verify_relocatable_launcher.py`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification commands:
-
-```bash
-python3 tools/verify_relocatable_launcher.py
-bash -n run_mxztar_forge.sh
-```
-
-Remaining local installation step after merge:
-
-- rename `$HOME/MXZTAR-forge-v2c0` to `$HOME/MXZTAR-forge-v2.0` only after checking the destination does not already exist;
-- back up and update the external application-menu and Desktop `.desktop` files;
-- confirm both launchers resolve to the canonical checkout and repository launcher.
-
-## 2026-07-19 — Bounded large-source thumbnail branch
-
-Branch: `agent/bound-large-source-previews`.
-
-Observed defect:
-
-- My Library attempted to construct a full-resolution `QPixmap` for very large source art;
-- Qt rejected the decode when it exceeded the 256 MB allocation limit;
-- raising the global allocation ceiling would risk UI freeze and excessive memory use on modest hardware.
-
-Purpose:
-
-- retain the original source file and exact workflow handoff path;
-- decode at most a 1600×1200 UI derivative when the Qt handler reports scaled-decode support;
-- reject unsafe large preview decoding before image read while keeping the source selectable;
-- cache the bounded thumbnail under `workspace/cache/source_previews`;
-- invalidate cache identity when source path, byte size, or modification time changes;
-- rerender window resizes from the bounded in-memory image rather than decoding the source again;
-- keep preview failure non-blocking so the original remains selectable.
-
-Files changed:
-
-- `src/core/paths.py`;
-- `src/core/source_preview_cache.py`;
-- `src/qt_panels/my_library_panel.py`;
-- `tools/verify_large_source_preview_contract.py`;
-- `tools/verify_source_preview_cache_contract.py`;
-- `.gitignore`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification commands:
-
-```bash
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_large_source_preview_contract.py
-
-PYTHONPATH=src .venv/bin/python tools/verify_source_preview_cache_contract.py
-
-git check-ignore workspace/cache/source_previews/private-source.png
-
-PYTHONPATH=src .venv/bin/python -m py_compile \
-  src/core/paths.py \
-  src/core/source_preview_cache.py \
-  src/qt_panels/my_library_panel.py \
-  tools/verify_large_source_preview_contract.py \
-  tools/verify_source_preview_cache_contract.py
-```
-
-Boundary:
-
-- thumbnail files are rebuildable, Git-ignored, count/byte-bounded cache, not project truth;
-- this PR does not resize or overwrite original source art;
-- AI-request image preflight remains a separate execution-path gate before large-source model testing;
-- the application does not raise Qt's global allocation limit.
-
-## 2026-07-19 — My Apps and Desktop launcher restoration branch
-
-Branch: `agent/restore-desktop-launchers`.
-
-Purpose:
-
-- provide one application-menu launcher and one Desktop launcher;
-- use the canonical MXZTAR Forge v2.0 name;
-- use a repository-owned gold star SVG icon;
-- target the checkout's relocatable `run_mxztar_forge.sh`;
-- back up existing launcher files before replacement;
-- validate the complete installation in an isolated temporary home.
-
-Files changed:
-
-- `assets/icons/mxztar-forge-star.svg`;
-- `tools/install_desktop_launchers.sh`;
-- `tools/verify_desktop_launchers.py`;
-- `README.md`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification commands:
-
-```bash
-python3 tools/verify_desktop_launchers.py
-bash -n tools/install_desktop_launchers.sh
-python3 -m py_compile tools/verify_desktop_launchers.py
-```
-
-Local installation command after merge:
-
-```bash
-bash tools/install_desktop_launchers.sh
-```
-
-Boundary:
-
-- the installer writes only the two named launcher files under the user's
-  application-menu and Desktop directories;
-- an existing target launcher is backed up before replacement;
-- the star icon remains repository-owned and versioned.
-
-## 2026-07-19 — PR #27 visible library grid and Desktop Input
-
-Status: `VERIFIED` on the T1700 after merge at `9167bf5`.
-
-Branch: `agent/library-grid-desktop-input`.
-
-Files changed:
-
-- `README.md`;
-- `docs/PROGRESS_LEDGER.md`;
-- `src/qt_panels/my_library_panel.py`;
-- `tools/install_desktop_launchers.sh`;
-- `tools/verify_desktop_launchers.py`;
-- `tools/verify_my_library_contract.py`.
-
-Established:
-
-- every discovered source appears as a visible card rather than a hidden selector;
-- thumbnail decoding runs incrementally outside the Qt main thread;
-- card icons retain bounded pixmaps;
-- folder-qualified labels distinguish duplicate basenames;
-- the selected preview remains compact;
-- the exact selected original reaches Agent Workflows;
-- active AI work rejects unsafe source replacement;
-- source bytes remain unchanged;
-- the Desktop Input link exposes the canonical input folder.
-
-Reproduction commands used by the branch and local verification contracts:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_my_library_contract.py
-
-python3 tools/verify_desktop_launchers.py
-python3 -m py_compile \
-  src/qt_panels/my_library_panel.py \
-  tools/verify_my_library_contract.py \
-  tools/verify_desktop_launchers.py
-```
-
-Recorded T1700 My Library verification result after merge:
-
-```text
-PASS: all six source images appear as visible cards
-PASS: every source card has a thumbnail
-PASS: card icons retain only card-sized pixmaps
-PASS: source cards retain folder-qualified labels
-PASS: selected preview height is compact
-PASS: grid selection emits the exact SourceArtItem
-PASS: handoff navigates to Agent Workflows
-PASS: active AI job rejects source replacement
-PASS: discovery and handoff leave all source bytes unchanged
-PASS: visible My Library grid verified
-```
-
-Remaining boundary:
-
-- the grid is source intake, not yet the durable project/processed-source lifecycle;
-- Shape Library and Jobs still require restoration around current authority contracts;
-- source analysis, approval, and Forge Pack export remain incomplete.
-
-Status changes:
-
-- My Library visible-card baseline: `MERGED` → `VERIFIED` on the T1700;
-- Desktop Input link: `MERGED` with repository installer-contract verification; live
-  presence remains a local installation fact rather than repository state.
-
-Backup status: no new VX12 backup was recorded for this UI verification; no backup is
-claimed by this ledger entry.
-
-## 2026-07-19 — Level One product-definition planning
-
-Status: `PLANNED` until the documentation PR merges.
+Status: `PLANNED`; documentation branch `agent/editor-first-roadmap`; draft PR #48.
 
 Founder decisions recorded:
 
-- operational Level One MVP takes priority over advanced 3D construction;
-- primary value is reviewed production intelligence and a durable Forge Pack;
-- Start Here will collect progressive local user and project intent;
-- workflows should normally be automated but remain visible and human governed;
-- approved shapes form the basis of later reversible 2D-to-3D construction;
-- later Modular Construct provides three-axis placement, alignment, instances, arrays,
-  grouping, assembly, join, boolean operations, and verified export;
-- three-second hover Insights teach users what controls do;
-- official software use is free of charge;
-- voluntary founder support is available at `https://buymeacoffee.com/mxztar`;
-- a formal recognised open-source licence remains a founder release decision;
-- versioned official releases are the primary ordinary-user distribution channel.
+- the Forge Editor becomes the primary daily workspace and expected most-used feature;
+- users must be able to import source images, extract shapes, create shapes from scratch,
+  edit them, save reusable assets, and export relevant interoperable formats;
+- Level One is the AI-independent 2D Shape Editor and portable-asset foundation;
+- Level Two adds reversible 2D-to-3D components, a governed 3D Construct environment,
+  assembly/stitch distinctions, and validated 3D export;
+- Product Levels Three and Four remain deferred until a future explicit decision;
+- no single format is universal, so adapters must declare target workflow, units, axes,
+  limitations, and verification evidence;
+- existing verified project authority, source immutability, modest-hardware policy, and
+  Qt worker safety remain mandatory.
 
-Planning artifacts:
+Documentation changed:
 
-- `README.md` — public goal and Level One boundary;
-- `docs/product/MASTER_BUILD_PLAN.md` — product, data, workflow, roadmap, release, and
-  future construction authority;
-- `docs/product/FIRST_RENTABLE_RELEASE.md` — historical scope reconciled with the
-  confirmed free-access model;
-- `docs/PROGRESS_LEDGER.md` — decisions, current state, next gate, and evidence.
-
-This milestone changes documentation only. It does not claim that Start Here, Review,
-Shape Library, Jobs, Forge Pack export, 2D-to-3D, or Modular Construct are implemented.
-
-## 2026-07-19 — Read-only Jobs panel baseline branch
-
-Status: `PLANNED` until the implementation PR merges and the T1700 verifier passes.
-
-Branch: `agent/restore-truthful-jobs-panel`.
-
-Purpose:
-
-- make previously saved workflow work findable without filesystem archaeology;
-- recover legacy success, saved-failure, and malformed JSON records truthfully;
-- scan record files outside the Qt main thread;
-- refresh after Agent Workflows saves an output or diagnostic;
-- remain a read-only evidence browser rather than a second execution authority;
-- expose no fake retry, cancel, delete, approval, or export actions.
-
-Files in scope:
-
-- `src/core/job_records.py`;
-- `src/qt_panels/jobs_panel.py`;
-- `src/qt_panels/agent_panel.py`;
-- `src/qt_app.py`;
-- `tools/verify_jobs_panel_contract.py`;
+- `README.md`;
+- `docs/product/MASTER_BUILD_PLAN.md`;
 - `docs/PROGRESS_LEDGER.md`.
 
-Verification commands:
+This branch changes planning documentation only. It does not claim that the editor,
+manual drawing tools, extraction, approved Shape Library writes, 3D construction, or new
+export adapters are implemented.
+
+Verification required before merge:
 
 ```bash
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_jobs_panel_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_agent_panel_execution_contract.py
-
-PYTHONPATH=src .venv/bin/python -m py_compile \
-  src/core/job_records.py \
-  src/qt_panels/jobs_panel.py \
-  src/qt_panels/agent_panel.py \
-  src/qt_app.py \
-  tools/verify_jobs_panel_contract.py
+bash scripts/verify_source_truth.sh
+git diff --check main...HEAD
 ```
 
-Boundary:
+Backup status: no new VX12 backup is claimed by this documentation branch.
 
-- legacy records remain in their current runner-owned directories;
-- this branch does not implement the future project manifest, job IDs, migration,
-  duration schema, retry, cancellation, deletion, approval, or Forge Pack export;
-- malformed records are displayed as `INVALID`, not silently discarded;
-- individual record reads are capped at 2 MiB, retained recent candidates are capped
-  at 500, and decoded record bodies are capped at 16 MiB per refresh;
-- inaccessible directories and record-stat failures surface as scan warnings;
-- application close requests asynchronous scan interruption and defers destruction
-  until every panel-owned `QThread` reports idle.
+## Next permitted milestone
 
-Backup status: no backup is claimed before merge and T1700 verification.
-
-## 2026-07-19 — Read-only Shape Library evidence baseline branch
-
-Status: `VERIFIED` on the T1700 after PR #31 merged at `8cbdb07`.
-
-Branch: `agent/restore-shape-library-evidence`.
-
-Audit finding:
-
-- no approved shape artifacts currently exist;
-- legacy `shape_structure_harvest` records are raw AI reports, not extracted masks,
-  SVGs, geometry, or approved reusable components;
-- the project/approval authority required to create approved shapes is a later phase;
-- inventing `workspace/data/shapes/approved` now would conflict with the canonical
-  project layout.
-
-Purpose:
-
-- replace the Shape Library placeholder with a useful read-only evidence browser;
-- load only when the user opens Shape Library, avoiding duplicate startup scans;
-- filter existing Jobs evidence to shape-harvest records;
-- preserve raw `SUCCESS`, `FAILED`, and `INVALID` distinctions;
-- state visibly that approved shapes remain zero;
-- expose no fake approval, extraction, correction, Morph, Make 3D, delete, or export
-  action;
-- participate in asynchronous application shutdown.
-
-Verification commands:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_shape_library_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_agent_panel_execution_contract.py
-```
-
-Boundary: this baseline creates no approved shape schema, files, or directory. Approval
-requires the future project-authority and review workflows.
-
-Recorded result:
-
-- the Shape Library evidence contract passed every assertion and exited normally;
-- the AgentPanel execution contract also passed and exited normally;
-- raw success, failure, and invalid evidence remained distinct and no raw evidence was
-  presented as approved shape truth.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
-by this entry.
-
-## Immediate next milestone after this ledger merges
-
-Milestone name: **Project authority and lifecycle foundation**.
+Milestone name: **Editor architecture and native shape document**.
 
 Required scope:
 
-- create/open project manifest and canonical directory structure;
-- source originals/previews and explicit processed-source lifecycle;
-- stable artifact/run/project IDs and atomic writes;
-- one-writer lock, read-only recovery, and SQLite rebuild boundary;
-- no approval UI until durable approval derivatives can be written and validated.
-
-Exit gate: durable project truth survives restart and derived-index deletion without
-inventing competing storage locations.
-
-## 2026-07-19 — Panel-owned QThread shutdown regression
-
-Status: `VERIFIED` on the T1700 after PR #30 merged at `140c99c`.
-
-Observed after PR #29 merge:
-
-- every AgentPanel execution assertion printed `PASS`;
-- process teardown then reported `QThread: Destroyed while thread '' is still running`;
-- the verifier aborted and produced a core dump;
-- therefore the verifier run is not a valid overall pass.
-
-Root cause:
-
-- the full-window verifier constructs My Library, which starts background thumbnail
-  loading;
-- window close stopped the Jobs scan introduced by PR #29 but did not stop My Library's
-  pre-existing `ThumbnailLoader`;
-- destroying a panel-owned running `QThread` is a fatal Qt lifecycle violation.
-
-Required fix:
-
-- My Library and Jobs expose non-blocking interruption requests and idle signals;
-- main-window close requests both background scans to stop, rejects the current close
-  event immediately, and keeps the Qt event loop responsive;
-- the window closes automatically only after both panels report idle;
-- AgentPanel and My Library verifiers assert no panel-owned thread remains running.
-
-Verification commands:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_agent_panel_execution_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_my_library_contract.py
-```
-
-Recorded result:
-
-- AgentPanel execution contract passed and exited normally;
-- My Library contract passed and exited normally;
-- Jobs contract passed and exited normally after its shutdown API changed;
-- no `QThread: Destroyed`, abort, or core dump followed any rerun.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is
-claimed by this entry.
-
-## 2026-07-20 — Future Construct and World vision capture
-
-Status: `PLANNED` until the documentation PR merges.
-
-Purpose:
-
-- preserve the founder's long-term direction without expanding or reordering Level One;
-- define the product-family horizon: Forge, Construct, Infrastructure Builder, World;
-- record lateral shape reasoning, modular compatibility, alignment/weld distinctions,
-  materials, lighting, mechatronics, and hyper-grid command architecture;
-- establish rig-friendly cyber-art as maximum visual identity per unit of computation;
-- preserve the moon-scale infrastructure, ecology, authorship, fair-rights, portability,
-  and generational-persistence vision;
-- identify present-day ID, provenance, coordinate, compatibility, history, and
-  performance-metadata consequences.
-
-Authority:
-
-- `docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md` is future vision, not a Level One
-  implementation or marketing contract;
-- `docs/product/MASTER_BUILD_PLAN.md` links to it without changing current phase order;
-- the next permitted milestone remains Project Authority and Lifecycle Foundation.
-
-Boundary: no 3D editor, renderer, world simulation, virtual ownership, cloud service,
-engineering validation, or future-product feature is claimed as implemented.
-
-## 2026-07-20 — Core project manifest foundation branch
-
-Status: `VERIFIED` on the T1700 after PR #33 merged at `ebfa7d5`.
-
-Branch: `agent/build-project-manifest-foundation`.
-
-Purpose:
-
-- create the canonical self-contained project directory without exposing premature UI;
-- generate a stable project ID, validated `project.json`, project README, and singular
-  `project_created` history event;
-- establish every contracted first-release artifact directory;
-- construct in a hidden staging directory and rename only after all durable files are
-  written;
-- reject unsafe names, malformed manifests, and existing-project overwrite;
-- preserve Unicode letters in Māori and international project slugs;
-- require every contracted manifest state field and the canonical project-contained
-  history path;
-- fsync file and directory entries before reporting project creation;
-- Git-ignore `workspace/projects/` so private runtime projects cannot be staged by a
-  routine repository add;
-- leave SQLite, locking, open/recovery, source import/move, approval, and workflow
-  integration to separately verified milestones.
-
-Files in scope:
-
-- `src/core/paths.py`;
-- `src/core/project_manifest.py`;
-- `tools/verify_project_manifest_contract.py`;
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification command:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-PYTHONPATH=src .venv/bin/python tools/verify_project_manifest_contract.py
-```
-
-Exit gate: a copied project contains its identity, initial event, and canonical folder
-structure; invalid or colliding creation cannot become a visible partial project.
-
-Next permitted milestone after verification: project locking plus validated open and
-read-only recovery classification. No project-creation UI is permitted before that
-writer/recovery boundary exists.
-
-Recorded result:
-
-- all project-manifest contract assertions passed, including durable directory creation,
-  stable identity, reload validation, collision refusal, Unicode names, required state,
-  directory fsync, and private-project Git exclusion.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
-by this entry.
-
-## 2026-07-20 — Project locking and validated-open branch
-
-Status: `VERIFIED` on the T1700 after PR #34 merged at `b0e9f7a`.
-
-Branch: `agent/add-project-lock-recovery`.
-
-Purpose:
-
-- classify a canonical project as writable, actively locked, or read-only recovery;
-- enforce one writer with an exclusively created, fsynced project-local lock;
-- record the writer ID, process ID, creation time, and host identity;
-- reject a second writer and refuse release by a non-owning lease;
-- preserve stale, malformed, foreign-host, and otherwise uncertain locks rather than
-  deleting or repairing them silently;
-- validate the manifest and required self-contained directory structure before writable
-  access is offered;
-- leave recovery actions, project UI, SQLite indexing, and workflow writes to later
-  separately verified milestones.
-
-Files in scope:
-
-- `src/core/project_access.py`;
-- `tools/verify_project_access_contract.py`;
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification command:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-PYTHONPATH=src .venv/bin/python tools/verify_project_access_contract.py
-```
-
-Exit gate: only one validated writer can hold a project; all uncertain state is reported
-without mutation and cannot be opened writable.
-
-Next permitted milestone after verification: a project session boundary and truthful
-Start Here create/open baseline. No source-import move or workflow integration is
-permitted before the session owns and releases the writer lease safely.
-
-Recorded result:
-
-- every project-access assertion passed, including exclusive ownership, stale and
-  malformed containment, lock-incarnation identity, failed-acquisition cleanup,
-  recycled-PID detection, non-regular-file rejection, symlink boundaries, and recovery
-  classification.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
-by this entry.
-
-## 2026-07-20 — Project session and Start Here authority branch
-
-Status: `VERIFIED` on the T1700 after PR #35 merged at `710468a`.
-
-Branch: `agent/build-project-session-start-here`.
-
-Purpose:
-
-- give the application one explicit project-session owner;
-- create a canonical project from the existing Start Here project name and primary goal;
-- discover and open existing canonical projects from a bounded selector;
-- acquire exactly one writer lease for a valid available project;
-- attach locked or uncertain projects visibly without writable authority;
-- require explicit close before switching projects;
-- release the owning writer lease on project close and application shutdown;
-- preserve the existing onboarding profile and trust-note workflow;
-- leave source import, workflow writes, approvals, recovery actions, and SQLite indexing
-  to later verified milestones.
-
-Files in scope:
-
-- `src/core/project_session.py`;
-- `src/qt_panels/start_here_panel.py`;
-- `src/qt_app.py`;
-- `tools/verify_project_session_contract.py`;
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification command:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_project_session_contract.py
-```
-
-Exit gate: Start Here never presents a locked or uncertain project as writable, and no
-normal project close or application shutdown leaks its writer lease.
-
-Next permitted milestone after verification: project-contained source intake with copy,
-hash, stable source ID, preview generation, manifest/history update, and explicit
-processed-source lifecycle. Legacy `workspace/input` must not be moved automatically.
-
-Recorded result:
-
-- every project-session and Start Here assertion passed, including writable creation,
-  locked and recovery attachment, bounded discovery, discovery diagnostics, root and
-  symlink containment, acquisition-race handling, partial-release reconciliation, and
-  application-shutdown lease release.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
-by this entry.
-
-## 2026-07-20 — Project-contained source intake branch
-
-Status: `VERIFIED` on the T1700 after PR #36 merged at `9364c35`.
-
-Branch: `agent/build-project-source-intake`.
-
-Purpose:
-
-- require a writable project session for every source mutation;
-- copy supported user-selected source art without changing or moving external bytes;
-- enforce the 1 GiB source limit and safe preview-dimension boundary;
-- create a stable content-addressed source ID and SHA-256 identity;
-- save a bounded project preview and validated project-relative source record;
-- update manifest and project history through atomic writes with tested rollback;
-- make duplicate intake idempotent;
-- provide an explicit processed transition that moves only the project-owned copy;
-- leave legacy `workspace/input` untouched and add no synchronous Qt import control.
-
-Files in scope:
-
-- `src/core/project_source_intake.py`;
-- `src/core/project_session.py`;
-- `tools/verify_project_source_intake_contract.py`;
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification command:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-PYTHONPATH=src .venv/bin/python tools/verify_project_source_intake_contract.py
-```
-
-Exit gate: imported identity and bytes are durable inside the project, external source
-bytes remain unchanged, failed transactions do not drift manifest/history authority, and
-processed transition moves only the project-owned copy.
-
-Next permitted milestone: asynchronous project-source intake UI and
-project-aware My Library discovery. Hashing, copying, preview generation, and scanning
-must remain off the Qt main thread with visible progress and safe shutdown.
-
-Recorded result:
-
-- all 16 source-intake assertions passed on the T1700;
-- external bytes remained unchanged and only project-owned copies could transition to
-  processed;
-- interrupted or unconfirmed rollback state revoked writable authority.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
-by this entry.
-
-## 2026-07-20 — Level Four platform priorities documentation branch
-
-Status: `MERGED` through PR #37 at `283919a`.
-
-Branch: `agent/define-level-four-platform-priorities`.
-
-Purpose:
-
-- define the long-term MXZTAR identity as a human-first creative civilisation builder;
-- record the shallow-or-heavy, portable-authorship, hardware-access, living-system, and
-  generational-history market gaps;
-- establish a gated Level Four MVP no earlier than approximately one year from this
-  planning date, subject to verified Levels One through Three;
-- define honest browser/tablet, mobile/AR, VR, and desktop product contracts;
-- define operator jobs as durable human-input and approval assets;
-- preserve portable personal archives independently of shared-world service continuity;
-- bound authorship-economy, educational, reflective, and wellbeing claims;
-- define authorised cross-device deltas, rig-efficient delivery, and proof gates;
-- retain the immediate Level One engineering sequence unchanged.
-
-Files in scope:
-
-- `docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md`;
-- `docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md`;
-- `docs/product/MASTER_BUILD_PLAN.md`;
-- `README.md`;
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Boundary: no browser, AR, VR, cloud collaboration, operator-job runtime, economy,
-persistent region, or world simulation is claimed as implemented.
-
-Verification: documentation source-truth verification and Markdown whitespace checks.
-
-Backup status: no backup is claimed before merge and local verification.
-
-## 2026-07-20 — Source-truth interpreter portability fix branch
-
-Status: `VERIFIED` on the T1700 after PR #38 merged at `a621f71`.
-
-Branch: `agent/fix-source-truth-python-selection`.
-
-Purpose:
-
-- make the source-truth verifier work from a fresh T1700 terminal without a global
-  `python` alias;
-- select the checkout-local `.venv/bin/python` first, then `python3`, then `python`;
-- fail visibly when no Python 3 interpreter is available;
-- restore `project_source_intake.py` to the compile check after its accidental omission
-  during the PR #37 documentation reconciliation.
-
-Files in scope:
-
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Verification command:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-bash scripts/verify_source_truth.sh
-```
-
-Exit gate: the unmodified command passes from the canonical checkout without PATH
-manipulation and still compiles every current project-authority module.
-
-Recorded result:
-
-- the unmodified source-truth command selected `.venv/bin/python` on the canonical
-  checkout and completed normally;
-- every required document was present, every listed Python source compiled, and all
-  seven prompt contracts passed.
-
-Backup status: no new VX12 backup was recorded for the verification; no backup is claimed
-by this entry.
-
-## 2026-07-20 — Asynchronous project-source intake and discovery branch
-
-Status: `PARTIAL` on branch `agent/project-aware-source-intake-ui`; implementation and
-non-Qt contracts pass in the review workspace, while the Qt lifecycle contract still
-requires execution on the T1700 before merge.
-
-Purpose:
-
-- make My Library discover legacy workspace inputs and the active project's validated
-  source records outside the Qt main thread;
-- add one explicit copy-only intake action for an active writable project;
-- run hashing, copying, image validation, bounded preview creation, and authority
-  updates outside the Qt main thread;
-- distinguish active-project authority from legacy workspace inputs in every card;
-- use the project-owned copy and bounded project preview for downstream selection;
-- block project switching and application shutdown during the non-cancellable
-  transactional intake boundary;
-- report successful, duplicate, and failed intake states truthfully;
-- leave external and legacy files unchanged and never mark intake as analysis,
-  approval, extraction, or successful processing.
-
-Files in scope:
-
-- `src/core/source_library.py`;
-- `src/core/project_source_intake.py`;
-- `src/qt_panels/agent_panel.py`;
-- `src/qt_panels/my_library_panel.py`;
-- `src/qt_panels/start_here_panel.py`;
-- `src/qt_app.py`;
-- `tools/verify_my_library_contract.py`;
-- `tools/verify_project_source_intake_contract.py`;
-- `tools/verify_project_source_intake_ui_contract.py`;
-- `scripts/verify_source_truth.sh`;
-- `docs/PROGRESS_LEDGER.md`.
-
-Recorded review-workspace evidence:
-
-- the project-source transaction and discovery contract passed;
-- the source-truth verifier passed all required documents, Python compilation, and
-  seven prompt contracts;
-- changed Python files and the new Qt verifier compile;
-- PR #39 review findings were patched to rehash project sources, enforce record size
-  and project identity, preserve independent legacy discovery, bound project-preview
-  decoding, invalidate former-project Agent Workflows selections, cooperate with
-  discovery interruption, and refresh revoked writable authority;
-- the review workspace could not execute PySide6 because its minimal runtime lacks
-  `libEGL.so.1`; this is an environment limitation, not recorded as a UI pass.
-- the first T1700 Qt run exposed a verifier-only 10-second aggregate completion
-  deadline; the follow-up raises that hardware-kind transaction/discovery window to
-  60 seconds while retaining the independent event-loop responsiveness assertion and
-  adding exact thread-state timeout diagnostics.
-
-T1700 verification commands:
-
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-PYTHONPATH=src .venv/bin/python tools/verify_project_source_intake_contract.py
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_project_source_intake_ui_contract.py
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_my_library_contract.py
-bash scripts/verify_source_truth.sh
-```
+1. define one versioned native shape-document schema;
+2. define coordinate space, units, bounds, path/node representation, layers, groups,
+   anchors, fill/stroke, and source relationships;
+3. define editor command, undo/redo, durable history, autosave, recovery, and
+   supersession rules;
+4. build the minimum project-owned blank-document Editor shell;
+5. prove create, one reversible edit, save, close, reopen, and interrupted-write recovery;
+6. expose no unsupported drawing, boolean, extraction, 3D, or export controls.
 
 Exit gate:
 
-- Qt remains responsive during intake;
-- create/open/close and application shutdown cannot race an active transaction;
-- duplicate and invalid inputs remain truthful;
-- active-project cards reference canonical project copies and previews;
-- discovery follows project attach/detach and all panel threads stop safely;
-- no existing My Library, AgentPanel, project-session, or source-intake contract regresses.
-
-Next permitted milestone after merge and T1700 verification: make one workflow execute
-against a project-owned source and save a project-contained, schema-valid diagnostic or
-finding artifact before attempting the controlled Ollama compatibility smoke test.
-
-Backup status: no new VX12 backup is claimed by this unmerged branch.
+- a blank shape document is durable project truth;
+- the user can make one verified reversible edit;
+- restart restores the editable document;
+- a failed or interrupted save cannot replace the last valid version;
+- the milestone works without AI or network access;
+- all existing project, source, My Library, Jobs, Agent Workflows, and Qt lifecycle
+  contracts remain green.
 
 ## Ledger update contract
 
-Every merged milestone must add or update:
+Every meaningful merged milestone must add or update:
 
 - date;
 - PR number;
 - branch;
-- purpose;
+- purpose and exact scope;
 - files changed;
 - verification commands;
 - verification result;
 - status changes;
-- new observations;
-- closed observations;
+- new and closed observations;
 - remaining blockers;
 - next permitted milestone;
 - backup status where relevant.
 
-No milestone may be marked `VERIFIED` solely because code was committed or a PR was merged.
-- T1700 verification exposed and isolated a verifier lifecycle race: intake could stop immediately before its queued Qt `finished` callback started discovery, creating a transient false-idle observation. The UI verifier now requires stable idle across consecutive event-loop turns; production intake and discovery behavior is unchanged.
-
-### Project-owned local-model run evidence — PR pending
-
-- Agent Workflows now shares the authoritative application project session.
-- A canonical active-project source routes through the existing off-main-thread worker into project-local run evidence.
-- Successful model calls save under `logs/`; failed model calls save under `diagnostics/`.
-- Saved records explicitly remain unvalidated, incomplete workflow evidence with no approval state and do not enter `current_artifact_ids`.
-- Project authority is rechecked after the model call and before any write; changed or revoked authority blocks the save.
-- Legacy workspace sources retain their existing legacy runner and storage path.
-- Structured findings, approval, Shape Library promotion, and Forge Pack export remain later gated milestones.
-
-### My Library minimum-layout and preview-selection correction — PR pending
-
-- The project import action is now first in a two-row action grid so it remains visible at the supported minimum window size.
-- Completed bounded thumbnails and their truthful decode errors are retained for later card selection.
-- Reselecting a project source no longer falls back permanently to a stale `Thumbnail loading…` message after its worker has finished.
-- Selecting a filename now produces visible status guidance while preserving the exact-source handoff boundary.
-
-### Guided Next Step workflow — PR pending
-
-- The application now exposes one always-visible, slow-pulsing Next control instead of requiring users to infer navigation order.
-- Guidance follows project creation/opening, source import, all seven workflow selections, active local work, and saved evidence inspection.
-- A successfully imported canonical project source is handed safely to Agent Workflows and the workspace navigates there automatically.
-- Safe navigation and selection are automated; starting a heavy Ollama workflow remains an explicit human click.
-- Active discovery, thumbnail work, intake, and AI execution suppress misleading next actions until their truthful terminal state.
+No milestone may be marked `VERIFIED` solely because code was committed or a PR was
+merged.
