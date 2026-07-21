@@ -17,6 +17,7 @@ def run_case(name: str, code: str) -> None:
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(SRC_ROOT)
     environment.setdefault("QT_QPA_PLATFORM", "offscreen")
+    environment.pop("PYTHONOPTIMIZE", None)
     try:
         completed = subprocess.run(
             [sys.executable, "-c", code],
@@ -45,6 +46,7 @@ def main() -> int:
         """
 import sys
 import qt_panels
+assert sys.flags.optimize == 0
 assert 'qt_startup_guards' not in sys.modules
 assert 'source_image_compatibility' not in sys.modules
 assert callable(qt_panels.install_panel_runtime_contracts)
