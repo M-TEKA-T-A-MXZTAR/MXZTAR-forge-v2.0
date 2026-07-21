@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -20,9 +21,14 @@ from PIL import Image  # noqa: E402
 from core import project_source_intake, source_library  # noqa: E402
 from core.source_library import SourceArtItem  # noqa: E402
 from qt_panels.agent_panel import AgentPanel  # noqa: E402
-from qt_panels.my_library_panel import MyLibraryPanel  # noqa: E402
+from qt_panels.my_library_panel import (  # noqa: E402
+    PREVIEW_MAX_HEIGHT,
+    PREVIEW_MAX_WIDTH,
+    MyLibraryPanel,
+)
 from source_image_compatibility import (  # noqa: E402
     ACCEPTED_SOURCE_EXTENSIONS,
+    LIBRARY_PREVIEW_MAX_SIZE,
     MODEL_READY_EXTENSIONS,
     decode_source_preview,
     install_source_image_compatibility,
@@ -34,16 +40,6 @@ from source_image_compatibility import (  # noqa: E402
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise RuntimeError(message)
-
-
-def make_item(path: Path) -> SourceArtItem:
-    return SourceArtItem(
-        label=path.name,
-        path=path,
-        folder_name=path.parent.name,
-        suffix=path.suffix.casefold(),
-        size_bytes=path.stat().st_size,
-    )
 
 
 class FakeCombo:
@@ -63,7 +59,63 @@ class FakeAgentPanel:
         self.status = message
 
 
+def make_item(path: Path) -> SourceArtItem:
+    return SourceArtItem(
+        label=path.name,
+        path=path,
+        folder_name=path.parent.name,
+        suffix=path.suffix.casefold(),
+        size_bytes=path.stat().st_size,
+    )
+
+
+def verify_direct_qt_app_bootstrap() -> None:
+    code = """
+import qt_app
+from qt_panels.agent_panel import AgentPanel
+from qt_panels.my_library_panel import MyLibraryPanel
+assert getattr(MyLibraryPanel.refresh_library, '_mxztar_worker_ownership_guard', False)
+assert getattr(MyLibraryPanel.decode_bounded_image, '_mxztar_source_compatibility', False)
+assert getattr(AgentPanel.start_selected_workflow, '_mxztar_source_compatibility', False)
+"""
+    environment = os.environ.copy()
+    existing_pythonpath = environment.get("PYTHONPATH", "")
+    environment["PYTHONPATH"] = str(SRC_ROOT) + (
+        os.pathsep + existing_pythonpath if existing_pythonpath else ""
+    )
+    environment["QT_QPA_PLATFORM"] = "offscreen"
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=PROJECT_ROOT,
+        env=environment,
+        text=True,
+        capture_output=True,
+        timeout=30,
+        check=False,
+    )
+    require(
+        completed.returncode == 0,
+        "direct qt_app bootstrap failed:\n"
+        f"stdout:\n{completed.stdout}\n"
+        f"stderr:\n{completed.stderr}",
+    )
+
+
 def main() -> int:
+    require(
+        getattr(MyLibraryPanel.refresh_library, "_mxztar_worker_ownership_guard", False),
+        "qt_panels bootstrap did not install the My Library startup guard",
+    )
+    require(
+        getattr(MyLibraryPanel.decode_bounded_image, "_mxztar_source_compatibility", False),
+        "qt_panels bootstrap did not install source preview compatibility",
+    )
+    require(
+        getattr(AgentPanel.start_selected_workflow, "_mxztar_source_compatibility", False),
+        "qt_panels bootstrap did not install truthful model gating",
+    )
+    verify_direct_qt_app_bootstrap()
+
     install_source_image_compatibility()
 
     require(
@@ -77,6 +129,10 @@ def main() -> int:
     require(
         MODEL_READY_EXTENSIONS == {".png", ".jpg", ".jpeg", ".webp"},
         "model-ready source boundary drifted",
+    )
+    require(
+        LIBRARY_PREVIEW_MAX_SIZE == (PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT),
+        "compatibility preview dimensions drifted from My Library",
     )
 
     installed_decode = MyLibraryPanel.decode_bounded_image
@@ -102,7 +158,8 @@ def main() -> int:
         portrait_preview, portrait_error = decode_source_preview(portrait_png)
         require(not portrait_preview.isNull(), f"portrait PNG preview failed: {portrait_error}")
         require(
-            portrait_preview.width() <= 1600 and portrait_preview.height() <= 1200,
+            portrait_preview.width() <= PREVIEW_MAX_WIDTH
+            and portrait_preview.height() <= PREVIEW_MAX_HEIGHT,
             "portrait PNG preview exceeded the bounded UI dimensions",
         )
 
@@ -158,6 +215,7 @@ def main() -> int:
     for extension in ACCEPTED_SOURCE_EXTENSIONS:
         require(f"*{extension}" in file_filter, f"file picker omitted {extension}")
 
+    print("PASS: direct qt_app import installs startup and image contracts")
     print("PASS: portrait PNG renders as a bounded thumbnail")
     print("PASS: BMP, TIFF, and GIF originals create project previews")
     print("PASS: accepted source formats share one discovery and intake contract")
