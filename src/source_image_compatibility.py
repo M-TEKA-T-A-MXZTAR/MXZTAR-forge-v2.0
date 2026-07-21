@@ -18,12 +18,6 @@ from PySide6.QtWidgets import QFileDialog
 
 from core import project_source_intake, source_library
 from core.source_library import SourceArtItem
-from qt_panels.agent_panel import AgentPanel
-from qt_panels.my_library_panel import (
-    PREVIEW_MAX_HEIGHT,
-    PREVIEW_MAX_WIDTH,
-    MyLibraryPanel,
-)
 
 
 ACCEPTED_SOURCE_EXTENSIONS = {
@@ -58,7 +52,10 @@ MIME_BY_FORMAT = {
 }
 
 MODEL_READY_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+LIBRARY_PREVIEW_MAX_SIZE = (1600, 1200)
 MAX_FALLBACK_PREVIEW_PIXELS = 40_000_000
+_INSTALLING = False
+_INSTALLED = False
 
 
 def accepted_source_extensions_text() -> str:
@@ -109,7 +106,7 @@ def decode_source_preview(path: Path) -> tuple[QImage, str]:
                     )
 
                 image.thumbnail(
-                    (PREVIEW_MAX_WIDTH, PREVIEW_MAX_HEIGHT),
+                    LIBRARY_PREVIEW_MAX_SIZE,
                     Image.Resampling.LANCZOS,
                 )
                 if image.mode != "RGBA":
@@ -137,79 +134,99 @@ def source_is_model_ready(item: SourceArtItem) -> bool:
 
 
 def install_source_image_compatibility() -> None:
-    """Install the format contract once before the Qt shell is constructed."""
+    """Install the format contract once before any panel is constructed."""
 
-    source_library.SUPPORTED_IMAGE_SUFFIXES = set(ACCEPTED_SOURCE_EXTENSIONS)
-    project_source_intake.SUPPORTED_EXTENSIONS = set(ACCEPTED_SOURCE_EXTENSIONS)
-    project_source_intake.FORMAT_BY_EXTENSION = dict(FORMAT_BY_EXTENSION)
-    project_source_intake.MIME_BY_FORMAT = dict(MIME_BY_FORMAT)
+    global _INSTALLING, _INSTALLED
+    if _INSTALLED or _INSTALLING:
+        return
 
-    current_decode = MyLibraryPanel.decode_bounded_image
-    if not getattr(current_decode, "_mxztar_source_compatibility", False):
-        def compatible_decode(_panel, path):
-            return decode_source_preview(Path(path))
+    _INSTALLING = True
+    try:
+        from qt_panels.agent_panel import AgentPanel
+        from qt_panels.my_library_panel import MyLibraryPanel
 
-        compatible_decode._mxztar_source_compatibility = True
-        compatible_decode.__name__ = current_decode.__name__
-        compatible_decode.__doc__ = current_decode.__doc__
-        MyLibraryPanel.decode_bounded_image = compatible_decode
+        source_library.SUPPORTED_IMAGE_SUFFIXES = set(ACCEPTED_SOURCE_EXTENSIONS)
+        project_source_intake.SUPPORTED_EXTENSIONS = set(ACCEPTED_SOURCE_EXTENSIONS)
+        project_source_intake.FORMAT_BY_EXTENSION = dict(FORMAT_BY_EXTENSION)
+        project_source_intake.MIME_BY_FORMAT = dict(MIME_BY_FORMAT)
 
-    current_picker = MyLibraryPanel.choose_project_source
-    if not getattr(current_picker, "_mxztar_source_compatibility", False):
-        def compatible_picker(panel):
-            if not panel.project_session.is_writable:
-                panel.set_status(
-                    "Open or create a writable project before importing source art."
+        current_decode = MyLibraryPanel.decode_bounded_image
+        if not getattr(current_decode, "_mxztar_source_compatibility", False):
+
+            def compatible_decode(_panel, path):
+                return decode_source_preview(Path(path))
+
+            compatible_decode._mxztar_source_compatibility = True
+            compatible_decode.__name__ = current_decode.__name__
+            compatible_decode.__doc__ = current_decode.__doc__
+            MyLibraryPanel.decode_bounded_image = compatible_decode
+
+        current_picker = MyLibraryPanel.choose_project_source
+        if not getattr(current_picker, "_mxztar_source_compatibility", False):
+
+            def compatible_picker(panel):
+                if not panel.project_session.is_writable:
+                    panel.set_status(
+                        "Open or create a writable project before importing source art."
+                    )
+                    return
+                path, _selected_filter = QFileDialog.getOpenFileName(
+                    panel,
+                    "Import Source into Active Project",
+                    str(Path.home()),
+                    source_file_dialog_filter(),
                 )
-                return
-            path, _selected_filter = QFileDialog.getOpenFileName(
-                panel,
-                "Import Source into Active Project",
-                str(Path.home()),
-                source_file_dialog_filter(),
-            )
-            if path:
-                panel.start_project_intake(Path(path))
+                if path:
+                    panel.start_project_intake(Path(path))
 
-        compatible_picker._mxztar_source_compatibility = True
-        compatible_picker.__name__ = current_picker.__name__
-        compatible_picker.__doc__ = current_picker.__doc__
-        MyLibraryPanel.choose_project_source = compatible_picker
+            compatible_picker._mxztar_source_compatibility = True
+            compatible_picker.__name__ = current_picker.__name__
+            compatible_picker.__doc__ = current_picker.__doc__
+            MyLibraryPanel.choose_project_source = compatible_picker
 
-    current_empty_message = AgentPanel.empty_source_message
-    if not getattr(current_empty_message, "_mxztar_source_compatibility", False):
-        def compatible_empty_message(_panel):
-            folders = "\n".join(f"- {path}" for path in source_library.known_source_dirs())
-            return (
-                "No supported source art found.\n\n"
-                "Accepted source originals:\n"
-                f"{accepted_source_extensions_text()}\n\n"
-                "PNG, JPEG, and WebP are currently model-ready. BMP, TIFF, and "
-                "GIF are accepted and previewable but require a future normalized "
-                "model-input derivative before AI execution.\n\n"
-                "Known source folders:\n"
-                f"{folders}"
-            )
+        current_empty_message = AgentPanel.empty_source_message
+        if not getattr(current_empty_message, "_mxztar_source_compatibility", False):
 
-        compatible_empty_message._mxztar_source_compatibility = True
-        compatible_empty_message.__name__ = current_empty_message.__name__
-        compatible_empty_message.__doc__ = current_empty_message.__doc__
-        AgentPanel.empty_source_message = compatible_empty_message
-
-    current_start = AgentPanel.start_selected_workflow
-    if not getattr(current_start, "_mxztar_source_compatibility", False):
-        def compatible_start(panel):
-            item = panel.source_combo.currentData()
-            if isinstance(item, SourceArtItem) and not source_is_model_ready(item):
-                panel.set_status(
-                    f"{item.suffix.upper()} is accepted as authoritative source art and "
-                    "can be previewed, but local AI currently requires PNG, JPEG, or "
-                    "WebP. No model call was started."
+            def compatible_empty_message(_panel):
+                folders = "\n".join(
+                    f"- {path}" for path in source_library.known_source_dirs()
                 )
-                return
-            return current_start(panel)
+                return (
+                    "No supported source art found.\n\n"
+                    "Accepted source originals:\n"
+                    f"{accepted_source_extensions_text()}\n\n"
+                    "PNG, JPEG, and WebP are currently model-ready. BMP, TIFF, and "
+                    "GIF are accepted and previewable but require a future normalized "
+                    "model-input derivative before AI execution.\n\n"
+                    "Known source folders:\n"
+                    f"{folders}"
+                )
 
-        compatible_start._mxztar_source_compatibility = True
-        compatible_start.__name__ = current_start.__name__
-        compatible_start.__doc__ = current_start.__doc__
-        AgentPanel.start_selected_workflow = compatible_start
+            compatible_empty_message._mxztar_source_compatibility = True
+            compatible_empty_message.__name__ = current_empty_message.__name__
+            compatible_empty_message.__doc__ = current_empty_message.__doc__
+            AgentPanel.empty_source_message = compatible_empty_message
+
+        current_start = AgentPanel.start_selected_workflow
+        if not getattr(current_start, "_mxztar_source_compatibility", False):
+
+            def compatible_start(panel):
+                item = panel.source_combo.currentData()
+                if isinstance(item, SourceArtItem) and not source_is_model_ready(item):
+                    panel.set_status(
+                        f"{item.suffix.upper()} is accepted as authoritative source art and "
+                        "can be previewed, but local AI currently requires PNG, JPEG, or "
+                        "WebP. No model call was started."
+                    )
+                    return None
+                current_start(panel)
+                return None
+
+            compatible_start._mxztar_source_compatibility = True
+            compatible_start.__name__ = current_start.__name__
+            compatible_start.__doc__ = current_start.__doc__
+            AgentPanel.start_selected_workflow = compatible_start
+
+        _INSTALLED = True
+    finally:
+        _INSTALLING = False
