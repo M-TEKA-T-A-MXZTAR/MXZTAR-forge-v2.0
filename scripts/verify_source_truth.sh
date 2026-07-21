@@ -58,6 +58,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/mxztar_forge.py \
   src/qt_app.py \
   src/qt_editor_app.py \
+  src/qt_panels/__init__.py \
   src/qt_panels/agent_panel.py \
   src/qt_panels/agent_worker.py \
   src/qt_panels/editor_panel.py \
@@ -67,11 +68,16 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_jobs_panel_contract.py \
+  tools/verify_launcher_import_contract.py \
   tools/verify_project_source_intake_ui_contract.py \
   tools/verify_project_workflow_run_contract.py \
   tools/verify_shape_document_editor_contract.py
 
 echo "PASS: listed Python files compile"
+
+echo
+echo "=== LAUNCHER IMPORT CONTRACT ==="
+PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_launcher_import_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
