@@ -18,7 +18,6 @@ from PySide6.QtWidgets import (
 
 from core.project_session import ProjectSession
 from core.shape_document import (
-    ShapeDocumentError,
     add_rectangle,
     can_redo,
     can_undo,
@@ -214,8 +213,8 @@ class EditorPanel(QWidget):
             write_shape_document_autosave(self.project_session, self.document)
             self.render_document()
             self.set_status(f"Undo applied and autosaved at revision {self.document['revision']}.")
-        except ShapeDocumentError as exc:
-            self.set_status(str(exc))
+        except Exception as exc:
+            self.set_status(f"Could not undo the last editor command: {exc}")
         self.update_controls()
 
     def redo_command(self, *_args) -> None:
@@ -226,8 +225,8 @@ class EditorPanel(QWidget):
             write_shape_document_autosave(self.project_session, self.document)
             self.render_document()
             self.set_status(f"Redo applied and autosaved at revision {self.document['revision']}.")
-        except ShapeDocumentError as exc:
-            self.set_status(str(exc))
+        except Exception as exc:
+            self.set_status(f"Could not redo the editor command: {exc}")
         self.update_controls()
 
     def save_document(self, *_args) -> None:
