@@ -592,6 +592,7 @@ def save_shape_document(session: ProjectSession, document: dict) -> Path:
                             canonical_path.unlink()
                             fsync_directory(canonical_path.parent)
                         except FileNotFoundError:
+                            # The failed save may not have created the canonical file before rollback.
                             pass
                     else:
                         atomic_write_text(canonical_path, canonical_before)
