@@ -8,17 +8,14 @@ execution aligned with the official launcher.
 
 from __future__ import annotations
 
-_BOOTSTRAPPING = False
-
 
 def install_panel_runtime_contracts() -> None:
     """Install idempotent panel contracts without recursive package bootstrap."""
 
-    global _BOOTSTRAPPING
-    if _BOOTSTRAPPING:
+    if getattr(install_panel_runtime_contracts, "_bootstrapping", False):
         return
 
-    _BOOTSTRAPPING = True
+    install_panel_runtime_contracts._bootstrapping = True
     try:
         from qt_startup_guards import install_my_library_refresh_guard
         from source_image_compatibility import install_source_image_compatibility
@@ -26,7 +23,8 @@ def install_panel_runtime_contracts() -> None:
         install_my_library_refresh_guard()
         install_source_image_compatibility()
     finally:
-        _BOOTSTRAPPING = False
+        install_panel_runtime_contracts._bootstrapping = False
 
 
+install_panel_runtime_contracts._bootstrapping = False
 install_panel_runtime_contracts()
