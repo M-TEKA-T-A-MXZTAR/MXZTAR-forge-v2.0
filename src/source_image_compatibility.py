@@ -54,8 +54,6 @@ MIME_BY_FORMAT = {
 MODEL_READY_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
 LIBRARY_PREVIEW_MAX_SIZE = (1600, 1200)
 MAX_FALLBACK_PREVIEW_PIXELS = 40_000_000
-_INSTALLING = False
-_INSTALLED = False
 
 
 def accepted_source_extensions_text() -> str:
@@ -136,11 +134,13 @@ def source_is_model_ready(item: SourceArtItem) -> bool:
 def install_source_image_compatibility() -> None:
     """Install the format contract once before any panel is constructed."""
 
-    global _INSTALLING, _INSTALLED
-    if _INSTALLED or _INSTALLING:
+    if (
+        getattr(install_source_image_compatibility, "_installed", False)
+        or getattr(install_source_image_compatibility, "_installing", False)
+    ):
         return
 
-    _INSTALLING = True
+    install_source_image_compatibility._installing = True
     try:
         from qt_panels.agent_panel import AgentPanel
         from qt_panels.my_library_panel import MyLibraryPanel
@@ -227,6 +227,10 @@ def install_source_image_compatibility() -> None:
             compatible_start.__doc__ = current_start.__doc__
             AgentPanel.start_selected_workflow = compatible_start
 
-        _INSTALLED = True
+        install_source_image_compatibility._installed = True
     finally:
-        _INSTALLING = False
+        install_source_image_compatibility._installing = False
+
+
+install_source_image_compatibility._installing = False
+install_source_image_compatibility._installed = False
