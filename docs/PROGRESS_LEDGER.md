@@ -56,7 +56,7 @@ is assigned.
 
 | Product level | Status | Current boundary | Activation gate |
 |---|---|---|---|
-| Level One — Shape Editor and portable 2D assets | ACTIVE / PARTIAL FOUNDATION | Project authority, source intake, previews, guided navigation, evidence paths, and an implementation-branch native Editor foundation exist; approval and export remain absent | Verify and extend the editor-first milestones through the complete Level One journey |
+| Level One — Shape Editor and portable 2D assets | ACTIVE / PARTIAL FOUNDATION | Project authority, source intake, previews, guided navigation, evidence paths, and a deterministically verified implementation-branch native Editor foundation exist; approval and export remain absent | Complete live acceptance, review, merge, then extend the editor-first milestones through the full Level One journey |
 | Level Two — 3D Construct and portable blockouts | PLANNED | Product contract is defined; no Construct workspace or verified 3D export is claimed | Verified Level One editor, shape lifecycle, and 2D interoperability |
 | Level Three | DEFERRED | Infrastructure relationships, regional state, distributed deltas, and advanced system-scale construction are future-only | Separate future founder decision after Levels One and Two |
 | Level Four | DEFERRED | Cross-device platform, operator jobs, collaboration, immersive clients, economy, persistent regions, and world simulation are future-only | Separate future founder decision after preceding levels |
@@ -85,11 +85,11 @@ is assigned.
 | Project-owned model-call evidence | MERGED | PR #42; logs/diagnostics remain incomplete evidence, not approved artifacts | Define structured finding and review schema only when needed by editor assistance |
 | Jobs evidence browser | VERIFIED historically | Read-only success/failure/invalid distinction and safe asynchronous shutdown | Add project-native editor and extraction job records |
 | Shape Library evidence browser | VERIFIED historically | Raw shape-harvest evidence remains distinct from approved shapes; approved count truthfully zero | Replace evidence-only baseline with editable approved shape lifecycle |
-| Native editable shape document | PARTIAL on implementation branch | Versioned project-owned JSON schema, content hash, bounded command history, coordinate system, one layer, source relationships, autosave, canonical save, manifest registration, and recovery marker are implemented on `agent/build-native-shape-document-editor` | T1700 contract and regression verification before merge |
-| Blank document creation | PARTIAL on implementation branch | Writable projects can lazily create `structures/shape-documents`, register a blank document in `current_artifact_ids`, save it atomically, and reopen it | T1700 contract and live Editor smoke test |
-| Editor workspace | PARTIAL on implementation branch | A real `QGraphicsScene` canvas and project document selector are present; official launcher routes through the editor-first shell | Verify navigation, minimum layout, project switching, and normal close on the T1700 |
-| Scratch-built primitives and paths | PARTIAL on implementation branch | One `Add Rectangle` command is implemented with a visible canvas result | Selection and transform command foundation after this milestone verifies |
-| Undo, redo, autosave, and recovery | PARTIAL on implementation branch | Command cursor replays state; edits autosave separately; explicit save clears autosave; interrupted marker forces read-only recovery | Prove deterministic contract and live reopen behaviour |
+| Native editable shape document | DETERMINISTICALLY VERIFIED ON PR #49 | Versioned project-owned JSON schema, content hash, bounded command history, coordinate system, one layer, source relationships, autosave, canonical save, manifest registration, rollback, and recovery marker passed the T1700 contract | Live acceptance, review, and merge |
+| Blank document creation | DETERMINISTICALLY VERIFIED ON PR #49 | Writable projects lazily create `structures/shape-documents`, register a blank document in `current_artifact_ids`, save it atomically, and reopen it | Live Editor smoke test |
+| Editor workspace | DETERMINISTICALLY VERIFIED ON PR #49 | A real `QGraphicsScene` canvas and project document selector are present; official launcher routes through the editor-first shell; offscreen Qt contract passed | Live navigation, minimum layout, project switching, and normal close |
+| Scratch-built primitives and paths | PARTIAL / DETERMINISTICALLY VERIFIED | One `Add Rectangle` command is implemented and verified with a visible canvas result | Selection and transform command foundation after PR #49 merges |
+| Undo, redo, autosave, and recovery | DETERMINISTICALLY VERIFIED ON PR #49 | Command cursor replays state; edits autosave separately; explicit save clears autosave; rollback preserves canonical truth; interrupted marker forces read-only recovery | Live save/reopen confirmation |
 | Node, handle, transform, layer, snapping, group, and boolean editing | PLANNED REQUIRED | Defined in Level One Editor contract; no controls are exposed in this branch | Incremental verified editor tools |
 | Source-region selection and manual tracing | PLANNED REQUIRED | Required extraction baseline independent of AI | Editor canvas and source overlay model |
 | Algorithmic contour/mask extraction | PLANNED | No approved extraction engine exists | Manual trace and editable candidate schema first |
@@ -257,8 +257,9 @@ Both commands passed on the T1700. No new VX12 backup was recorded for PR #48.
 
 ## 22 July 2026 — Native shape-document and minimum Editor branch
 
-Status: `PARTIAL` on branch `agent/build-native-shape-document-editor`; PR pending and no
-T1700 pass is claimed yet.
+Status: `DETERMINISTICALLY VERIFIED` on branch
+`agent/build-native-shape-document-editor`; draft PR #49. Live visual acceptance remains
+pending before merge.
 
 Purpose:
 
@@ -297,29 +298,27 @@ Truth boundary:
 - no source extraction, tracing, node editing, transforms, booleans, SVG/PNG export, 3D
   generation, Construct workspace, or Levels Three/Four work is included.
 
-Required T1700 verification before merge:
+Recorded T1700 deterministic results:
 
-```bash
-cd /home/michael/MXZTAR-forge-v2.0
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_shape_document_editor_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_project_session_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_project_source_intake_ui_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_my_library_contract.py
-
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src \
-  .venv/bin/python tools/verify_agent_panel_execution_contract.py
-
-bash scripts/verify_source_truth.sh
-git diff --check origin/main...HEAD
+```text
+editor-contract           0
+project-session           0
+project-source-intake-ui  0
+my-library                0
+agent-panel               0
+source-truth              0
+diff-whitespace           0
 ```
+
+The editor contract proved blank document creation, manifest registration, canonical save,
+newer-autosave recovery, Undo, Redo, restart recovery, stale-temporary containment,
+transaction-failure propagation, multi-file rollback, marker cleanup after confirmed
+rollback, retained writable authority, and read-only recovery after interruption.
+
+The project-session, project-source intake UI, My Library, AgentPanel, source-truth, Python
+compile, prompt-contract, and whitespace regressions all remained green. This is a
+recorded deterministic T1700 pass; it is not a substitute for the live visual acceptance
+below.
 
 Live acceptance before merge:
 
@@ -337,15 +336,13 @@ Backup status: no new VX12 backup is claimed by this unmerged implementation bra
 
 ## Current permitted gate
 
-Milestone name: **Verify the native shape document and minimum Editor foundation**.
+Milestone name: **Complete live acceptance and review for the native Editor foundation**.
 
 The next implementation milestone is not permitted until:
 
-- the new shape-document/Editor contract passes on the T1700;
-- all named project, My Library, Agent Workflows, and source-truth regressions remain green;
 - the live Editor create/edit/undo/redo/save/reopen path completes normally;
 - Codex review comments are addressed;
-- the implementation PR is merged and its branch removed.
+- PR #49 is merged and its branch removed.
 
 After that evidence, the next planned editor increment is **selection and transform command
 foundation**: select one rectangle, move it reversibly, persist the command, and retain
