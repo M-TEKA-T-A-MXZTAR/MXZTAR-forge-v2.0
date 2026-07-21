@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import sys
@@ -19,6 +20,7 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtWidgets import QApplication, QPushButton
 
 import core.shape_document as shape_document_module
+import qt_panels.editor_panel as editor_panel_module
 from core.editor_project_access import EDITOR_TRANSACTION_FILENAME
 from core.project_session import ProjectSession
 from core.shape_document import (
@@ -70,6 +72,24 @@ def main() -> int:
         panel.set_project_state(session.state)
         require(panel.document_selector.count() == 1, "Editor discovers the project-owned document")
         require(panel.document is not None, "Editor opens the discovered native document")
+
+        original_panel_load = editor_panel_module.load_shape_document
+        panel_load_count = 0
+
+        def count_panel_load(project_session: ProjectSession, selected_id: str):
+            nonlocal panel_load_count
+            panel_load_count += 1
+            return original_panel_load(project_session, selected_id)
+
+        editor_panel_module.load_shape_document = count_panel_load
+        try:
+            panel.refresh_documents(document_id)
+        finally:
+            editor_panel_module.load_shape_document = original_panel_load
+        require(
+            panel_load_count == 1,
+            "Editor refresh loads and renders the selected document exactly once",
+        )
         require(
             not any(
                 word in button.text().casefold()
@@ -116,6 +136,42 @@ def main() -> int:
             "restart restores the editable document and command state",
         )
 
+        manifest_path = reopened.project_dir / "project.json"
+        history_path = reopened.project_dir / reopened.state.assessment.manifest["history_path"]
+        marker_path = reopened.project_dir / EDITOR_TRANSACTION_FILENAME
+        canonical_before = canonical_path.read_bytes()
+        manifest_before = manifest_path.read_bytes()
+        history_before = history_path.read_bytes()
+        oversized = copy.deepcopy(restored.document)
+        oversized["title"] = "x" * shape_document_module.MAX_DOCUMENT_BYTES
+        oversized = shape_document_module._with_integrity(oversized)
+
+        for writer, label in (
+            (
+                lambda: shape_document_module.write_shape_document_autosave(reopened, oversized),
+                "oversized autosave",
+            ),
+            (lambda: save_shape_document(reopened, oversized), "oversized canonical save"),
+        ):
+            try:
+                writer()
+            except shape_document_module.ShapeDocumentError as exc:
+                require(
+                    "safe write limit" in str(exc),
+                    f"{label} is rejected before unreadable bytes are written",
+                )
+            else:
+                raise AssertionError(f"{label} unexpectedly succeeded")
+
+        require(not autosave_path.exists(), "oversized autosave rejection creates no recovery file")
+        require(
+            canonical_path.read_bytes() == canonical_before
+            and manifest_path.read_bytes() == manifest_before
+            and history_path.read_bytes() == history_before,
+            "oversized write rejection leaves canonical project truth unchanged",
+        )
+        require(not marker_path.exists(), "oversized canonical rejection creates no transaction marker")
+
         stale_temporary = canonical_path.with_name(f"{canonical_path.name}.tmp")
         stale_temporary.write_text("{interrupted", encoding="utf-8")
         require(
@@ -125,7 +181,6 @@ def main() -> int:
         stale_temporary.unlink()
 
         changed = add_rectangle(restored.document, x=420, y=420)
-        history_path = reopened.project_dir / reopened.state.assessment.manifest["history_path"]
         original_atomic_write = shape_document_module.atomic_write_text
         failure_used = False
 
