@@ -46,23 +46,30 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/brain/prompts.py \
   src/brain/service.py \
   src/core/agent_runner.py \
+  src/core/editor_project_access.py \
   src/core/job_records.py \
   src/core/project_access.py \
   src/core/project_manifest.py \
   src/core/project_session.py \
   src/core/project_source_intake.py \
   src/core/project_workflow_run.py \
+  src/core/shape_document.py \
   src/core/source_library.py \
-  src/qt_panels/agent_panel.py \
-  src/qt_panels/jobs_panel.py \
-  src/qt_panels/agent_worker.py \
-  src/qt_panels/my_library_panel.py \
-  src/qt_panels/start_here_panel.py \
+  src/mxztar_forge.py \
   src/qt_app.py \
+  src/qt_editor_app.py \
+  src/qt_panels/agent_panel.py \
+  src/qt_panels/agent_worker.py \
+  src/qt_panels/editor_panel.py \
+  src/qt_panels/jobs_panel.py \
+  src/qt_panels/my_library_panel.py \
+  src/qt_panels/shape_library_panel.py \
+  src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_jobs_panel_contract.py \
   tools/verify_project_source_intake_ui_contract.py \
-  tools/verify_project_workflow_run_contract.py
+  tools/verify_project_workflow_run_contract.py \
+  tools/verify_shape_document_editor_contract.py
 
 echo "PASS: listed Python files compile"
 
