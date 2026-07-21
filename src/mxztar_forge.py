@@ -21,6 +21,10 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from qt_startup_guards import install_my_library_refresh_guard
+
+install_my_library_refresh_guard()
+
 from qt_app import main
 
 
