@@ -21,8 +21,10 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from source_image_compatibility import install_source_image_compatibility
 from qt_startup_guards import install_my_library_refresh_guard
 
+install_source_image_compatibility()
 install_my_library_refresh_guard()
 
 from qt_app import main
