@@ -147,7 +147,11 @@ class EditorPanel(QWidget):
             self.update_controls()
 
         index = self.document_selector.findData(selected_document_id)
-        self.document_selector.setCurrentIndex(index if index >= 0 else 0)
+        selection_signals_were_blocked = self.document_selector.blockSignals(True)
+        try:
+            self.document_selector.setCurrentIndex(index if index >= 0 else 0)
+        finally:
+            self.document_selector.blockSignals(selection_signals_were_blocked)
         self.open_selected_document()
 
     def open_selected_document(self, *_args) -> None:
