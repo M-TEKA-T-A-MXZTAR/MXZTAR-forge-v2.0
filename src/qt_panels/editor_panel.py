@@ -112,9 +112,11 @@ class EditorPanel(QWidget):
     def has_open_document(self) -> bool:
         return self.document is not None
 
-    def refresh_documents(self) -> None:
+    def refresh_documents(self, selected_document_id: str | None = None) -> None:
         self._refreshing_documents = True
+        signals_were_blocked = self.document_selector.blockSignals(True)
         self.document_selector.clear()
+        documents: tuple[dict, ...] = ()
         try:
             if self.project_session.state is None:
                 self.set_status("Open a project before using the Editor.")
@@ -140,9 +142,12 @@ class EditorPanel(QWidget):
             self.set_status(f"Editor document discovery failed: {exc}")
             return
         finally:
+            self.document_selector.blockSignals(signals_were_blocked)
             self._refreshing_documents = False
             self.update_controls()
-        self.document_selector.setCurrentIndex(0)
+
+        index = self.document_selector.findData(selected_document_id)
+        self.document_selector.setCurrentIndex(index if index >= 0 else 0)
         self.open_selected_document()
 
     def open_selected_document(self, *_args) -> None:
@@ -175,11 +180,7 @@ class EditorPanel(QWidget):
             result = create_blank_shape_document(self.project_session)
             created_id = result.document["document_id"]
             self.document = result.document
-            self.refresh_documents()
-            index = self.document_selector.findData(created_id)
-            if index >= 0:
-                self.document_selector.setCurrentIndex(index)
-                self.open_selected_document()
+            self.refresh_documents(created_id)
             self.set_status(f"Created project-owned blank document: {created_id}.")
         except Exception as exc:
             self.set_status(f"Could not create a blank shape document: {exc}")
@@ -237,11 +238,7 @@ class EditorPanel(QWidget):
             document_id = self.document["document_id"]
             revision = self.document["revision"]
             path = save_shape_document(self.project_session, self.document)
-            self.refresh_documents()
-            index = self.document_selector.findData(document_id)
-            if index >= 0:
-                self.document_selector.setCurrentIndex(index)
-                self.open_selected_document()
+            self.refresh_documents(document_id)
             self.set_status(f"Saved canonical shape document revision {revision}: {path.name}")
         except Exception as exc:
             self.set_status(f"Could not save the shape document: {exc}")
