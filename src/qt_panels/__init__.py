@@ -11,7 +11,14 @@ from __future__ import annotations
 
 
 def install_panel_runtime_contracts() -> None:
-    """Install the idempotent panel contracts after package initialization."""
+    """Install idempotent runtime contracts required before any window is constructed.
+
+    Must be called by every supported application entrypoint (e.g. mxztar_forge,
+    qt_app, qt_editor_app) after importing panel classes and before showing UI.
+    Calling it more than once is safe. Omitting the call leaves worker-ownership
+    and source-compatibility guards uninstalled, which is only acceptable in
+    non-UI contexts such as compile checks.
+    """
 
     if getattr(install_panel_runtime_contracts, "_bootstrapping", False):
         return

@@ -17,15 +17,20 @@ def run_case(name: str, code: str) -> None:
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(SRC_ROOT)
     environment.setdefault("QT_QPA_PLATFORM", "offscreen")
-    completed = subprocess.run(
-        [sys.executable, "-c", code],
-        cwd=PROJECT_ROOT,
-        env=environment,
-        text=True,
-        capture_output=True,
-        timeout=60,
-        check=False,
-    )
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=PROJECT_ROOT,
+            env=environment,
+            text=True,
+            capture_output=True,
+            timeout=60,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"{name} exceeded the 60 s import timeout"
+        ) from exc
     if completed.returncode != 0:
         details = "\n".join(
             part for part in (completed.stdout.strip(), completed.stderr.strip()) if part
