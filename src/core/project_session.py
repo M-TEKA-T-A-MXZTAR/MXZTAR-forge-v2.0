@@ -7,10 +7,10 @@ import itertools
 import stat
 import threading
 from contextlib import contextmanager
-from dataclasses import replace
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
+from core.editor_project_access import assess_project_open
 from core.paths import PROJECTS_DIR
 from core.project_access import (
     ProjectAccessStatus,
@@ -18,12 +18,10 @@ from core.project_access import (
     ProjectLockLease,
     ProjectOpenAssessment,
     acquire_project_lock,
-    assess_project_open,
     read_project_lock,
     release_project_lock,
 )
-from core.project_manifest import create_project
-from core.project_manifest import validate_manifest
+from core.project_manifest import create_project, validate_manifest
 
 
 class ProjectSessionError(RuntimeError):
@@ -135,7 +133,10 @@ class ProjectSession:
                     self._state = None
                     return ProjectSessionCloseResult(
                         released_writer=True,
-                        warning=f"Writer lock was removed but directory durability could not be confirmed: {exc}",
+                        warning=(
+                            "Writer lock was removed but directory durability could not be "
+                            f"confirmed: {exc}"
+                        ),
                     )
             self._lease = None
             self._state = None
@@ -158,7 +159,9 @@ class ProjectSession:
                 raise ProjectSessionError("A writable project session is required.")
             validated = validate_manifest(manifest)
             if validated["project_id"] != self._state.assessment.manifest["project_id"]:
-                raise ProjectSessionError("Manifest project identity does not match the active session.")
+                raise ProjectSessionError(
+                    "Manifest project identity does not match the active session."
+                )
             assessment = replace(self._state.assessment, manifest=validated)
             self._state = ProjectSessionState(assessment=assessment, writable=True)
 

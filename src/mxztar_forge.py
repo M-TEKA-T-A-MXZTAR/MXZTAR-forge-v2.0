@@ -27,7 +27,7 @@ from qt_startup_guards import install_my_library_refresh_guard
 install_source_image_compatibility()
 install_my_library_refresh_guard()
 
-from qt_app import main
+from qt_editor_app import main
 
 
 if __name__ == "__main__":
