@@ -217,7 +217,7 @@ Status: `OBSERVED ABSENCE`, not a defect.
 
 ## 22 July 2026 — Editor-first roadmap realignment
 
-Status: `PLANNED`; documentation branch `agent/editor-first-roadmap`; PR pending.
+Status: `PLANNED`; documentation branch `agent/editor-first-roadmap`; draft PR #48.
 
 Founder decisions recorded:
 
@@ -235,6 +235,7 @@ Founder decisions recorded:
 
 Documentation changed:
 
+- `README.md`;
 - `docs/product/MASTER_BUILD_PLAN.md`;
 - `docs/PROGRESS_LEDGER.md`.
 
