@@ -66,6 +66,13 @@ def _with_integrity(document: dict) -> dict:
     return value
 
 
+def _serialize_bounded_document(document: dict) -> str:
+    serialized = json.dumps(document, indent=2, ensure_ascii=False) + "\n"
+    if len(serialized.encode("utf-8")) > MAX_DOCUMENT_BYTES:
+        raise ShapeDocumentError("Shape document exceeds the safe write limit.")
+    return serialized
+
+
 def _require_non_empty_string(payload: dict, key: str) -> str:
     value = payload.get(key)
     if not isinstance(value, str) or not value.strip():
@@ -478,12 +485,13 @@ def load_shape_document(session: ProjectSession, document_id: str) -> ShapeDocum
 def write_shape_document_autosave(session: ProjectSession, document: dict) -> Path:
     _project_dir, project_id = _require_session(session, writable=True)
     value = validate_shape_document(document, project_id)
+    serialized_value = _serialize_bounded_document(value)
     root, autosave_root = _shape_store(session, create=True)
     canonical_path = _document_path(root, value["document_id"])
     if not canonical_path.is_file():
         raise ShapeDocumentError("Save the blank shape document before creating autosave changes.")
     path = _autosave_path(autosave_root, value["document_id"])
-    atomic_write_text(path, json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+    atomic_write_text(path, serialized_value)
     return path
 
 
@@ -504,6 +512,7 @@ def _clear_transaction_marker(project_dir: Path, *, missing_ok: bool = False) ->
 def save_shape_document(session: ProjectSession, document: dict) -> Path:
     project_dir, project_id = _require_session(session, writable=True)
     value = validate_shape_document(document, project_id)
+    serialized_value = _serialize_bounded_document(value)
     with session.mutation_guard():
         if (
             not session.is_writable
@@ -567,7 +576,7 @@ def save_shape_document(session: ProjectSession, document: dict) -> Path:
             )
             marker_created = True
             canonical_write_attempted = True
-            atomic_write_text(canonical_path, json.dumps(value, indent=2, ensure_ascii=False) + "\n")
+            atomic_write_text(canonical_path, serialized_value)
             history_write_attempted = True
             atomic_write_text(history_path, history_before + json.dumps(event, ensure_ascii=False) + "\n")
             manifest_write_attempted = True
