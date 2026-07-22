@@ -1,129 +1,115 @@
-# MXZTAR-forge v2.0 — Output Artifact Contracts
+# MXZTAR Forge v2.0 — Output Artifact Contracts
 
 ## 1. Purpose
 
-This document defines the durable files produced by MXZTAR-forge v2.0 workflows.
+This document defines the durable files produced or changed by MXZTAR Forge Stage One and Stage Two workflows.
 
-Its purpose is to ensure that workflow outputs are:
+Its purpose is to ensure that user work remains:
 
-* structured;
-* traceable;
-* reviewable;
-* recoverable;
-* versioned;
-* distinguishable as success or failure;
-* safe to reuse in later workflows;
-* understandable outside the application.
+- structured;
+- traceable;
+- reviewable;
+- recoverable;
+- versioned;
+- distinguishable as success, failure, raw proposal, and approved truth;
+- safe to reuse in later workflows;
+- understandable outside the application where practical.
 
-A workflow is not complete merely because text appears in the interface.
+A workflow is not complete merely because text appears in the interface or a file is written.
 
 A workflow is complete only when its result is:
 
 1. validated;
-2. saved;
+2. saved or transactionally rejected;
 3. correctly classified;
-4. traceable to its source;
+4. traceable to its inputs and actor;
 5. visible to the user;
-6. available for later project use.
+6. available for later project use where successful;
+7. recoverable after restart or interruption.
 
 ---
 
-## 2. Core Artifact Principles
+## 2. Core artifact principles
 
-### 2.1 Files are product outputs
+### 2.1 Durable project files are product outputs
 
-Saved artifacts are part of the product, not implementation leftovers.
+Saved project artifacts are not implementation leftovers. They must remain usable when:
 
-They must remain usable when:
+- Forge is closed;
+- the project is copied;
+- the machine is restored;
+- the application is updated;
+- SQLite is rebuilt;
+- a later workflow consumes the result;
+- the user inspects the project manually.
 
-* the application is closed;
-* the project is copied;
-* the machine is restored;
-* the user changes versions;
-* a later workflow consumes the result;
-* the user inspects the project manually.
+### 2.2 Storage success and workflow success are different
 
----
-
-### 2.2 Success and storage are separate states
-
-The system must distinguish:
+The system distinguishes:
 
 ```text
-output saved
+artifact or diagnostic saved
 ```
 
 from:
 
 ```text
-workflow succeeded
+workflow or job succeeded
 ```
 
-A diagnostic failure record may be saved successfully while the workflow itself failed.
+A failure record may be stored successfully while the workflow itself failed. The UI must never report success merely because bytes were written.
 
-The interface must never report a workflow as successful merely because a file was written.
+### 2.3 Proposal, editable state, and approved truth are different
 
----
+Forge distinguishes:
 
-### 2.3 Raw model output is not project truth
+- source evidence;
+- algorithmic or model proposal;
+- user-created or corrected editable geometry;
+- reviewed and approved project truth;
+- exported derivative.
 
-Model-generated results begin as raw findings.
-
-They become approved project material only after explicit user approval or a future documented approval rule.
-
-Initial approval states:
-
-```text
-raw
-approved
-rejected
-superseded
-```
-
----
+Raw model output does not become an approved shape, component, assembly, or export authority automatically.
 
 ### 2.4 Provenance is mandatory
 
-Every durable workflow artifact must identify:
+Every material artifact identifies:
 
-* the originating project;
-* the workflow;
-* the workflow contract version;
-* the source asset;
-* the source hash where available;
-* the model used;
-* the creation time;
-* the application version;
-* the parent artifact where applicable.
+- originating project;
+- workflow family or operation;
+- schema and contract versions;
+- input artifact IDs;
+- source asset and hash where applicable;
+- actor: user, algorithm, or model;
+- creation and update time;
+- application version;
+- parent and superseded artifact IDs;
+- validation and approval state;
+- intended output profile and known limitations where applicable.
 
----
+### 2.5 Historical files are preserved
 
-### 2.5 User files remain inspectable
+Approved prior versions, raw proposals, rejected candidates, and superseded artifacts remain historically inspectable unless an explicit retention policy later authorises removal.
 
-Artifacts must use open, inspectable formats where practical.
+State changes require durable records. Moving files between directories is not sufficient authority by itself.
 
-Primary structured format:
+### 2.6 Open and inspectable formats are preferred
 
-```text
-JSON
-```
+Primary structured formats:
 
-Human-readable companion formats may include:
+- JSON;
+- JSON Lines for append-only history;
+- Markdown for human-readable reports;
+- SVG and PNG for Stage One interchange;
+- documented GLB/glTF and OBJ profiles for Stage Two interchange.
 
-```text
-Markdown
-TXT
-PNG
-SVG
-```
-
-Binary-only project state should be avoided for first-release planning outputs.
+Binary-only project authority should be avoided where a durable inspectable representation is practical.
 
 ---
 
-## 3. Project Artifact Layout
+## 3. Project artifact layout
 
-The first-release project structure should follow this contract:
+The target project structure is:
 
 ```text
 project-name/
@@ -138,115 +124,126 @@ project-name/
 │   ├── rejected/
 │   └── superseded/
 ├── structures/
-│   ├── raw/
-│   ├── approved/
-│   └── superseded/
+│   ├── shape-documents/
+│   │   └── .autosave/
+│   ├── extraction-candidates/
+│   ├── approved-shapes/
+│   ├── construction-recipes/
+│   ├── components/
+│   └── assemblies/
 ├── briefs/
-│   ├── draft/
-│   ├── approved/
-│   └── superseded/
 ├── prompts/
-│   ├── draft/
-│   ├── approved/
-│   └── superseded/
-├── recommendations/
-├── exports/
 ├── diagnostics/
 ├── logs/
-└── history/
-```
-
-Not every directory must be populated immediately.
-
-The directory contract exists so later workflows do not invent competing storage locations.
-
----
-
-## 4. Artifact Identity
-
-Every durable artifact must have a unique identifier.
-
-Recommended format:
-
-```text
-art_<utc-timestamp>_<short-random-id>
-```
-
-Example:
-
-```text
-art_20260625T041530Z_a8f2c1
-```
-
-The identifier must remain stable after creation.
-
-Renaming the file must not change the artifact ID stored inside the artifact.
-
----
-
-## 5. Filename Contract
-
-Recommended filename pattern:
-
-```text
-<workflow-key>__<source-stem>__<utc-timestamp>__<artifact-id>.<extension>
-```
-
-Example:
-
-```text
-source_art_intelligence__mxztar_test_shapes__20260625T041530Z__art_20260625T041530Z_a8f2c1.json
+├── history/
+└── exports/
 ```
 
 Rules:
 
-* use lowercase;
-* replace spaces with underscores;
-* remove unsafe filesystem characters;
-* preserve the original source filename inside provenance;
-* use UTC timestamps in filenames;
-* do not silently overwrite an existing artifact;
-* create a new artifact for each run;
-* use explicit supersession links rather than replacing historical files.
+- a directory is created only after its schema and authority contract are implemented;
+- accepted source originals remain unchanged;
+- autosave remains separate from canonical truth;
+- exports are derivatives, not project authority replacements;
+- SQLite indexes files by project-relative path and remains rebuildable.
 
 ---
 
-## 6. Shared Artifact Envelope
+## 4. Core artifact classes
 
-Every JSON artifact must contain a common top-level envelope.
+The Stage One–Two product uses approximately 14 core durable artifact classes.
+
+| Class | Purpose | Typical authority |
+|---|---|---|
+| Project manifest | Project identity and declared current state | Canonical |
+| Project history event | Append-only material state change | Canonical history |
+| Source asset record | Source identity, hash, origin, rights notes, project path | Canonical |
+| Source preview record | Rebuildable bounded preview metadata | Derived |
+| Native shape document | Editable 2D geometry and replayable command state | Canonical current revision |
+| Extraction candidate | Manual, algorithmic, or AI-proposed editable geometry | Raw/editable |
+| Approved Shape Library asset | Reviewed reusable shape and compatibility declarations | Approved truth |
+| Review/approval record | Approval, rejection, correction request, or review decision | Canonical decision |
+| Supersession/version record | Relationship between historical and current versions | Canonical decision |
+| Job/evidence record | Execution, progress, terminal state, output and diagnostics | Evidence |
+| Construction recipe | Reversible shape/primitive-to-component derivation | Canonical editable recipe |
+| Component document | Editable 3D component, transform, parent and validation | Canonical current revision |
+| Assembly document | Hierarchy, instances, anchors, connectors and relationships | Canonical current revision |
+| Export/Forge Pack record | Named profile, validation, derivatives, provenance, limitations | Derived handoff |
+
+Optional concept briefs, prompt packs, source-art findings, modular proposals, and recommendations remain additional planning artifacts. They do not replace geometry authority.
+
+---
+
+## 5. Identity and naming
+
+Every durable artifact has a stable unique ID.
+
+Recommended patterns:
+
+```text
+project_<safe-slug>_<short-id>
+source_<utc-stamp>_<short-id>
+shape_doc_<utc-stamp>_<short-id>
+shape_<utc-stamp>_<short-id>
+recipe_<utc-stamp>_<short-id>
+component_<utc-stamp>_<short-id>
+assembly_<utc-stamp>_<short-id>
+job_<utc-stamp>_<short-id>
+export_<utc-stamp>_<short-id>
+```
+
+Rules:
+
+- IDs remain stable after file rename;
+- filenames are safe, deterministic where required, and collision-resistant;
+- the original source filename is preserved in provenance;
+- UTC timestamps are used for generated names and events;
+- no canonical artifact is silently overwritten;
+- later versions use explicit version and supersession relationships.
+
+---
+
+## 6. Shared metadata contract
+
+Every material artifact schema includes or references these fields where applicable:
 
 ```json
 {
-  "schema_name": "mxztar_forge_output_artifact",
+  "schema_name": "mxztar_forge_example",
   "schema_version": "1.0.0",
-  "artifact_id": "art_20260625T041530Z_a8f2c1",
-  "artifact_type": "workflow_result",
-  "workflow_key": "source_art_intelligence",
-  "workflow_contract_version": "1.0.0",
+  "artifact_id": "shape_20260722T000000Z_a8f2c1",
+  "artifact_type": "approved_shape",
   "project_id": "project_example",
-  "status": "succeeded",
-  "approval_state": "raw",
-  "created_at_utc": "2026-06-25T04:15:30Z",
-  "completed_at_utc": "2026-06-25T04:16:12Z",
-  "elapsed_seconds": 42.0,
+  "status": "valid",
+  "approval_state": "approved",
+  "created_at_utc": "2026-07-22T00:00:00Z",
+  "updated_at_utc": "2026-07-22T00:00:00Z",
   "application": {
-    "name": "MXZTAR-forge v2.0",
+    "name": "MXZTAR Forge v2.0",
     "version": "0.0.0-development"
   },
-  "execution": {},
+  "actor": {
+    "type": "user",
+    "identifier": null
+  },
   "provenance": {},
-  "result": {},
   "validation": {},
-  "recommendation": {},
-  "error": null
+  "integrity": {},
+  "limitations": [],
+  "parent_artifact_ids": [],
+  "supersedes_artifact_ids": []
 }
 ```
 
+A specialised schema may use different internal structure, but it must preserve equivalent identity, provenance, validation, integrity, and lifecycle information.
+
 ---
 
-## 7. Shared Status Values
+## 7. Shared status values
 
-Allowed workflow result status values:
+### Execution status
+
+Allowed terminal and transient job states:
 
 ```text
 queued
@@ -260,128 +257,94 @@ partially_succeeded
 
 Rules:
 
-* `queued` and `running` are transient execution states;
-* durable final artifacts should normally use a terminal state;
-* `partially_succeeded` must include an explanation;
-* `failed` must include an error object;
-* `succeeded` must not contain a fatal error;
-* `cancelled` must state who or what cancelled the run;
-* `timed_out` must record the configured timeout.
+- `queued` and `running` are transient;
+- durable job records normally use a terminal state;
+- `partially_succeeded` explains exactly what succeeded and failed;
+- `failed` contains an error object;
+- `succeeded` contains no fatal validation error;
+- `cancelled` records who or what cancelled the job;
+- `timed_out` records the configured timeout and cancellation/cleanup result.
 
----
+### Artifact validity status
 
-## 8. Shared Approval States
+```text
+valid
+invalid
+recovery_required
+read_only
+migrated
+superseded
+```
 
-Allowed approval states:
+### Approval state
 
 ```text
 not_applicable
 raw
+editable_candidate
+review_requested
+correction_requested
 approved
 rejected
 superseded
 ```
 
-Use:
-
-* `not_applicable` for diagnostics and execution logs;
-* `raw` for newly generated findings;
-* `approved` after explicit user approval;
-* `rejected` after explicit user rejection;
-* `superseded` when a newer artifact replaces it conceptually.
-
-Approval must not be inferred from successful generation.
+Approval is never inferred from successful generation or file storage.
 
 ---
 
-## 9. Execution Metadata Contract
+## 8. Actor and provenance contract
 
-The `execution` object should contain:
+Actor type:
 
-```json
-{
-  "run_id": "run_20260625T041530Z_39fd10",
-  "model_provider": "ollama",
-  "model_name": "qwen2.5vl:3b",
-  "model_digest": null,
-  "host_mode": "local",
-  "thread_limit": 2,
-  "parallel_limit": 1,
-  "timeout_seconds": 300,
-  "attempt_number": 1,
-  "triggered_by": "user",
-  "worker_type": "qt_thread_worker"
-}
+```text
+user
+algorithm
+model
+migration
+system_recovery
 ```
 
-Required fields:
-
-* run ID;
-* model provider;
-* model name;
-* local or remote mode;
-* timeout;
-* attempt number;
-* trigger source.
-
-Optional fields:
-
-* model digest;
-* hardware profile;
-* temperature;
-* seed;
-* prompt token count;
-* output token count;
-* retry reason.
-
----
-
-## 10. Provenance Contract
-
-The `provenance` object should contain:
+The provenance object should include:
 
 ```json
 {
-  "source_assets": [
-    {
-      "asset_id": "asset_001",
-      "project_relative_path": "source/originals/mxztar_test_shapes.png",
-      "original_filename": "mxztar_test_shapes.png",
-      "mime_type": "image/png",
-      "size_bytes": 123456,
-      "width_px": 1000,
-      "height_px": 1000,
-      "sha256": "example-hash"
-    }
-  ],
+  "source_asset_ids": [],
+  "source_hashes": [],
+  "source_regions": [],
   "parent_artifact_ids": [],
+  "workflow_family": "S5_shape_editing",
+  "operation_type": "add_rectangle",
+  "job_id": null,
+  "model": null,
+  "user_purpose": "",
   "user_notes": "",
-  "user_intent": "",
-  "prompt_contract_key": "source_art_intelligence",
-  "prompt_contract_version": "1.0.0"
+  "coordinate_space": "cartesian_2d_top_left_y_down",
+  "units": "px"
 }
 ```
 
 Rules:
 
-* project-relative paths are preferred;
-* absolute paths may be recorded only in diagnostics where necessary;
-* hashes should use SHA-256;
-* missing hashes must be represented as `null`, not fabricated;
-* parent artifacts must be identified explicitly;
-* user intent must remain distinct from machine-generated findings.
+- project-relative paths are preferred;
+- absolute paths appear only where required for diagnostics and are not portable authority;
+- SHA-256 is used for content identity where implemented;
+- missing values are `null` or absent, never fabricated;
+- user purpose and intent remain distinct from machine observation;
+- model-proposed geometry identifies model, prompt/contract, and source region.
 
 ---
 
-## 11. Validation Contract
+## 9. Validation and integrity contract
 
-The `validation` object should contain:
+A validation record includes:
 
 ```json
 {
   "is_valid": true,
+  "validator_name": "shape_document_validator",
   "validator_version": "1.0.0",
-  "validated_at_utc": "2026-06-25T04:16:12Z",
+  "validated_at_utc": "2026-07-22T00:00:00Z",
   "checks": [
     {
       "name": "required_fields_present",
@@ -393,55 +356,53 @@ The `validation` object should contain:
 }
 ```
 
-A result may be:
+Integrity may include:
 
-* successfully generated;
-* successfully saved;
-* but invalid against its artifact schema.
+- content SHA-256;
+- manifest relationship validation;
+- file-size boundary;
+- command-history boundary;
+- parent existence;
+- version/supersession consistency;
+- output-profile checksum.
 
-In that case, the final workflow status must not be `succeeded`.
-
-Recommended classification:
-
-```text
-failed
-```
-
-or:
-
-```text
-partially_succeeded
-```
-
-depending on whether useful recoverable content exists.
+A file may be written but fail validation. In that case it does not become canonical approved truth.
 
 ---
 
-## 12. Error Contract
+## 10. Error contract
 
-When a workflow does not succeed, the `error` object must contain:
+A failed workflow or transaction records:
 
 ```json
 {
-  "category": "model_http_error",
-  "code": "OLLAMA_HTTP_400",
-  "message": "The local model service rejected the request.",
-  "technical_detail": "400 Client Error: Bad Request",
+  "category": "validation_failed",
+  "code": "SHAPE_DOCUMENT_INVALID",
+  "message": "The shape document did not pass validation.",
+  "technical_detail": "",
   "recoverable": true,
-  "suggested_action": "Verify the selected model and request payload, then retry.",
-  "exception_type": "HTTPError",
-  "stage": "model_request"
+  "suggested_action": "Restore the last canonical revision or correct the invalid field.",
+  "exception_type": null,
+  "stage": "pre_commit_validation"
 }
 ```
 
-Allowed initial error categories:
+Initial error categories include:
 
 ```text
+project_missing
+project_locked
+project_read_only
+project_recovery_required
+schema_unsupported
+migration_unavailable
 source_missing
 source_unreadable
 source_unsupported
 source_decode_error
 compatibility_blocked
+operation_invalid
+geometry_invalid
 model_unavailable
 model_missing
 model_http_error
@@ -450,925 +411,385 @@ model_output_empty
 model_output_malformed
 validation_failed
 storage_failed
+transaction_failed
+rollback_failed
 permission_denied
 cancelled_by_user
 unexpected_internal_error
 ```
 
-The user-facing message should be understandable.
-
-Technical details should be preserved in the artifact without becoming the only visible explanation.
+User-facing explanations remain understandable. Technical detail is preserved without becoming the only explanation.
 
 ---
 
-## 13. Source-Art Intelligence Artifact
+## 11. Project manifest contract
 
-### Workflow key
+`project.json` is authoritative for project identity and declared current state, validated against durable artifact files.
 
-```text
-source_art_intelligence
-```
+It includes:
 
-### Directory
+- schema and project identity;
+- exact creator Purpose;
+- safe project display name and directory identity;
+- creation/update/application versions;
+- project status;
+- source asset IDs;
+- current artifact IDs;
+- approved artifact IDs;
+- superseded artifact IDs;
+- history path;
+- integrity fields.
 
-```text
-findings/raw/
-```
-
-### Artifact type
-
-```text
-visual_intelligence_finding
-```
-
-### Required result fields
-
-```json
-{
-  "summary": "",
-  "visible_content": [],
-  "structural_observations": [],
-  "layer_observations": [],
-  "reusable_motifs": [],
-  "reusable_surfaces": [],
-  "candidate_components": [],
-  "production_possibilities": [],
-  "uncertainties": [],
-  "quality_notes": [],
-  "recommended_next_workflow": ""
-}
-```
-
-### Validation rules
-
-A successful result must contain:
-
-* a non-empty summary;
-* at least one visible-content observation;
-* at least one production-relevant observation;
-* an uncertainty section;
-* a recommended next workflow.
-
-A generic image caption alone is invalid.
-
-### Approval behaviour
-
-New result:
-
-```text
-raw
-```
-
-User may approve:
-
-* the full artifact;
-* selected findings;
-* a corrected derivative artifact.
-
-Approved material moves conceptually to:
-
-```text
-findings/approved/
-```
-
-The original raw artifact remains preserved.
+Creating a project appends a durable `project_created` event containing the exact Purpose and derived name/slug result.
 
 ---
 
-## 14. Shape and Structure Harvest Artifact
+## 12. Project history event contract
 
-### Workflow key
-
-```text
-shape_structure_harvest
-```
-
-### Directory
-
-```text
-structures/raw/
-```
-
-### Artifact type
-
-```text
-shape_structure_map
-```
-
-### Required result fields
-
-```json
-{
-  "major_silhouettes": [],
-  "geometric_forms": [],
-  "organic_forms": [],
-  "repeated_forms": [],
-  "layer_relationships": [],
-  "structural_stacks": [],
-  "perspective_cues": [],
-  "extraction_zones": [],
-  "vector_candidates": [],
-  "raster_cutout_candidates": [],
-  "manual_reconstruction_guidance": [],
-  "priority_order": []
-}
-```
-
-### Validation rules
-
-A successful result must identify at least one of:
-
-* silhouette;
-* structure;
-* repeated form;
-* extraction zone.
-
-The artifact must not claim that extraction has occurred unless an actual extracted file exists.
-
-### Future child artifacts
-
-Possible later outputs:
-
-```text
-SVG
-PNG
-mask files
-coordinate maps
-layer manifests
-```
-
-These are not automatically implied by this planning artifact.
-
----
-
-## 15. Modular-Set Perspective Artifact
-
-### Workflow key
-
-```text
-modular_set_perspective
-```
-
-### Directory
-
-```text
-structures/raw/
-```
-
-### Artifact type
-
-```text
-modular_system_proposal
-```
-
-### Required result fields
-
-```json
-{
-  "observed_modules": [],
-  "inferred_modules": [],
-  "module_families": [],
-  "relationships": [],
-  "connection_rules": [],
-  "repetition_rules": [],
-  "naming_proposals": [],
-  "two_dimensional_uses": [],
-  "future_three_dimensional_uses": [],
-  "production_order": [],
-  "uncertainties": []
-}
-```
-
-### Validation rules
-
-The artifact must separate:
-
-```text
-observed_modules
-```
-
-from:
-
-```text
-inferred_modules
-```
-
-Speculative modules must never be presented as directly observed facts.
-
-A successful result must contain at least one module or an explicit valid finding that the source is unsuitable for modular interpretation.
-
----
-
-## 16. Prototype Imagination Artifact
-
-### Workflow key
-
-```text
-prototype_imagination
-```
-
-### Directory
-
-```text
-findings/raw/
-```
-
-### Artifact type
-
-```text
-prototype_concept
-```
-
-### Required result fields
-
-```json
-{
-  "prototype_name": "",
-  "problem_statement": "",
-  "proposed_function": "",
-  "source_influences": [],
-  "speculative_extensions": [],
-  "primary_components": [],
-  "interaction_model": [],
-  "intended_users": [],
-  "production_considerations": [],
-  "constraints": [],
-  "risks": [],
-  "next_validation_step": ""
-}
-```
-
-### Validation rules
-
-A successful artifact must:
-
-* identify a problem or intended function;
-* distinguish source influence from speculation;
-* contain at least one constraint;
-* avoid unsupported engineering, safety, or certification claims.
-
----
-
-## 17. Concept Brief Artifact
-
-### Workflow key
-
-```text
-concept_brief
-```
-
-### Directory
-
-Initial state:
-
-```text
-briefs/draft/
-```
-
-Approved state:
-
-```text
-briefs/approved/
-```
-
-### Artifact type
-
-```text
-concept_brief
-```
-
-### Required result fields
-
-```json
-{
-  "title": "",
-  "production_objective": "",
-  "audience_or_user": "",
-  "problem_or_opportunity": "",
-  "intended_use": "",
-  "visual_direction": [],
-  "approved_motifs": [],
-  "approved_structures": [],
-  "required_deliverables": [],
-  "constraints": [],
-  "exclusions": [],
-  "risks": [],
-  "production_sequence": [],
-  "acceptance_criteria": [],
-  "recommended_next_workflow": ""
-}
-```
-
-### Validation rules
-
-A successful concept brief must contain:
-
-* a title;
-* a production objective;
-* intended use;
-* at least one deliverable;
-* at least one constraint;
-* acceptance criteria.
-
-A brief must not silently treat raw findings as approved findings.
-
----
-
-## 18. Render Prompt Pack Artifact
-
-### Workflow key
-
-```text
-render_prompt_pack
-```
-
-### Directory
-
-Initial state:
-
-```text
-prompts/draft/
-```
-
-Approved state:
-
-```text
-prompts/approved/
-```
-
-### Artifact type
-
-```text
-render_prompt_pack
-```
-
-### Required result fields
-
-```json
-{
-  "title": "",
-  "intended_output": "",
-  "target_model": null,
-  "primary_prompt": "",
-  "controlled_variants": [],
-  "composition_variants": [],
-  "material_variants": [],
-  "lighting_variants": [],
-  "negative_constraints": [],
-  "consistency_anchors": [],
-  "model_specific_notes": [],
-  "provenance_summary": ""
-}
-```
-
-### Validation rules
-
-A successful prompt pack must contain:
-
-* one primary prompt;
-* at least one controlled variation;
-* negative or exclusion constraints;
-* intended output;
-* provenance summary.
-
-A single unstructured paragraph is not a valid prompt pack.
-
----
-
-## 19. Recommend Next Step Artifact
-
-### Workflow key
-
-```text
-recommend_next_step
-```
-
-### Directory
-
-```text
-recommendations/
-```
-
-### Artifact type
-
-```text
-next_step_recommendation
-```
-
-### Required result fields
-
-```json
-{
-  "primary_action": "",
-  "reason": "",
-  "required_input": [],
-  "expected_result": "",
-  "compatibility_status": "",
-  "what_not_to_do_yet": [],
-  "alternative_actions": []
-}
-```
-
-### Validation rules
-
-A successful result must contain exactly one primary action.
-
-Alternative actions may exist, but must not replace prioritisation.
-
-The recommendation must not reference:
-
-* unavailable controls;
-* nonexistent workflows;
-* missing project artifacts as if they exist.
-
----
-
-## 20. Compatibility Assessment Artifact
-
-Compatibility assessment may be transient in the interface, but when saved it should use:
-
-### Directory
-
-```text
-history/
-```
-
-### Artifact type
-
-```text
-workflow_compatibility_assessment
-```
-
-### Required fields
-
-```json
-{
-  "workflow_key": "",
-  "status": "ready",
-  "reason": "",
-  "missing_requirements": [],
-  "recommended_improvements": [],
-  "can_run": true,
-  "recommended_alternative": null,
-  "expected_output": ""
-}
-```
-
-Allowed status values:
-
-```text
-ready
-caution
-blocked
-```
-
----
-
-## 21. Diagnostic Artifact
-
-### Directory
-
-```text
-diagnostics/
-```
-
-### Artifact type
-
-```text
-workflow_diagnostic
-```
-
-### Approval state
-
-```text
-not_applicable
-```
-
-### Required fields
-
-```json
-{
-  "run_id": "",
-  "workflow_key": "",
-  "failure_stage": "",
-  "source_summary": {},
-  "execution_summary": {},
-  "error": {},
-  "recovery_actions": [],
-  "related_artifact_ids": []
-}
-```
-
-A diagnostic artifact must never be placed in an approved findings directory.
-
----
-
-## 22. Execution Log Artifact
-
-### Directory
-
-```text
-logs/
-```
-
-### Recommended filename
-
-```text
-run_<run-id>.jsonl
-```
-
-### Format
-
-JSON Lines.
-
-Each line represents one event.
-
-Example:
-
-```json
-{"timestamp_utc":"2026-06-25T04:15:30Z","event":"run_started","run_id":"run_001"}
-{"timestamp_utc":"2026-06-25T04:15:31Z","event":"source_validated","run_id":"run_001"}
-{"timestamp_utc":"2026-06-25T04:16:12Z","event":"run_failed","run_id":"run_001"}
-```
-
-Initial event types:
-
-```text
-run_queued
-run_started
-source_validated
-compatibility_assessed
-model_request_started
-heartbeat
-model_response_received
-validation_started
-validation_failed
-artifact_saved
-run_succeeded
-run_failed
-run_cancelled
-run_timed_out
-```
-
-Logs should support troubleshooting without becoming the only record of the result.
-
----
-
-## 23. Project History Artifact
-
-### Directory
-
-```text
-history/
-```
-
-### Recommended format
-
-```text
-project_history.jsonl
-```
-
-Project history events may include:
+Material state changes append JSON Lines events such as:
 
 ```text
 project_created
-source_added
-source_removed
-workflow_run
-finding_approved
-finding_rejected
-artifact_superseded
-brief_approved
-prompt_pack_approved
+project_opened
+project_closed
+project_recovered
+source_imported
+source_processed
+shape_document_created
+editor_command_applied
+shape_saved
+shape_review_requested
+shape_approved
+shape_rejected
+shape_superseded
+construction_recipe_created
+component_regenerated
+assembly_saved
 export_created
-project_restored
-schema_migrated
+migration_applied
 ```
 
-History should be append-oriented.
+A history event contains:
 
-Earlier records should not be rewritten without a documented migration.
+- event ID;
+- event type and version;
+- project ID;
+- actor;
+- timestamp;
+- affected artifact IDs;
+- concise parameters or references;
+- result status;
+- integrity reference where required.
 
----
-
-## 24. Approval Derivative Contract
-
-When selected raw findings are approved, the system should create an approval derivative rather than altering the original artifact invisibly.
-
-Example:
-
-```json
-{
-  "schema_name": "mxztar_forge_approval_record",
-  "schema_version": "1.0.0",
-  "approval_id": "approval_001",
-  "source_artifact_id": "art_001",
-  "approved_at_utc": "2026-06-25T05:00:00Z",
-  "approved_by": "user",
-  "approved_content": [
-    {
-      "field": "reusable_motifs",
-      "item_indexes": [0, 2]
-    }
-  ],
-  "user_corrections": [],
-  "notes": ""
-}
-```
-
-This preserves:
-
-* the original raw output;
-* the user’s approval decision;
-* later corrections;
-* downstream provenance.
+History supplements canonical artifacts; it does not override a valid newer canonical file without an explicit reconstruction rule.
 
 ---
 
-## 25. Supersession Contract
+## 13. Source asset and preview contracts
 
-When an artifact is replaced conceptually, the newer artifact should record:
+### Source asset
 
-```json
-{
-  "supersedes_artifact_ids": [
-    "art_older"
-  ]
-}
-```
+Contains:
 
-The older artifact should not be deleted automatically.
+- source asset ID;
+- project-relative original path;
+- original filename;
+- MIME type and accepted format;
+- size, dimensions, and frame rule where applicable;
+- SHA-256;
+- origin and rights notes where supplied;
+- model-ready classification;
+- import and processing history.
 
-Its approval state may become:
+External source bytes are never modified.
 
-```text
-superseded
-```
+### Preview
 
-Supersession must not erase project history.
+Contains:
 
----
+- parent source asset ID and hash;
+- project-relative preview path;
+- bounded dimensions and colour mode;
+- decoder and preview version;
+- rebuildable classification;
+- creation and validation time.
 
-## 26. Storage Failure Behaviour
-
-If artifact storage fails after model execution:
-
-* do not report full success;
-* preserve the result in memory long enough to offer retry where practical;
-* record the storage error;
-* identify the intended path;
-* avoid overwriting unrelated files;
-* do not silently discard the model result.
-
-Recommended final status:
-
-```text
-partially_succeeded
-```
-
-if the generated content is still recoverable.
-
-Otherwise:
-
-```text
-failed
-```
+A preview is never source authority.
 
 ---
 
-## 27. Atomic Save Requirement
+## 14. Native shape document contract
 
-Structured artifacts should be saved atomically where practical.
+The current native schema is `mxztar_forge_shape_document` version `1.0.0`.
 
-Recommended sequence:
+A shape document includes:
 
-1. write to a temporary file in the target directory;
-2. flush and close;
-3. validate the temporary file;
-4. rename into the final path;
-5. record the final path;
-6. update project history.
+- document and project identity;
+- title and lifecycle state;
+- canvas, coordinate space, units, and bounds;
+- source relationships;
+- layers and objects;
+- replayable command history and cursor;
+- revision and integrity;
+- autosave/canonical relationship;
+- approval and supersession fields where applicable.
 
-This reduces the risk of partially written JSON after interruption.
+Rules:
 
----
-
-## 28. Overwrite Policy
-
-The system must not silently overwrite durable artifacts.
-
-Allowed behaviours:
-
-* create a new artifact;
-* create a versioned derivative;
-* explicitly replace through a confirmed migration;
-* mark an earlier artifact as superseded.
-
-Disallowed behaviour:
-
-```text
-write new result over an existing approved artifact without warning
-```
+- document and history sizes remain bounded;
+- commands are validated before application;
+- autosave is separate from canonical truth;
+- explicit save uses a multi-file transaction and rollback;
+- stale `.tmp` files cannot replace canonical truth;
+- an interrupted transaction marker forces explicit read-only recovery;
+- unsupported commands or schema versions fail closed.
 
 ---
 
-## 29. Schema Versioning
+## 15. Extraction candidate contract
 
-Initial shared schema version:
+A candidate records:
 
-```text
-1.0.0
-```
+- candidate ID and origin type: manual, algorithmic, or model;
+- parent source asset and exact source region;
+- editable path/node representation;
+- open/closed contours, holes, bounds, and winding where applicable;
+- extraction settings or model identity;
+- confidence and limitations where generated;
+- correction history;
+- approval state beginning as `editable_candidate` or `raw`;
+- parent/child relationships when converted into a shape document.
 
-Version format:
-
-```text
-major.minor.patch
-```
-
-Use:
-
-* major for incompatible structural changes;
-* minor for backward-compatible field additions;
-* patch for clarifications and validation fixes.
-
-Every artifact must include:
-
-```text
-schema_name
-schema_version
-```
+A candidate is not an approved Shape Library asset.
 
 ---
 
-## 30. Migration Expectations
+## 16. Approved Shape Library asset contract
 
-When schema changes occur, the system should:
+An approved shape contains:
 
-* detect the artifact schema version;
-* preserve the original artifact;
-* create a migrated derivative or backup;
-* record the migration;
-* validate the migrated artifact;
-* report failures clearly;
-* never pretend migration succeeded when validation failed.
+- stable shape ID and approved version;
+- editable native geometry;
+- source-derived or scratch-built origin classification;
+- fill, stroke, layers, groups, anchors, bounds, centre, and symmetry axes where used;
+- source and parent provenance;
+- dimensional assumptions and confidence;
+- intended role: profile, panel, trim, cutout, path, decoration, volume source, or connector;
+- compatible construction recipes and output profiles;
+- durable approval record;
+- correction and supersession history.
 
-Future migration record example:
-
-```json
-{
-  "migration_id": "migration_001",
-  "source_schema_version": "1.0.0",
-  "target_schema_version": "1.1.0",
-  "source_artifact_id": "art_001",
-  "migrated_artifact_id": "art_002",
-  "status": "succeeded",
-  "created_at_utc": "2026-06-25T06:00:00Z"
-}
-```
+Approved assets remain reopenable and editable. Exported SVG or PNG files do not replace the native approved asset.
 
 ---
 
-## 31. Manual Inspection Requirement
+## 17. Review, approval, rejection, and supersession contracts
 
-A user opening a saved JSON artifact should be able to determine:
+A review decision records:
 
-* what workflow created it;
-* what source it came from;
-* whether it succeeded;
-* whether it was approved;
-* when it was created;
-* what model was used;
-* what result was produced;
-* what should happen next;
-* whether an error occurred.
+- review ID;
+- target artifact and revision;
+- decision type;
+- approving/reviewing actor;
+- timestamp;
+- user corrections or notes;
+- validation snapshot;
+- resulting artifact IDs;
+- superseded IDs where applicable.
 
-The application must not require hidden database knowledge to interpret core workflow files.
-
----
-
-## 32. Privacy Requirements
-
-Artifacts must not unnecessarily record:
-
-* home-directory details;
-* unrelated absolute paths;
-* environment secrets;
-* API keys;
-* access tokens;
-* passwords;
-* hidden system prompts containing secrets;
-* unrelated personal metadata.
-
-Local diagnostic detail should be sufficient for repair without exposing credentials.
+Approval does not mutate or delete the original raw candidate. A corrected derivative may be approved while the original remains historical.
 
 ---
 
-## 33. Source Ownership and Licensing Notes
+## 18. Job and evidence contract
 
-The artifact system may record user-supplied ownership or licensing notes.
+A job record includes:
 
-Example:
+- job and workflow IDs;
+- inputs and expected output classes;
+- algorithm or model identity;
+- hardware/resource policy;
+- timeout and attempt;
+- start, heartbeat, cancellation, and completion data;
+- terminal status;
+- saved output artifact IDs;
+- diagnostic path;
+- error object;
+- recommended next action.
 
-```json
-{
-  "rights_context": {
-    "user_asserted_owner": true,
-    "licence_notes": "",
-    "commercial_use_status": "user_noted",
-    "verification_status": "not_verified_by_application"
-  }
-}
-```
-
-The system must not claim legal verification it has not performed.
-
----
-
-## 34. Minimum First-Release Artifact Set
-
-The first rentable release should support durable artifacts for:
-
-1. project metadata;
-2. source asset metadata;
-3. compatibility assessments;
-4. source-art intelligence;
-5. shape and structure harvest;
-6. modular-set perspective;
-7. concept brief;
-8. render prompt pack;
-9. next-step recommendation;
-10. diagnostics;
-11. execution logs;
-12. project history;
-13. approval records.
-
-Prototype imagination may remain included if retained in the first-release workflow set.
+Jobs remain inspectable through the Jobs workspace. Evidence is not automatically approval authority.
 
 ---
 
-## 35. Acceptance Criteria
+## 19. Construction recipe contract
 
-The output artifact system is ready for implementation when:
+A recipe includes:
 
-1. every first-release workflow has an artifact type;
-2. every artifact has a stable identity;
-3. every artifact records provenance;
-4. success and failure are distinguishable;
-5. approval state is explicit;
-6. raw findings remain preserved;
-7. approved derivatives can be traced;
-8. filenames cannot silently collide;
-9. validation results are recorded;
-10. storage failures are represented honestly;
-11. project history can record major events;
-12. schema versions are present;
-13. future migrations can be supported;
-14. users can inspect their files outside the application;
-15. secrets and irrelevant private paths are excluded.
+- recipe ID and version;
+- parent approved shape or declared primitive;
+- method: extrude, revolve, sweep, loft, relief, shell, or bevel;
+- units, axes, origin, pivot, and parameters;
+- assumptions and limitations;
+- generated component ID;
+- regeneration history;
+- validation result;
+- actor and provenance.
+
+Changing a recipe regenerates a component derivative without destroying the parent shape.
 
 ---
 
-## 36. Decisions Still Required
+## 20. Component contract
 
-The following remain planning decisions:
+A component includes:
 
-1. exact project ID format;
-2. exact artifact ID generator;
-3. whether SQLite indexes the artifact files;
-4. whether JSON files or SQLite are authoritative;
-5. whether approval records are separate files or embedded derivatives;
-6. whether source images are copied or referenced;
-7. maximum supported source size;
-8. preview generation rules;
-9. retention policy for diagnostics;
-10. whether cancelled runs save partial model output;
-11. how project exports package history and diagnostics;
-12. how offline licensing interacts with project access;
-13. whether users can edit structured artifacts manually;
-14. how manual edits are detected and validated;
-15. how future cloud-assisted workflows preserve provenance.
+- component ID and revision;
+- construction recipe or primitive parent;
+- geometry representation;
+- units, bounds, axes, origin, pivot, and transform;
+- anchors and connectors;
+- visibility, lock, instance, and hierarchy state;
+- normals, open-boundary, intersection, and limitation checks;
+- parent and supersession history.
+
+A baked component is a new explicit derivative. It does not silently replace reversible history.
 
 ---
 
-## 37. Next Planning Event
+## 21. Assembly contract
 
-Create:
+An assembly includes:
 
-```text
-docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md
-```
+- assembly ID and revision;
+- component and instance IDs;
+- hierarchy;
+- transforms;
+- anchors and connectors;
+- declared relationships: group, assembly, contact/mate, stitch/weld, join mesh, boolean, separate, or bake;
+- construction history;
+- validation and limitations;
+- export-profile compatibility.
 
-That document must decide:
+The operation name determines the artifact meaning. A vague `join` state is prohibited.
 
-* which data source is authoritative;
-* the relationship between JSON artifacts and SQLite;
-* how project state is reconstructed;
-* how concurrent writes are prevented;
-* how corruption is detected;
-* how backups and restoration work;
-* how manually edited files are handled;
-* how history, approvals, and supersession affect current state.
+---
 
-No project-state implementation should begin until data authority is explicitly defined.
+## 22. Export and Forge Pack contract
 
+An export record contains:
+
+- export ID;
+- approved input artifact IDs;
+- named output profile and version;
+- target program or generic profile;
+- units, scale, axis, origin, pivot, hierarchy, naming, and material rules;
+- validation checks;
+- generated project-relative files and checksums;
+- provenance graph;
+- known losses and limitations;
+- downstream import, round-trip, or continuation evidence where required.
+
+Core Stage One profiles:
+
+- SVG;
+- PNG;
+- Forge Pack.
+
+Core Stage Two profiles:
+
+- GLB/glTF;
+- OBJ.
+
+A Forge Pack contains deterministic JSON and human-readable documentation plus named approved derivatives. It is not a second editable project authority.
+
+---
+
+## 23. Optional agent and planning artifacts
+
+Optional Agent Workflow outputs may include:
+
+- source-art intelligence finding;
+- shape/structure planning map;
+- modular-system proposal;
+- prototype concept;
+- concept brief;
+- render prompt pack;
+- next-step recommendation.
+
+They use the shared identity, execution, provenance, validation, error, and approval rules.
+
+They remain planning or evidence artifacts unless a Stage One or Stage Two workflow converts reviewed material into an editable native artifact.
+
+---
+
+## 24. Transactions, autosave, and recovery
+
+Material multi-file writes use:
+
+1. pre-commit validation;
+2. transaction marker where interruption could create competing truth;
+3. atomic temporary writes;
+4. canonical replacement;
+5. manifest/history update;
+6. post-write validation;
+7. rollback on failure;
+8. marker removal only after confirmed success or confirmed rollback.
+
+Autosave:
+
+- is project-owned;
+- is bounded;
+- never silently becomes canonical;
+- may be offered as a newer recovery candidate;
+- is cleared after a successful explicit canonical save where appropriate.
+
+Uncertain rollback or interrupted transaction reopens read-only until resolved.
+
+---
+
+## 25. Schema migration
+
+Every runtime-written schema has:
+
+- schema name and semantic version;
+- current validator;
+- supported read versions;
+- explicit migration path where offered;
+- pre-migration backup or rollback rule;
+- migration history event;
+- post-migration validation.
+
+Assessment alone must not mutate a project. Unsupported future schemas fail closed or attach read-only.
+
+---
+
+## 26. Size and workload boundaries
+
+Every artifact class defines appropriate limits for:
+
+- file size;
+- collection count;
+- command/history length;
+- geometry complexity;
+- preview dimensions;
+- job duration;
+- memory/resource class.
+
+Limits are checked before unreadable or unmanageable bytes become canonical truth.
+
+---
+
+## 27. Artifact verification
+
+Each artifact class requires proportionate evidence:
+
+- schema fixture validation;
+- round-trip serialization;
+- invalid and oversized input rejection;
+- transaction interruption and rollback;
+- approval/supersession reconstruction;
+- project copy and index rebuild;
+- UI truthful status;
+- downstream import or continuation for output profiles.
+
+No artifact contract is considered verified solely because an example appears in this document.
