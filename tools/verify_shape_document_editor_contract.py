@@ -138,6 +138,14 @@ def main() -> int:
         require(recovered.recovered_from_autosave, "newer autosave is recovered on reopen")
         require(recovered.document["revision"] == 2, "autosave recovery preserves edited revision")
 
+        panel.load_project_action.trigger()
+        app.processEvents()
+        require(
+            "Recovered a newer autosave" in panel.status_label.text()
+            and "Save Document" in panel.status_label.text(),
+            "Load Project preserves the autosave recovery and canonical-save guidance",
+        )
+
         panel.undo_action.trigger()
         app.processEvents()
         require(len(panel.document["objects"]) == 0, "Undo removes the replayed rectangle")
