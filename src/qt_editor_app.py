@@ -9,7 +9,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QListWidgetItem
 
 from qt_app import MXZTARForgeWindow, NAV_ITEMS, SETTINGS_APP, SETTINGS_ORG
-from qt_panels.editor_panel import EditorPanel
+from qt_panels.object_cad_panel import ObjectCadEditorPanel
 
 
 EDITOR_PAGE_INDEX = 2
@@ -21,7 +21,7 @@ START_HERE_PAGE_INDEX = 1
 EDITOR_NAV = {
     "icon": "✦",
     "label": "Editor",
-    "tooltip": "Editor: create and edit project-owned native shape documents.",
+    "tooltip": "Editor: create and edit project-owned shape/object CAD documents.",
 }
 
 
@@ -32,13 +32,13 @@ def _install_editor_navigation_contract() -> None:
 
 
 class EditorForgeWindow(MXZTARForgeWindow):
-    """Add the Stage One Editor without weakening verified legacy workspaces."""
+    """Add the integrated shape/object CAD Editor without weakening verified workspaces."""
 
     def __init__(self, project_session=None):
         _install_editor_navigation_contract()
         super().__init__(project_session)
 
-        self.editor_panel = EditorPanel(self.project_session)
+        self.editor_panel = ObjectCadEditorPanel(self.project_session)
         self.editor_panel.status_changed.connect(self.set_status)
         self.pages.insertWidget(EDITOR_PAGE_INDEX, self.editor_panel)
         self.start_here_panel.project_changed.connect(self.editor_panel.set_project_state)
