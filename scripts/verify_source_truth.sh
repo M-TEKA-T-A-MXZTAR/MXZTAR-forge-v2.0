@@ -82,8 +82,12 @@ echo "=== LAUNCHER IMPORT CONTRACT ==="
 PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_launcher_import_contract.py
 
 echo
-echo "=== PROJECT BIRTH CONTRACT ==="
+echo "=== PROJECT BIRTH AND ROUTING CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_project_birth_contract.py
+
+echo
+echo "=== EDITOR MENU AND PRIMITIVE CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_shape_document_editor_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
