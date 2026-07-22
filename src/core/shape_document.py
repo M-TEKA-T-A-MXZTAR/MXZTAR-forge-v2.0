@@ -34,6 +34,15 @@ MAX_COMMANDS = 500
 DEFAULT_CANVAS_WIDTH = 1024.0
 DEFAULT_CANVAS_HEIGHT = 1024.0
 SUPPORTED_UNITS = {"px", "mm", "cm", "in"}
+SUPPORTED_PRIMITIVES = {"rectangle", "square", "circle", "ellipse", "star"}
+COMMAND_TO_PRIMITIVE = {
+    "add_rectangle": "rectangle",
+    "add_square": "square",
+    "add_circle": "circle",
+    "add_ellipse": "ellipse",
+    "add_star": "star",
+}
+PRIMITIVE_TO_COMMAND = {value: key for key, value in COMMAND_TO_PRIMITIVE.items()}
 
 
 class ShapeDocumentError(RuntimeError):
@@ -91,6 +100,14 @@ def _require_number(value, label: str, *, positive: bool = False) -> float:
     return number
 
 
+def _require_integer(value, label: str, *, minimum: int, maximum: int) -> int:
+    if not isinstance(value, int) or isinstance(value, bool):
+        raise ShapeDocumentError(f"{label} must be an integer.")
+    if value < minimum or value > maximum:
+        raise ShapeDocumentError(f"{label} must be between {minimum} and {maximum}.")
+    return value
+
+
 def _validate_style(style: object) -> dict:
     if not isinstance(style, dict):
         raise ShapeDocumentError("Shape style must be an object.")
@@ -106,19 +123,36 @@ def _validate_style(style: object) -> dict:
     return {"fill": fill, "stroke": stroke, "stroke_width": stroke_width}
 
 
-def _rectangle_from_command(command: dict) -> dict:
+def _primitive_from_command(command: dict) -> dict:
+    primitive_type = COMMAND_TO_PRIMITIVE.get(command.get("type"))
+    if primitive_type is None:
+        raise ShapeDocumentError(f"Unsupported editor command: {command.get('type')!r}")
     payload = command["payload"]
-    return {
+    width = _require_number(payload.get("width"), f"{primitive_type.title()} width", positive=True)
+    height = _require_number(payload.get("height"), f"{primitive_type.title()} height", positive=True)
+    if primitive_type in {"square", "circle"} and abs(width - height) > 1.0e-9:
+        raise ShapeDocumentError(f"{primitive_type.title()} width and height must match.")
+    primitive = {
         "object_id": _require_non_empty_string(payload, "object_id"),
-        "type": "rectangle",
+        "type": primitive_type,
         "layer_id": _require_non_empty_string(payload, "layer_id"),
-        "x": _require_number(payload.get("x"), "Rectangle x"),
-        "y": _require_number(payload.get("y"), "Rectangle y"),
-        "width": _require_number(payload.get("width"), "Rectangle width", positive=True),
-        "height": _require_number(payload.get("height"), "Rectangle height", positive=True),
+        "x": _require_number(payload.get("x"), f"{primitive_type.title()} x"),
+        "y": _require_number(payload.get("y"), f"{primitive_type.title()} y"),
+        "width": width,
+        "height": height,
         "style": _validate_style(payload.get("style")),
         "origin": "user_created",
     }
+    if primitive_type == "star":
+        primitive["points"] = _require_integer(
+            payload.get("points", 5), "Star point count", minimum=3, maximum=32
+        )
+        primitive["inner_ratio"] = _require_number(
+            payload.get("inner_ratio", 0.45), "Star inner ratio", positive=True
+        )
+        if primitive["inner_ratio"] >= 1:
+            raise ShapeDocumentError("Star inner ratio must be less than 1.")
+    return primitive
 
 
 def replay_commands(commands: object, history_cursor: int) -> list[dict]:
@@ -142,16 +176,16 @@ def replay_commands(commands: object, history_cursor: int) -> list[dict]:
             raise ShapeDocumentError("Shape document contains a duplicate command ID.")
         seen_command_ids.add(command_id)
         _require_non_empty_string(command, "created_at_utc")
-        if command.get("type") != "add_rectangle":
+        if command.get("type") not in COMMAND_TO_PRIMITIVE:
             raise ShapeDocumentError(f"Unsupported editor command: {command.get('type')!r}")
         if not isinstance(command.get("payload"), dict):
             raise ShapeDocumentError("Editor command payload must be an object.")
-        rectangle = _rectangle_from_command(command)
-        if rectangle["object_id"] in seen_object_ids:
+        primitive = _primitive_from_command(command)
+        if primitive["object_id"] in seen_object_ids:
             raise ShapeDocumentError("Shape document contains a duplicate object ID.")
-        seen_object_ids.add(rectangle["object_id"])
+        seen_object_ids.add(primitive["object_id"])
         if index < history_cursor:
-            objects.append(rectangle)
+            objects.append(primitive)
     return objects
 
 
@@ -312,6 +346,54 @@ def blank_shape_document(
     return validate_shape_document(_with_integrity(document), project_id)
 
 
+def add_primitive(
+    document: dict,
+    primitive_type: str,
+    *,
+    x: float,
+    y: float,
+    width: float,
+    height: float,
+    points: int = 5,
+    inner_ratio: float = 0.45,
+) -> dict:
+    if primitive_type not in SUPPORTED_PRIMITIVES:
+        raise ShapeDocumentError(f"Unsupported primitive type: {primitive_type!r}")
+    current = validate_shape_document(document)
+    width_value = _require_number(width, f"{primitive_type.title()} width", positive=True)
+    height_value = _require_number(height, f"{primitive_type.title()} height", positive=True)
+    if primitive_type in {"square", "circle"} and abs(width_value - height_value) > 1.0e-9:
+        raise ShapeDocumentError(f"{primitive_type.title()} width and height must match.")
+    commands = copy.deepcopy(current["commands"][: current["history_cursor"]])
+    payload = {
+        "object_id": f"object_{uuid.uuid4().hex}",
+        "layer_id": current["layers"][0]["layer_id"],
+        "x": _require_number(x, f"{primitive_type.title()} x"),
+        "y": _require_number(y, f"{primitive_type.title()} y"),
+        "width": width_value,
+        "height": height_value,
+        "style": {"fill": "#d6c27a", "stroke": "#2a2415", "stroke_width": 2.0},
+    }
+    if primitive_type == "star":
+        payload["points"] = _require_integer(points, "Star point count", minimum=3, maximum=32)
+        payload["inner_ratio"] = _require_number(inner_ratio, "Star inner ratio", positive=True)
+        if payload["inner_ratio"] >= 1:
+            raise ShapeDocumentError("Star inner ratio must be less than 1.")
+    commands.append(
+        {
+            "command_id": f"command_{uuid.uuid4().hex}",
+            "type": PRIMITIVE_TO_COMMAND[primitive_type],
+            "created_at_utc": utc_now_iso(),
+            "payload": payload,
+        }
+    )
+    if len(commands) > MAX_COMMANDS:
+        raise ShapeDocumentError(f"Shape document exceeds the {MAX_COMMANDS}-command limit.")
+    current["commands"] = commands
+    current["history_cursor"] = len(commands)
+    return validate_shape_document(_refresh_derived_state(current, revision_increment=True))
+
+
 def add_rectangle(
     document: dict,
     *,
@@ -320,29 +402,60 @@ def add_rectangle(
     width: float = 240.0,
     height: float = 160.0,
 ) -> dict:
-    current = validate_shape_document(document)
-    commands = copy.deepcopy(current["commands"][: current["history_cursor"]])
-    commands.append(
-        {
-            "command_id": f"command_{uuid.uuid4().hex}",
-            "type": "add_rectangle",
-            "created_at_utc": utc_now_iso(),
-            "payload": {
-                "object_id": f"object_{uuid.uuid4().hex}",
-                "layer_id": current["layers"][0]["layer_id"],
-                "x": _require_number(x, "Rectangle x"),
-                "y": _require_number(y, "Rectangle y"),
-                "width": _require_number(width, "Rectangle width", positive=True),
-                "height": _require_number(height, "Rectangle height", positive=True),
-                "style": {"fill": "#d6c27a", "stroke": "#2a2415", "stroke_width": 2.0},
-            },
-        }
+    return add_primitive(document, "rectangle", x=x, y=y, width=width, height=height)
+
+
+def add_square(
+    document: dict,
+    *,
+    x: float = 120.0,
+    y: float = 120.0,
+    size: float = 180.0,
+) -> dict:
+    return add_primitive(document, "square", x=x, y=y, width=size, height=size)
+
+
+def add_circle(
+    document: dict,
+    *,
+    x: float = 120.0,
+    y: float = 120.0,
+    diameter: float = 180.0,
+) -> dict:
+    return add_primitive(document, "circle", x=x, y=y, width=diameter, height=diameter)
+
+
+def add_ellipse(
+    document: dict,
+    *,
+    x: float = 120.0,
+    y: float = 120.0,
+    width: float = 240.0,
+    height: float = 150.0,
+) -> dict:
+    return add_primitive(document, "ellipse", x=x, y=y, width=width, height=height)
+
+
+def add_star(
+    document: dict,
+    *,
+    x: float = 120.0,
+    y: float = 120.0,
+    width: float = 200.0,
+    height: float = 200.0,
+    points: int = 5,
+    inner_ratio: float = 0.45,
+) -> dict:
+    return add_primitive(
+        document,
+        "star",
+        x=x,
+        y=y,
+        width=width,
+        height=height,
+        points=points,
+        inner_ratio=inner_ratio,
     )
-    if len(commands) > MAX_COMMANDS:
-        raise ShapeDocumentError(f"Shape document exceeds the {MAX_COMMANDS}-command limit.")
-    current["commands"] = commands
-    current["history_cursor"] = len(commands)
-    return validate_shape_document(_refresh_derived_state(current, revision_increment=True))
 
 
 def undo(document: dict) -> dict:
@@ -601,7 +714,6 @@ def save_shape_document(session: ProjectSession, document: dict) -> Path:
                             canonical_path.unlink()
                             fsync_directory(canonical_path.parent)
                         except FileNotFoundError:
-                            # The failed save may not have created the canonical file before rollback.
                             pass
                     else:
                         atomic_write_text(canonical_path, canonical_before)
