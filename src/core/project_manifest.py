@@ -18,6 +18,7 @@ from core.paths import PROJECTS_DIR
 PROJECT_SCHEMA = "mxztar_forge_project"
 PROJECT_SCHEMA_VERSION = "1.0.0"
 APPLICATION_VERSION = "2.0-development"
+MAX_PROJECT_DISPLAY_NAME_CHARS = 80
 PROJECT_DIRS = (
     "source/originals",
     "source/previews",
@@ -65,7 +66,26 @@ def project_slug(name: str) -> str:
     value = "".join(parts)
     if not value:
         raise ProjectManifestError("Project name must contain at least one letter or number.")
-    return value[:80]
+    return value[:MAX_PROJECT_DISPLAY_NAME_CHARS]
+
+
+def project_name_from_purpose(purpose: str) -> str:
+    """Derive a bounded display name without changing the stored project purpose."""
+    if not isinstance(purpose, str):
+        raise ProjectManifestError("Project purpose must be text.")
+    exact_purpose = purpose.strip()
+    if not exact_purpose:
+        raise ProjectManifestError("Project purpose is required.")
+
+    display_name = " ".join(exact_purpose.split())
+    project_slug(display_name)
+    if len(display_name) <= MAX_PROJECT_DISPLAY_NAME_CHARS:
+        return display_name
+
+    shortened = display_name[: MAX_PROJECT_DISPLAY_NAME_CHARS - 1].rstrip(" .,:;_-—")
+    if not shortened:
+        raise ProjectManifestError("Project purpose must contain at least one letter or number.")
+    return shortened + "…"
 
 
 def new_project_id() -> str:
@@ -96,7 +116,6 @@ def atomic_write_text(path: Path, text: str) -> None:
         try:
             temporary.unlink()
         except FileNotFoundError:
-            # Expected after os.replace moved the temporary file into place.
             if temporary.exists():
                 raise
 
@@ -218,14 +237,19 @@ def create_project(
             "event": "project_created",
             "project_id": manifest["project_id"],
             "project_name": manifest["project_name"],
+            "purpose": manifest["primary_goal"],
         }
         atomic_write_text(
             staging / manifest["history_path"],
             json.dumps(history_event, ensure_ascii=False) + "\n",
         )
+        purpose_line = (
+            f"\nPurpose: {manifest['primary_goal']}\n" if manifest["primary_goal"] else ""
+        )
         atomic_write_text(
             staging / "README.md",
-            f"# {manifest['project_name']}\n\nMXZTAR Forge project: {manifest['project_id']}\n",
+            f"# {manifest['project_name']}\n\nMXZTAR Forge project: {manifest['project_id']}\n"
+            f"{purpose_line}",
         )
         atomic_write_text(
             staging / "project.json",
