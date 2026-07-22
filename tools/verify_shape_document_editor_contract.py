@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify the native shape-document and minimum Editor foundation."""
+"""Verify native shape documents, primitive commands, and Editor recovery."""
 
 from __future__ import annotations
 
@@ -17,20 +17,21 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from PySide6.QtWidgets import QApplication, QPushButton
+from PySide6.QtGui import QAction  # noqa: E402
+from PySide6.QtWidgets import QApplication  # noqa: E402
 
-import core.shape_document as shape_document_module
-import qt_panels.editor_panel as editor_panel_module
-from core.editor_project_access import EDITOR_TRANSACTION_FILENAME
-from core.project_session import ProjectSession
-from core.shape_document import (
+import core.shape_document as shape_document_module  # noqa: E402
+import qt_panels.editor_panel as editor_panel_module  # noqa: E402
+from core.editor_project_access import EDITOR_TRANSACTION_FILENAME  # noqa: E402
+from core.project_session import ProjectSession  # noqa: E402
+from core.shape_document import (  # noqa: E402
     add_rectangle,
     create_blank_shape_document,
     list_shape_documents,
     load_shape_document,
     save_shape_document,
 )
-from qt_panels.editor_panel import EditorPanel
+from qt_panels.editor_panel import EditorPanel  # noqa: E402
 
 
 def require(condition: bool, message: str) -> None:
@@ -74,6 +75,16 @@ def main() -> int:
         panel.set_project_state(session.state)
         require(panel.document_selector.count() == 2, "Editor discovers both project-owned documents")
         require(panel.document is not None, "Editor opens a discovered native document")
+        require(
+            [action.text() for action in panel.document_menu.actions()]
+            == ["Load Project", "New Blank Document", "Save Document"],
+            "Document menu exposes only real project-file operations",
+        )
+        require(
+            [action.text() for action in panel.shape_menu.actions()]
+            == ["Rectangle", "Square", "Circle", "Ellipse", "Star"],
+            "Shape menu exposes the five implemented reversible primitives",
+        )
 
         current_document_id = panel.document_selector.currentData()
         selection_target = (
@@ -107,33 +118,50 @@ def main() -> int:
             panel.document is not None and panel.document["document_id"] == document_id,
             "Editor returns to the primary document for command verification",
         )
+        unsupported = {"extract", "boolean", "3d", "export", "approve"}
         require(
             not any(
-                word in button.text().casefold()
-                for button in panel.findChildren(QPushButton)
-                for word in ("extract", "boolean", "3d", "export", "approve")
+                word in action.text().casefold()
+                for action in panel.findChildren(QAction)
+                for word in unsupported
             ),
-            "Editor exposes no unsupported extraction, boolean, 3D, export, or approval controls",
+            "Editor exposes no unsupported extraction, boolean, 3D, export, or approval actions",
         )
 
-        panel.add_rectangle_button.click()
+        panel.rectangle_action.trigger()
         app.processEvents()
-        require(len(panel.document["objects"]) == 1, "Add Rectangle creates one visible object")
+        require(len(panel.document["objects"]) == 1, "Rectangle action creates one visible object")
+        require(panel.document["objects"][0]["type"] == "rectangle", "rectangle type is durable")
         require(len(panel.scene.items()) == 1, "Editor canvas renders the rectangle")
         require(autosave_path.is_file(), "reversible edit is autosaved separately from canonical truth")
         recovered = load_shape_document(session, document_id)
         require(recovered.recovered_from_autosave, "newer autosave is recovered on reopen")
         require(recovered.document["revision"] == 2, "autosave recovery preserves edited revision")
 
-        panel.undo_button.click()
+        panel.undo_action.trigger()
         app.processEvents()
         require(len(panel.document["objects"]) == 0, "Undo removes the replayed rectangle")
-        require(panel.redo_button.isEnabled(), "Redo becomes available after undo")
-        panel.redo_button.click()
+        require(panel.redo_action.isEnabled(), "Redo becomes available after undo")
+        panel.redo_action.trigger()
         app.processEvents()
         require(len(panel.document["objects"]) == 1, "Redo restores the replayed rectangle")
 
-        panel.save_button.click()
+        for action in (
+            panel.square_action,
+            panel.circle_action,
+            panel.ellipse_action,
+            panel.star_action,
+        ):
+            action.trigger()
+            app.processEvents()
+        require(
+            [item["type"] for item in panel.document["objects"]]
+            == ["rectangle", "square", "circle", "ellipse", "star"],
+            "all Shape menu primitives replay in deterministic command order",
+        )
+        require(len(panel.scene.items()) == 5, "Editor renders all five primitive types")
+
+        panel.save_document_action.trigger()
         app.processEvents()
         require(not autosave_path.exists(), "explicit save clears the superseded autosave")
         saved_revision = panel.document["revision"]
@@ -149,8 +177,9 @@ def main() -> int:
         restored = load_shape_document(reopened, document_id)
         require(
             restored.document["revision"] == saved_revision
-            and len(restored.document["objects"]) == 1,
-            "restart restores the editable document and command state",
+            and [item["type"] for item in restored.document["objects"]]
+            == ["rectangle", "square", "circle", "ellipse", "star"],
+            "restart restores every editable primitive and its command state",
         )
 
         manifest_path = reopened.project_dir / "project.json"
@@ -258,7 +287,7 @@ def main() -> int:
         panel.deleteLater()
         app.processEvents()
 
-    print("PASS: native shape-document and minimum Editor contract verified")
+    print("PASS: native shape-document and Editor primitive contract verified")
     return 0
 
 
