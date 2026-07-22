@@ -92,7 +92,7 @@ approved 2D shape or 3D primitive
 → verified GLB/glTF and OBJ continuation
 ```
 
-**Stage Two is the planned finished-product boundary.** Product Stages Three and Four remain deferred future vision and are not current implementation instructions.
+**Stage Two is the planned finished-product boundary.** Future Product Levels Three and Four remain deferred vision and are not current implementation instructions.
 
 ## Controlled workflow architecture
 
