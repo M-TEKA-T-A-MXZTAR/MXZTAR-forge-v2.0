@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -11,9 +12,11 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QMenu,
     QPushButton,
     QScrollArea,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -31,6 +34,7 @@ from core.project_session import ProjectSession, discover_project_directories
 class StartHerePanel(QWidget):
     status_changed = Signal(str)
     project_changed = Signal(object)
+    go_to_project_requested = Signal(object)
 
     def __init__(self, project_session: ProjectSession | None = None):
         super().__init__()
@@ -58,8 +62,23 @@ class StartHerePanel(QWidget):
         self.project_selector.setToolTip("Canonical projects found in workspace/projects.")
         self.refresh_projects_button = QPushButton("Refresh Projects")
         self.refresh_projects_button.clicked.connect(self.refresh_projects)
-        self.open_project_button = QPushButton("Open Selected")
-        self.open_project_button.clicked.connect(self.open_selected_project)
+
+        self.open_project_button = QToolButton()
+        self.open_project_button.setText("Open Selected")
+        self.open_project_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.open_project_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.open_project_button.setToolTip(
+            "Choose whether to attach the selected project here or go directly to its Editor build."
+        )
+        self.open_project_menu = QMenu(self.open_project_button)
+        self.open_project_action = QAction("Open Project", self.open_project_menu)
+        self.go_to_project_action = QAction("Go to Project", self.open_project_menu)
+        self.open_project_action.triggered.connect(self.open_selected_project)
+        self.go_to_project_action.triggered.connect(self.go_to_selected_project)
+        self.open_project_menu.addActions(
+            [self.open_project_action, self.go_to_project_action]
+        )
+        self.open_project_button.setMenu(self.open_project_menu)
 
         self.purpose_label = QLabel("PURPOSE:")
         self.purpose_label.setStyleSheet("font-weight: 700;")
@@ -122,8 +141,8 @@ class StartHerePanel(QWidget):
             self._saved_profile_keys.append(key)
             form.addRow(label + ":", edit)
 
-        # Compatibility for the established guided-navigation shell. This alias is not
-        # loaded from or saved to the global onboarding profile; Purpose is project authority.
+        # Compatibility for established guided navigation. Purpose remains project authority
+        # and is neither loaded from nor saved into the global onboarding profile.
         self.profile_fields["project_name"] = self.purpose_edit
 
         self.notes_edit = QTextEdit()
@@ -238,21 +257,33 @@ class StartHerePanel(QWidget):
         except (OSError, ValueError, RuntimeError) as exc:
             self.set_status(f"Could not create project: {exc}")
             self.update_project_controls()
-            return
+            return None
         self.refresh_projects()
         self._show_project_state(state, "Created")
+        return state
 
-    def open_selected_project(self):
+    def open_selected_project(self, *_args):
         selected = self.project_selector.currentData()
         if not selected:
             self.set_status("No canonical project is selected.")
-            return
+            return None
         try:
             state = self.project_session.open(selected)
         except (OSError, ValueError, RuntimeError) as exc:
             self.set_status(f"Could not open project: {exc}")
-            return
+            return None
         self._show_project_state(state, "Opened")
+        return state
+
+    def go_to_selected_project(self, *_args):
+        state = self.open_selected_project()
+        if state is None:
+            return None
+        self.go_to_project_requested.emit(state)
+        self.set_status(
+            f"Opened project {state.assessment.project_dir.name}; loading its Editor build."
+        )
+        return state
 
     def close_project(self):
         was_writable = self.project_session.is_writable
@@ -299,12 +330,15 @@ class StartHerePanel(QWidget):
     def update_project_controls(self):
         attached = self.project_session.state is not None
         unlocked = not self._project_mutation_sources
+        selection_available = self.project_selector.count() > 0
+        open_enabled = not attached and unlocked and selection_available
+
         self.create_project_button.setEnabled(
             not attached and unlocked and self._purpose_is_valid()
         )
-        self.open_project_button.setEnabled(
-            not attached and unlocked and self.project_selector.count() > 0
-        )
+        self.open_project_button.setEnabled(open_enabled)
+        self.open_project_action.setEnabled(open_enabled)
+        self.go_to_project_action.setEnabled(open_enabled)
         self.project_selector.setEnabled(not attached and unlocked)
         self.refresh_projects_button.setEnabled(not attached and unlocked)
         self.purpose_edit.setEnabled(not attached and unlocked)
@@ -347,7 +381,6 @@ class StartHerePanel(QWidget):
             self.profile_fields[key].setText(profile.get(key, ""))
 
         self.notes_edit.setPlainText(profile.get("primary_goal", ""))
-
         self.trust_edit.setPlainText(load_settings_notes())
         self.set_status("Loaded optional profile and trust notes.")
 
