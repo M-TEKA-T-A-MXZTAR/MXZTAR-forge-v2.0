@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
-"""
-Start Here panel for MXZTAR Forge v2.0.
+"""Purpose-driven project authority and optional profile controls."""
 
-Purpose:
-- store project identity
-- store creator/brand notes
-- store workflow/trust notes
-- give the user a stable restart point after rebuilds
-"""
+from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -30,6 +24,7 @@ from core.onboarding_store import (
     save_profile,
     save_settings_notes,
 )
+from core.project_manifest import project_name_from_purpose
 from core.project_session import ProjectSession, discover_project_directories
 
 
@@ -41,15 +36,16 @@ class StartHerePanel(QWidget):
         super().__init__()
 
         self.project_session = project_session or ProjectSession()
-        self.profile_fields = {}
+        self.profile_fields: dict[str, QLineEdit] = {}
+        self._saved_profile_keys: list[str] = []
         self._project_mutation_sources = set()
 
         title = QLabel("Start Here")
         title.setStyleSheet("font-size: 24px; font-weight: 700;")
 
         intro = QLabel(
-            "Define the forge identity, project direction, and workflow rules. "
-            "These notes are injected later into agent workflows."
+            "State what this project is for, then create or open its local authority. "
+            "Creator and workflow profile fields below are optional and do not block editing."
         )
         intro.setWordWrap(True)
         intro.setStyleSheet("color: #cfcfcf;")
@@ -64,7 +60,23 @@ class StartHerePanel(QWidget):
         self.refresh_projects_button.clicked.connect(self.refresh_projects)
         self.open_project_button = QPushButton("Open Selected")
         self.open_project_button.clicked.connect(self.open_selected_project)
+
+        self.purpose_label = QLabel("PURPOSE:")
+        self.purpose_label.setStyleSheet("font-weight: 700;")
+        self.purpose_edit = QLineEdit()
+        self.purpose_edit.setPlaceholderText(
+            "What should this project create, recover, explore, or prepare?"
+        )
+        self.purpose_edit.setToolTip(
+            "The exact wording becomes the first project purpose. Forge derives a safe "
+            "display name and directory slug without changing the stored purpose."
+        )
+        self.purpose_edit.textChanged.connect(lambda _text: self.update_project_controls())
+
         self.create_project_button = QPushButton("Create Project")
+        self.create_project_button.setToolTip(
+            "Create and open one canonical local project from the stated Purpose."
+        )
         self.create_project_button.clicked.connect(self.create_current_project)
         self.close_project_button = QPushButton("Close Project")
         self.close_project_button.clicked.connect(self.close_project)
@@ -74,10 +86,11 @@ class StartHerePanel(QWidget):
         project_row.addWidget(self.refresh_projects_button)
         project_row.addWidget(self.open_project_button)
 
-        project_actions = QHBoxLayout()
-        project_actions.addWidget(self.create_project_button)
-        project_actions.addWidget(self.close_project_button)
-        project_actions.addStretch(1)
+        self.project_actions_layout = QHBoxLayout()
+        self.project_actions_layout.addWidget(self.purpose_label)
+        self.project_actions_layout.addWidget(self.purpose_edit, 1)
+        self.project_actions_layout.addWidget(self.create_project_button)
+        self.project_actions_layout.addWidget(self.close_project_button)
 
         project_frame = QFrame()
         project_frame.setFrameShape(QFrame.Shape.StyledPanel)
@@ -85,31 +98,38 @@ class StartHerePanel(QWidget):
         project_layout.addWidget(QLabel("Project Authority"))
         project_layout.addWidget(self.project_status_label)
         project_layout.addLayout(project_row)
-        project_layout.addLayout(project_actions)
+        project_layout.addLayout(self.project_actions_layout)
         project_frame.setLayout(project_layout)
+
+        optional_title = QLabel("Optional Creator / Workflow Profile")
+        optional_title.setStyleSheet("font-size: 16px; font-weight: 600;")
 
         form = QFormLayout()
         form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
 
         field_specs = [
-            ("project_name", "Project name"),
             ("project_role", "Project role"),
             ("creator_name", "Creator name"),
             ("brand_presence", "Brand / presence"),
-            ("primary_goal", "Primary goal"),
             ("workflow_focus", "Workflow focus"),
         ]
 
         for key, label in field_specs:
             edit = QLineEdit()
             edit.setPlaceholderText(f"Enter {label.lower()}...")
-            edit.setToolTip(f"Saved into onboarding_profile.json as {key}.")
+            edit.setToolTip(f"Optional profile field saved as {key}.")
             self.profile_fields[key] = edit
+            self._saved_profile_keys.append(key)
             form.addRow(label + ":", edit)
+
+        # Compatibility for the established guided-navigation shell. This alias is not
+        # loaded from or saved to the global onboarding profile; Purpose is project authority.
+        self.profile_fields["project_name"] = self.purpose_edit
 
         self.notes_edit = QTextEdit()
         self.notes_edit.setPlaceholderText(
-            "Project notes / pasted brief. Use this for the current build direction."
+            "Optional profile notes or a pasted working brief. Project-owned artifacts "
+            "remain the authority for actual project work."
         )
         self.notes_edit.setMinimumHeight(140)
 
@@ -119,16 +139,18 @@ class StartHerePanel(QWidget):
         )
         self.trust_edit.setMinimumHeight(160)
 
-        save_fields_button = QPushButton("Save Fields")
-        save_fields_button.setToolTip("Save profile fields to workspace/data/user_profile/onboarding_profile.json.")
+        save_fields_button = QPushButton("Save Profile")
+        save_fields_button.setToolTip(
+            "Save optional creator and workflow fields to the global onboarding profile."
+        )
         save_fields_button.clicked.connect(self.save_fields)
 
-        reload_button = QPushButton("Reload")
-        reload_button.setToolTip("Reload saved profile and trust notes from disk.")
+        reload_button = QPushButton("Reload Profile")
+        reload_button.setToolTip("Reload optional profile and trust notes from disk.")
         reload_button.clicked.connect(self.load_all)
 
-        save_notes_button = QPushButton("Save Notes")
-        save_notes_button.setToolTip("Save project notes into the profile primary goal/workflow context.")
+        save_notes_button = QPushButton("Save Profile Notes")
+        save_notes_button.setToolTip("Save optional profile notes into the onboarding profile.")
         save_notes_button.clicked.connect(self.save_fields)
 
         save_trust_button = QPushButton("Save Trust Notes")
@@ -141,7 +163,7 @@ class StartHerePanel(QWidget):
         top_buttons.addStretch(1)
 
         notes_row = QHBoxLayout()
-        notes_label = QLabel("Project Notes / Pasted Brief")
+        notes_label = QLabel("Optional Profile Notes")
         notes_label.setStyleSheet("font-size: 16px; font-weight: 600;")
         notes_row.addWidget(notes_label)
         notes_row.addStretch(1)
@@ -163,6 +185,7 @@ class StartHerePanel(QWidget):
         layout.addWidget(intro)
         layout.addWidget(project_frame)
         layout.addSpacing(12)
+        layout.addWidget(optional_title)
         layout.addLayout(form)
         layout.addLayout(top_buttons)
         layout.addSpacing(18)
@@ -209,13 +232,12 @@ class StartHerePanel(QWidget):
         self.update_project_controls()
 
     def create_current_project(self):
+        purpose = self.purpose_edit.text()
         try:
-            state = self.project_session.create_and_open(
-                self.profile_fields["project_name"].text(),
-                self.profile_fields["primary_goal"].text(),
-            )
+            state = self.project_session.create_from_purpose(purpose)
         except (OSError, ValueError, RuntimeError) as exc:
             self.set_status(f"Could not create project: {exc}")
+            self.update_project_controls()
             return
         self.refresh_projects()
         self._show_project_state(state, "Created")
@@ -240,6 +262,7 @@ class StartHerePanel(QWidget):
             self.set_status(f"Could not safely close project: {exc}")
             return False
         self.project_status_label.setText("No project is open.")
+        self.purpose_edit.clear()
         self.update_project_controls()
         self.project_changed.emit(None)
         if result.warning:
@@ -253,6 +276,7 @@ class StartHerePanel(QWidget):
 
     def _show_project_state(self, state, action: str):
         assessment = state.assessment
+        self.purpose_edit.setText(assessment.manifest.get("primary_goal", ""))
         if state.writable:
             detail = "Writable session; this application owns the project lock."
         else:
@@ -265,15 +289,25 @@ class StartHerePanel(QWidget):
         self.project_changed.emit(state)
         self.set_status(f"{action} project {assessment.project_dir.name}: {detail}")
 
+    def _purpose_is_valid(self) -> bool:
+        try:
+            project_name_from_purpose(self.purpose_edit.text())
+        except (TypeError, ValueError):
+            return False
+        return True
+
     def update_project_controls(self):
         attached = self.project_session.state is not None
         unlocked = not self._project_mutation_sources
-        self.create_project_button.setEnabled(not attached and unlocked)
+        self.create_project_button.setEnabled(
+            not attached and unlocked and self._purpose_is_valid()
+        )
         self.open_project_button.setEnabled(
             not attached and unlocked and self.project_selector.count() > 0
         )
         self.project_selector.setEnabled(not attached and unlocked)
         self.refresh_projects_button.setEnabled(not attached and unlocked)
+        self.purpose_edit.setEnabled(not attached and unlocked)
         self.close_project_button.setEnabled(attached and unlocked)
 
     def set_project_mutation_active(self, active: bool, source: str = "source intake"):
@@ -291,9 +325,11 @@ class StartHerePanel(QWidget):
         """Refresh displayed authority without announcing a project switch."""
         if state is None:
             self.project_status_label.setText("No project is open.")
+            self.purpose_edit.clear()
             self.update_project_controls()
             return
         assessment = state.assessment
+        self.purpose_edit.setText(assessment.manifest.get("primary_goal", ""))
         if state.writable:
             detail = "Writable session; this application owns the project lock."
         else:
@@ -307,33 +343,25 @@ class StartHerePanel(QWidget):
     def load_all(self):
         profile = load_profile()
 
-        for key, edit in self.profile_fields.items():
-            edit.setText(profile.get(key, ""))
+        for key in self._saved_profile_keys:
+            self.profile_fields[key].setText(profile.get(key, ""))
 
-        self.notes_edit.setPlainText(
-            "Current project spine:\n"
-            f"{profile.get('workflow_focus', '')}\n\n"
-            "Primary goal:\n"
-            f"{profile.get('primary_goal', '')}\n"
-        )
+        self.notes_edit.setPlainText(profile.get("primary_goal", ""))
 
         self.trust_edit.setPlainText(load_settings_notes())
-
-        self.set_status("Loaded Start Here profile and trust notes.")
+        self.set_status("Loaded optional profile and trust notes.")
 
     def save_fields(self):
-        profile = {key: edit.text() for key, edit in self.profile_fields.items()}
-
+        profile = load_profile()
+        for key in self._saved_profile_keys:
+            profile[key] = self.profile_fields[key].text()
+        profile["primary_goal"] = self.notes_edit.toPlainText()
         saved = save_profile(profile)
 
-        self.profile_fields["project_name"].setText(saved.get("project_name", ""))
-        self.profile_fields["project_role"].setText(saved.get("project_role", ""))
-        self.profile_fields["creator_name"].setText(saved.get("creator_name", ""))
-        self.profile_fields["brand_presence"].setText(saved.get("brand_presence", ""))
-        self.profile_fields["primary_goal"].setText(saved.get("primary_goal", ""))
-        self.profile_fields["workflow_focus"].setText(saved.get("workflow_focus", ""))
+        for key in self._saved_profile_keys:
+            self.profile_fields[key].setText(saved.get(key, ""))
 
-        self.set_status("Saved onboarding profile.")
+        self.set_status("Saved optional onboarding profile.")
 
     def save_trust_notes(self):
         save_settings_notes(self.trust_edit.toPlainText())

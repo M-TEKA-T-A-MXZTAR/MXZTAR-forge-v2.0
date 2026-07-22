@@ -31,7 +31,7 @@ def _install_editor_navigation_contract() -> None:
 
 
 class EditorForgeWindow(MXZTARForgeWindow):
-    """Add the Level One Editor without weakening the verified legacy workspaces."""
+    """Add the Stage One Editor without weakening verified legacy workspaces."""
 
     def __init__(self, project_session=None):
         _install_editor_navigation_contract()
@@ -48,6 +48,70 @@ class EditorForgeWindow(MXZTARForgeWindow):
             item = QListWidgetItem(f"{EDITOR_NAV['icon']}  {EDITOR_NAV['label']}")
             item.setToolTip(EDITOR_NAV["tooltip"])
             self.sidebar.insertItem(EDITOR_PAGE_INDEX, item)
+
+    def focus_project_name(self) -> None:
+        """Compatibility override: guided project identity now begins with Purpose."""
+        self._open_guided_page(1)
+        self.start_here_panel.purpose_edit.setFocus()
+        self.set_status("State the project Purpose, then use the pulsing Next control.")
+
+    def open_guided_blank_document(self) -> None:
+        self._open_guided_page(EDITOR_PAGE_INDEX)
+        self.editor_panel.create_blank_document()
+        self.refresh_guided_next_step()
+
+    def refresh_guided_next_step(self) -> None:
+        """Prefer Project Birth and one blank Editor document in the official shell."""
+        if not hasattr(self, "editor_panel"):
+            super().refresh_guided_next_step()
+            return
+        if self.agent_panel.has_active_job() or self._guided_evidence_ready:
+            super().refresh_guided_next_step()
+            return
+
+        state = self.project_session.state
+        if state is None:
+            purpose = self.start_here_panel.purpose_edit.text().strip()
+            if self._guided_project_name_edited and self.start_here_panel.create_project_button.isEnabled():
+                self.set_guidance(
+                    "Next: Create project",
+                    self.start_here_panel.create_current_project,
+                    self.start_here_panel.create_project_button,
+                )
+            elif self.start_here_panel.project_selector.currentData():
+                self.set_guidance(
+                    "Next: Open selected project",
+                    self.start_here_panel.open_selected_project,
+                    self.start_here_panel.open_project_button,
+                )
+            elif purpose and self.start_here_panel.create_project_button.isEnabled():
+                self.set_guidance(
+                    "Next: Create project",
+                    self.start_here_panel.create_current_project,
+                    self.start_here_panel.create_project_button,
+                )
+            else:
+                self.set_guidance(
+                    "Next: State project Purpose",
+                    self.focus_project_name,
+                    self.start_here_panel.purpose_edit,
+                )
+            return
+
+        if (
+            state.writable
+            and not self.library_panel.has_active_intake()
+            and not self.library_panel.has_active_thumbnail_loading()
+            and not self.editor_panel.has_open_document()
+        ):
+            self.set_guidance(
+                "Next: New blank document",
+                self.open_guided_blank_document,
+                self.editor_panel.new_button,
+            )
+            return
+
+        super().refresh_guided_next_step()
 
     def open_guided_import(self) -> None:
         self._open_guided_page(LIBRARY_PAGE_INDEX)

@@ -21,7 +21,11 @@ from core.project_access import (
     read_project_lock,
     release_project_lock,
 )
-from core.project_manifest import create_project, validate_manifest
+from core.project_manifest import (
+    create_project,
+    project_name_from_purpose,
+    validate_manifest,
+)
 
 
 class ProjectSessionError(RuntimeError):
@@ -88,7 +92,20 @@ class ProjectSession:
     def is_writable(self) -> bool:
         return self._state is not None and self._state.writable
 
+    def create_from_purpose(self, purpose: str) -> ProjectSessionState:
+        """Create and open one canonical project from the user's first purpose event."""
+        self._require_detached()
+        exact_purpose = purpose.strip()
+        project_name = project_name_from_purpose(exact_purpose)
+        project_dir, _manifest = create_project(
+            project_name,
+            primary_goal=exact_purpose,
+            projects_root=self.projects_root,
+        )
+        return self.open(project_dir)
+
     def create_and_open(self, project_name: str, primary_goal: str = "") -> ProjectSessionState:
+        """Compatibility path for callers that already own an explicit project name."""
         self._require_detached()
         project_dir, _manifest = create_project(
             project_name,

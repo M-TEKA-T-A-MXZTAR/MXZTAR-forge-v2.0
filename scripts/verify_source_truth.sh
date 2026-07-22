@@ -69,6 +69,8 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_jobs_panel_contract.py \
   tools/verify_launcher_import_contract.py \
+  tools/verify_project_birth_contract.py \
+  tools/verify_project_session_contract.py \
   tools/verify_project_source_intake_ui_contract.py \
   tools/verify_project_workflow_run_contract.py \
   tools/verify_shape_document_editor_contract.py
@@ -78,6 +80,10 @@ echo "PASS: listed Python files compile"
 echo
 echo "=== LAUNCHER IMPORT CONTRACT ==="
 PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_launcher_import_contract.py
+
+echo
+echo "=== PROJECT BIRTH CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_project_birth_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
