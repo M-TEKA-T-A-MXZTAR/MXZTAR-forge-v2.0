@@ -1,113 +1,151 @@
-# MXZTAR-forge v2.0 — Project State and Data Authority
+# MXZTAR Forge v2.0 — Project State and Data Authority
 
 ## 1. Purpose
 
-This document defines how MXZTAR-forge v2.0 stores, reconstructs, validates, and protects project state.
+This document defines how MXZTAR Forge stores, reconstructs, validates, migrates, and protects project state across Stage One and Stage Two.
 
 Its purpose is to prevent competing sources of truth between:
 
-* JSON artifacts;
-* SQLite indexes;
-* project metadata;
-* approval records;
-* history logs;
-* cached UI state;
-* manually edited files.
+- durable project artifacts;
+- `project.json`;
+- project history;
+- approval and supersession records;
+- autosaves and transaction markers;
+- SQLite indexes;
+- cached UI state;
+- in-memory objects;
+- manually edited files.
 
 The system must always be able to answer:
 
-* What is authoritative?
-* What is derived?
-* What can be rebuilt?
-* What happens if data sources disagree?
-* How is corruption detected?
-* How is state restored after interruption or machine failure?
+- What is authoritative?
+- What is derived or rebuildable?
+- What may be edited?
+- What happens when sources disagree?
+- How is corruption detected?
+- How is interrupted work recovered?
+- How is a copied project reopened without the original machine database?
 
 ---
 
-## 2. Core Decision
+## 2. Core decision
 
 ### Durable project artifacts are authoritative
 
-The authoritative record of project work is the set of durable project files stored inside the project directory.
+The authoritative record of creative work is the set of validated durable files stored inside the project directory.
 
-These include:
+These include, where implemented:
 
-* `project.json`;
-* source asset metadata;
-* workflow artifacts;
-* approval records;
-* supersession records;
-* project history;
-* structured diagnostics;
-* approved briefs;
-* approved prompt packs.
+- `project.json`;
+- source asset records and unchanged project-owned source copies;
+- native shape documents;
+- extraction candidates;
+- approved Shape Library assets;
+- review, approval, rejection, and supersession records;
+- construction recipes;
+- components and assemblies;
+- project history;
+- job and diagnostic evidence;
+- validated export records.
 
 ### SQLite is an index and acceleration layer
 
-SQLite may be used for:
+SQLite may support:
 
-* fast lookup;
-* filtering;
-* sorting;
-* UI state;
-* recent-project lists;
-* search indexes;
-* artifact summaries;
-* cached compatibility assessments;
-* execution queues;
-* resumable job metadata.
+- fast lookup, filtering, and sorting;
+- recent-project lists;
+- search indexes;
+- artifact summaries;
+- cached compatibility assessments;
+- UI layout and selection state;
+- execution queues and resumable job metadata.
 
-SQLite is not the sole source of truth for durable creative work.
+SQLite is never the sole authority for durable creative work.
 
-If the database is lost or corrupted, the project must remain recoverable from project files.
+If the database is lost or corrupted, a valid project must remain recoverable from project files.
 
 ---
 
-## 3. Authority Hierarchy
+## 3. Authority hierarchy
 
 When data sources disagree, use this order:
 
-1. validated durable artifact files;
-2. signed or hashed approval and supersession records;
+1. validated canonical durable artifact files;
+2. durable approval, rejection, correction, and supersession records;
 3. append-only project history;
-4. `project.json`;
-5. rebuilt SQLite index;
-6. cached UI state;
-7. transient in-memory state.
+4. validated `project.json` declarations;
+5. a validated newer autosave offered through explicit recovery;
+6. rebuilt SQLite index;
+7. cached UI state;
+8. transient in-memory state;
+9. terminal scrollback or unsaved notes.
 
 Lower-priority data must never silently override higher-priority data.
 
+A transaction marker or uncertain durability state may reduce authority to read-only even when a canonical file still exists.
+
 ---
 
-## 4. Project Directory as Recovery Boundary
+## 4. Project directory as recovery boundary
 
-Each project directory is a self-contained recovery boundary.
+Each project directory is self-contained and portable.
 
 A copied project should preserve:
 
-* project identity;
-* source references;
-* source metadata;
-* workflow results;
-* approvals;
-* rejections;
-* supersession history;
-* briefs;
-* prompts;
-* diagnostics;
-* logs;
-* project history.
+- project identity and exact Purpose;
+- source copies, identity, hashes, and rights notes;
+- editable shape documents and autosave/recovery state;
+- extraction candidates;
+- approved Shape Library assets;
+- review, correction, rejection, and supersession history;
+- construction recipes, components, and assemblies;
+- jobs, diagnostics, and logs;
+- exports and validation evidence;
+- project history.
 
-The user should not require the original machine-wide SQLite database to reopen a project.
+The user must not require the original machine-wide SQLite database to reopen a project.
 
 ---
 
-## 5. `project.json` Contract
+## 5. Target project layout
+
+```text
+project/
+├── project.json
+├── README.md
+├── source/
+│   ├── originals/
+│   └── previews/
+├── findings/
+│   ├── raw/
+│   ├── approved/
+│   ├── rejected/
+│   └── superseded/
+├── structures/
+│   ├── shape-documents/
+│   │   └── .autosave/
+│   ├── extraction-candidates/
+│   ├── approved-shapes/
+│   ├── construction-recipes/
+│   ├── components/
+│   └── assemblies/
+├── briefs/
+├── prompts/
+├── diagnostics/
+├── logs/
+├── history/
+└── exports/
+```
+
+A proposed directory does not become runtime authority merely because it appears here. Runtime code creates it only after the associated schema, migration, transaction, and verifier exist.
+
+---
+
+## 6. `project.json` contract
 
 `project.json` is the project manifest.
 
-It should contain:
+It contains or references:
 
 ```json
 {
@@ -115,17 +153,17 @@ It should contain:
   "schema_version": "1.0.0",
   "project_id": "project_example",
   "project_name": "Example Project",
-  "created_at_utc": "2026-06-25T00:00:00Z",
-  "updated_at_utc": "2026-06-25T00:00:00Z",
+  "project_slug": "example-project",
+  "purpose": "Build reusable engine-panel shapes from this source art",
+  "created_at_utc": "2026-07-22T00:00:00Z",
+  "updated_at_utc": "2026-07-22T00:00:00Z",
   "application_version_created": "0.0.0-development",
   "application_version_last_opened": "0.0.0-development",
   "project_status": "active",
-  "primary_goal": "",
   "source_asset_ids": [],
   "current_artifact_ids": [],
   "approved_artifact_ids": [],
   "superseded_artifact_ids": [],
-  "last_recommendation_artifact_id": null,
   "history_path": "history/project_history.jsonl",
   "integrity": {
     "manifest_sha256": null,
@@ -134,661 +172,398 @@ It should contain:
 }
 ```
 
-The manifest is authoritative for project identity and declared current state, but it must be validated against the actual artifact files.
+Rules:
+
+- the exact creator Purpose is preserved;
+- a safe name and slug may be derived, but do not replace the stored Purpose;
+- identity fields remain stable;
+- current, approved, and superseded declarations validate against actual files;
+- manifest changes occur through atomic project transactions;
+- unsupported future versions fail closed or attach read-only.
 
 ---
 
-## 6. Derived SQLite Data
+## 7. Project Birth authority
 
-SQLite records may include:
+Project creation is the first project workflow.
 
-* project ID;
-* project path;
-* project name;
-* last opened time;
-* artifact ID;
-* artifact type;
-* workflow key;
-* status;
-* approval state;
-* source asset ID;
-* created time;
-* validation status;
-* user-facing summary;
-* search text;
-* file path.
+Inputs:
 
-Every SQLite artifact row must reference a durable project-relative file path.
+- creator-supplied Purpose;
+- workspace project root;
+- current application and schema versions.
 
-A database row without a corresponding durable artifact must be treated as stale or invalid.
+The creation transaction must:
 
----
+1. validate non-empty Purpose;
+2. derive a safe display name and slug;
+3. refuse unsafe paths and collisions;
+4. create the canonical directory structure required by the current schema only;
+5. write and validate `project.json` atomically;
+6. create project history;
+7. append `project_created` with exact Purpose and derived identity;
+8. acquire the writer lease;
+9. return one truthful writable, locked, or failure state.
 
-## 7. Rebuild Contract
-
-The SQLite index must be rebuildable from project files.
-
-A rebuild should:
-
-1. locate the project directory;
-2. validate `project.json`;
-3. enumerate durable artifacts;
-4. validate schema names and versions;
-5. identify approvals and supersession links;
-6. reconstruct current project state;
-7. rebuild database rows;
-8. record warnings for missing or conflicting files;
-9. preserve original files;
-10. report the rebuild result.
-
-Rebuild must not modify project artifacts unless a separate migration is explicitly performed.
+A broader onboarding profile is optional and must not be required to create a project.
 
 ---
 
-## 8. Current-State Reconstruction
+## 8. Writer authority and locks
 
-Current project state is reconstructed from:
+Only one Forge process may hold writable authority for a project at a time.
 
-* project manifest;
-* durable artifacts;
-* approval records;
-* supersession records;
-* history events.
+The writer lease:
 
-For each artifact:
+- is acquired through an exclusive operation;
+- records enough identity to diagnose ownership;
+- belongs to the active ProjectSession;
+- is released on explicit close and normal application shutdown;
+- is not silently stolen;
+- does not become writable merely because a stale-looking file exists;
+- survives UI navigation until the project is closed.
 
-1. validate file structure;
-2. read artifact ID;
-3. read status;
-4. read approval state;
-5. identify parent artifacts;
-6. identify superseded artifacts;
-7. identify approval derivatives;
-8. determine whether the artifact is current;
-9. index the result.
+A project may attach read-only when:
 
-An artifact is current when it is:
+- another writer owns the lock;
+- a transaction marker indicates interrupted work;
+- rollback durability is uncertain;
+- schema migration is unavailable;
+- project validation cannot safely authorise mutation.
 
-* valid;
-* not rejected;
-* not superseded;
-* not replaced by a later approved derivative;
-* relevant to the current project manifest.
+Read-only state remains visible and disables mutations.
 
 ---
 
-## 9. Raw, Approved, Rejected, and Superseded State
+## 9. Canonical, autosave, temporary, and transaction state
 
-### Raw
+### Canonical
 
-Generated but not accepted as project truth.
+The last fully validated explicit save registered by project authority.
 
-### Approved
+### Autosave
 
-Explicitly accepted by the user.
+A bounded project-owned recovery candidate separate from canonical truth.
+
+A newer valid autosave may be offered for explicit recovery but does not silently replace canonical bytes.
+
+### Temporary file
+
+An implementation detail of an atomic write. A stray `.tmp` file never becomes truth merely because it is newer.
+
+### Transaction marker
+
+A durable indicator that a multi-file editor or project transaction may have been interrupted.
+
+Rules:
+
+- an active writer lock remains authoritative over an unrelated stale marker during the live owning session;
+- on reopen, an unresolved marker forces explicit read-only recovery classification;
+- the marker clears only after confirmed success or confirmed rollback;
+- uncertain rollback remains read-only.
+
+---
+
+## 10. Shape-document authority
+
+The current native shape schema is `mxztar_forge_shape_document` version `1.0.0`.
+
+Canonical shape documents live beneath:
+
+```text
+structures/shape-documents/
+```
+
+Autosaves live beneath:
+
+```text
+structures/shape-documents/.autosave/
+```
+
+A shape save may affect:
+
+- canonical shape document;
+- project manifest;
+- project history;
+- autosave cleanup;
+- transaction marker.
+
+These writes form one logical transaction. Partial success is not reported as a successful save.
+
+Document and history bounds are enforced before unreadable bytes become canonical or autosave state.
+
+---
+
+## 11. Candidate and approval authority
+
+### Raw or editable candidate
+
+A manual trace, algorithmic extraction, or model proposal not yet approved.
+
+### Approved shape
+
+A reviewed native shape artifact accepted for reuse.
 
 ### Rejected
 
-Explicitly excluded from downstream project truth.
+Explicitly excluded from downstream approved truth while remaining historically inspectable.
 
 ### Superseded
 
-Historically preserved but replaced conceptually by a newer artifact.
+Preserved historical artifact conceptually replaced by a later approved version.
 
-State changes must be represented by durable records.
+Rules:
 
-The system must not rely only on moving files between directories.
-
----
-
-## 10. Approval Authority
-
-User approval is authoritative.
-
-A successful workflow run does not imply approval.
-
-Approval should create a durable approval record containing:
-
-* approval ID;
-* source artifact ID;
-* approved content;
-* user corrections;
-* approval time;
-* approving actor;
-* notes.
-
-Downstream workflows should prefer approved material where available.
+- successful generation does not imply approval;
+- approval creates a durable decision record;
+- corrected derivatives may be approved without mutating the raw candidate;
+- downstream construction and export prefer current approved material;
+- directory location alone does not define approval state.
 
 ---
 
-## 11. Supersession Authority
+## 12. Construction and assembly authority
 
-Supersession must be explicit.
+### Construction recipe
 
-A newer artifact may supersede one or more older artifacts.
+The reversible derivation authority for a component generated from an approved shape or declared primitive.
 
-The newer artifact or a dedicated supersession record must identify:
+### Component
 
-```json
-{
-  "supersedes_artifact_ids": [
-    "art_older"
-  ]
-}
-```
+The current editable 3D object and transform state produced by a recipe or primitive.
 
-The older artifact remains preserved.
+### Assembly
 
-Its historical existence must remain visible in project history.
+The authoritative hierarchy of component IDs, instances, transforms, anchors, connectors, and declared relationships.
+
+Group, assembly, contact, stitch, join mesh, boolean, separate, and bake remain distinct durable meanings.
+
+A baked result is a new derivative and cannot silently erase reversible parent history.
 
 ---
 
-## 12. History Authority
+## 13. Export authority
 
-`project_history.jsonl` is append-oriented.
+Exports are validated derivatives.
 
-It records major project events, including:
+An export record identifies:
 
-* project creation;
-* source addition;
-* workflow execution;
-* workflow failure;
-* approval;
-* rejection;
-* supersession;
-* migration;
-* export;
-* restoration;
-* database rebuild;
-* manual-edit detection.
+- approved input artifacts;
+- named output profile;
+- generated project-relative files and checksums;
+- units, axes, hierarchy, names, and limitation rules;
+- validation result;
+- downstream import or continuation evidence where required.
 
-History is not the only source of truth, but it is the authoritative event trail.
-
-A missing history line must not erase an otherwise valid artifact.
+An SVG, PNG, GLB, OBJ, or Forge Pack never replaces the native project authority.
 
 ---
 
-## 13. Write Ordering
+## 14. Project history
 
-Durable writes should follow this order:
+Project history is append-only JSON Lines.
 
-1. validate input;
-2. create run ID;
-3. record run start;
-4. generate result;
-5. validate result;
-6. write artifact to temporary file;
-7. flush and close;
-8. re-read and validate temporary file;
-9. atomically rename to final path;
-10. append project history event;
-11. update `project.json`;
-12. update SQLite index;
-13. notify the UI.
+Material events include:
 
-SQLite must be updated after the durable artifact exists.
+- project creation/open/close/recovery;
+- source import/processing;
+- document creation and save;
+- editor command application where required by the history design;
+- review and approval decisions;
+- version and supersession changes;
+- recipe/component/assembly changes;
+- exports;
+- migration and recovery actions.
+
+History supports reconstruction and audit but does not override a valid newer canonical artifact without an explicit reconstruction rule.
 
 ---
 
-## 14. Atomicity Rules
+## 15. Derived SQLite data
 
-The system should use atomic replacement where practical.
+SQLite rows may include:
 
-For new artifacts:
+- project ID, path, name, Purpose summary, and last-opened time;
+- artifact ID, type, schema, status, approval state, and project-relative path;
+- source and parent IDs;
+- validation summary;
+- user-facing search text;
+- UI state and recent selection;
+- queued/resumable job metadata.
 
-* write temporary file;
-* validate;
-* rename to final file.
+Every durable-artifact row references a project-relative file.
 
-For `project.json`:
-
-* write `project.json.tmp`;
-* validate;
-* preserve prior manifest as backup where practical;
-* atomically replace.
-
-The system must not leave partially written JSON as valid state.
+A database row without a corresponding valid artifact is stale or invalid.
 
 ---
 
-## 15. Concurrent-Write Prevention
+## 16. Rebuild contract
 
-Only one writer may modify a project at a time.
+A project/index rebuild should:
 
-Initial desktop strategy:
+1. locate the project directory;
+2. validate `project.json`;
+3. enumerate durable artifacts through bounded discovery;
+4. validate schema names and versions;
+5. identify approvals, rejections, corrections, and supersession links;
+6. reconstruct current shapes, components, assemblies, and exports;
+7. rebuild SQLite rows;
+8. record warnings for missing, invalid, or conflicting files;
+9. preserve original files;
+10. report the rebuild result.
 
-* process-level project lock;
-* lock file inside the project directory;
-* unique writer ID;
-* process ID;
-* creation time;
-* host identifier where practical.
-
-Example:
-
-```json
-{
-  "lock_schema": "mxztar_forge_project_lock",
-  "writer_id": "writer_001",
-  "process_id": 12345,
-  "created_at_utc": "2026-06-25T00:00:00Z",
-  "host": "mk-T1700"
-}
-```
-
-A stale lock must not be removed silently.
-
-The system should verify whether the owning process still exists before offering recovery.
+Rebuild does not modify project artifacts unless a separate explicit migration or repair operation is selected.
 
 ---
 
-## 16. Read-Only Recovery Mode
+## 17. Current-state reconstruction
 
-If project integrity is uncertain, the application should open the project in read-only recovery mode.
+For each artifact:
 
-Read-only recovery mode should permit:
+1. validate file structure and integrity;
+2. read artifact ID and schema version;
+3. read status and approval state;
+4. identify project, source, and parent relationships;
+5. identify superseded artifacts;
+6. determine whether it is current;
+7. index or quarantine the result truthfully.
 
-* inspection;
-* validation;
-* export;
-* backup;
-* diagnostic generation;
-* database rebuild preview.
+An artifact is current when it is:
 
-It should block:
-
-* new workflow writes;
-* approvals;
-* supersession;
-* migration;
-* manifest replacement.
-
----
-
-## 17. Corruption Detection
-
-The system should detect:
-
-* malformed JSON;
-* missing required fields;
-* duplicate artifact IDs;
-* missing referenced artifacts;
-* broken parent links;
-* broken supersession links;
-* invalid schema versions;
-* hash mismatches;
-* truncated history lines;
-* database rows with missing files;
-* manifest references to nonexistent files.
-
-Corruption must be reported precisely.
-
-The application must not silently “fix” uncertain project truth.
+- valid;
+- relevant to the current project manifest;
+- not rejected;
+- not superseded;
+- not replaced by a later approved derivative;
+- consistent with required parent and approval records.
 
 ---
 
-## 18. Hashing Policy
+## 18. Conflict rules
 
-SHA-256 should be used for:
+Examples:
 
-* source assets;
-* durable artifacts where practical;
-* project manifest integrity;
-* export packages.
+### Manifest references missing artifact
 
-Hashes support:
+- preserve manifest and remaining files;
+- mark reference invalid;
+- warn user;
+- do not fabricate replacement.
 
-* corruption detection;
-* duplicate detection;
-* manual-edit detection;
-* provenance.
+### Artifact exists but is absent from manifest
 
-A missing hash must be represented as `null`.
+- treat as orphan or candidate recovery material;
+- do not silently register it as current;
+- offer explicit reconciliation where safe.
 
-A hash mismatch must not be ignored.
+### SQLite disagrees with files
 
----
+- validated files win;
+- rebuild affected index rows.
 
-## 19. Manual File Edits
+### Autosave newer than canonical
 
-Users may inspect and edit their project files manually.
+- validate both;
+- present recovery choice;
+- do not silently replace canonical.
 
-The application must distinguish:
+### Approval and artifact disagree
 
-* valid manual edit;
-* invalid manual edit;
-* schema-breaking edit;
-* hash-changing edit;
-* externally replaced file.
+- fail closed for downstream approved use;
+- inspect decision and content hashes;
+- require explicit repair or supersession.
 
-When a manual edit is detected:
+### Transaction marker exists
 
-1. do not overwrite it automatically;
-2. validate the edited file;
-3. compare hashes;
-4. report the difference;
-5. offer re-indexing if valid;
-6. offer read-only recovery if invalid;
-7. append a history event if accepted.
-
-Manual edits should not automatically become approved project truth.
+- attach read-only on reopen;
+- diagnose canonical, manifest, history, and temporary state;
+- clear only after confirmed resolution.
 
 ---
 
-## 20. Database Corruption
+## 19. Corruption detection
 
-If SQLite is corrupted:
+Detection may use:
 
-* preserve the corrupt database;
-* rename it with a timestamp;
-* create a fresh database;
-* rebuild from durable artifacts;
-* report warnings;
-* do not alter project artifacts.
+- JSON/schema validation;
+- content hashes;
+- manifest relationship checks;
+- missing parent or source IDs;
+- impossible approval/supersession links;
+- duplicate IDs;
+- malformed history lines;
+- file-size and history bounds;
+- invalid path traversal or symlink escape;
+- incomplete transaction markers;
+- unsupported schema versions.
 
-Example preserved filename:
-
-```text
-mxztar_forge.sqlite.corrupt.20260625T000000Z
-```
-
----
-
-## 21. Missing Database
-
-A missing SQLite database is recoverable.
-
-The application should:
-
-1. create a new database;
-2. scan known project directories;
-3. validate manifests;
-4. rebuild indexes;
-5. restore recent-project metadata where available.
-
-The absence of SQLite must not destroy project access.
+Corruption warnings remain explicit. The system does not quietly discard user work.
 
 ---
 
-## 22. Missing Artifact
+## 20. Migration contract
 
-If `project.json` references a missing artifact:
+A migration must:
 
-* mark the project degraded;
-* record the missing artifact ID;
-* do not silently remove the reference;
-* search expected directories;
-* offer restore-from-backup guidance;
-* permit read-only access where possible.
+1. identify source and target schema versions;
+2. validate pre-migration state;
+3. preserve or back up current canonical files;
+4. write through atomic transaction rules;
+5. append a migration history event;
+6. validate the migrated project;
+7. roll back or attach read-only on failure;
+8. preserve unknown future fields where the schema contract requires it.
 
----
-
-## 23. Orphan Artifact
-
-An artifact is orphaned when it exists but is not referenced by the manifest or history.
-
-The system should:
-
-* validate it;
-* identify its project ID;
-* identify its provenance;
-* present it for recovery review;
-* avoid automatic deletion;
-* allow deliberate reattachment.
+Opening a project for assessment must not mutate it automatically.
 
 ---
 
-## 24. Duplicate Artifact IDs
+## 21. UI state authority
 
-Duplicate artifact IDs are invalid.
+UI layout, active workspace, selected artifact, zoom, and safe tool state may be cached in SQLite or settings.
 
-The system must:
+UI state:
 
-* stop automatic indexing of the conflicting records;
-* report both file paths;
-* preserve both files;
-* require deliberate resolution;
-* avoid generating a replacement ID silently.
-
----
-
-## 25. Backup Contract
-
-A valid project backup must include the complete project directory.
-
-Recommended backup properties:
-
-* timestamped;
-* externally stored;
-* integrity checked;
-* restorable without SQLite;
-* not dependent on application cache.
-
-Project backups should preserve:
-
-* source assets;
-* manifests;
-* artifacts;
-* approvals;
-* history;
-* diagnostics;
-* logs;
-* exports.
+- is lower authority than project artifacts;
+- cannot make a rejected or invalid artifact current;
+- cannot grant writable authority;
+- cannot silently switch projects;
+- may be discarded and rebuilt without losing creative work.
 
 ---
 
-## 26. Restoration Contract
+## 22. Backup and restoration
+
+A useful backup preserves the full project directory.
 
 Restoration should:
 
-1. copy the project directory to a safe location;
-2. validate all files;
-3. verify hashes where present;
-4. rebuild SQLite indexes;
-5. identify missing or conflicting records;
-6. open in read-only mode if integrity is uncertain;
-7. append a restoration event only after successful validation.
+1. copy or locate the project;
+2. validate manifest and artifacts;
+3. assess lock and transaction state;
+4. rebuild derived indexes;
+5. report missing or conflicting data;
+6. attach writable only when authority is safe.
 
-Restoration must not overwrite an existing project without explicit confirmation.
-
----
-
-## 27. Export Contract
-
-A project export should be a self-contained package.
-
-It should include:
-
-* project manifest;
-* selected source assets;
-* selected artifacts;
-* approval records;
-* provenance;
-* relevant history;
-* export manifest;
-* integrity hashes.
-
-Diagnostics and logs may be optional depending on export purpose.
+A new VX12 backup is claimed only when it is actually created and recorded.
 
 ---
 
-## 28. UI State Authority
+## 23. Verification requirements
 
-UI state is not project truth.
+Project authority changes require proportionate tests for:
 
-Examples of non-authoritative UI state:
+- creation collisions and unsafe paths;
+- one-writer acquisition and release;
+- read-only lock and recovery states;
+- atomic writes and rollback;
+- autosave/canonical separation;
+- stale temporary-file containment;
+- transaction-marker recovery;
+- project copying without SQLite;
+- index rebuild;
+- schema migration;
+- approval/supersession reconstruction;
+- application shutdown and guarded worker lifecycle.
 
-* selected tab;
-* panel expansion;
-* current preview;
-* scroll position;
-* temporary filters;
-* unsaved text;
-* cached recommendation display.
-
-If UI state conflicts with durable artifacts, durable artifacts win.
-
----
-
-## 29. In-Memory State
-
-In-memory state is transient.
-
-It may contain:
-
-* active run status;
-* current progress;
-* pending model response;
-* unsaved preview;
-* temporary validation result.
-
-Important in-memory results must be persisted before being treated as durable project state.
-
----
-
-## 30. Failure During Write
-
-If failure occurs before final artifact rename:
-
-* preserve the temporary file where useful;
-* mark it invalid or incomplete;
-* write a diagnostic record if possible;
-* do not index it as a valid artifact;
-* do not update `project.json` as if success occurred.
-
-If failure occurs after artifact save but before SQLite update:
-
-* the artifact remains authoritative;
-* database rebuild must recover it.
-
----
-
-## 31. Failure During Manifest Update
-
-If the artifact is saved but `project.json` update fails:
-
-* keep the artifact;
-* report partial success;
-* record a diagnostic;
-* do not delete the artifact;
-* allow later reconciliation;
-* avoid falsely reporting full success.
-
----
-
-## 32. Failure During History Append
-
-If the artifact and manifest are valid but history append fails:
-
-* report degraded success;
-* preserve the artifact;
-* record the missing history event during later reconciliation;
-* do not discard valid work.
-
----
-
-## 33. Reconciliation Process
-
-A reconciliation scan should:
-
-1. validate the manifest;
-2. enumerate artifacts;
-3. compare manifest references;
-4. compare history;
-5. compare SQLite;
-6. identify missing, orphaned, duplicate, or conflicting records;
-7. produce a reconciliation report;
-8. apply no destructive changes automatically.
-
----
-
-## 34. Data Authority Summary
-
-### Authoritative
-
-* durable artifact files;
-* approval records;
-* supersession records;
-* project manifest;
-* project history.
-
-### Derived
-
-* SQLite indexes;
-* search caches;
-* compatibility caches;
-* UI summaries;
-* recent-project lists.
-
-### Transient
-
-* active worker state;
-* progress indicators;
-* unsaved previews;
-* temporary model responses.
-
----
-
-## 35. First-Release Implementation Rules
-
-The first rentable release must satisfy:
-
-1. projects remain readable without SQLite;
-2. SQLite can be rebuilt;
-3. durable artifacts are validated before indexing;
-4. only one project writer is active;
-5. writes are atomic where practical;
-6. approvals are explicit;
-7. supersession preserves history;
-8. manual edits are detected;
-9. corruption is reported;
-10. recovery does not destroy original files;
-11. backups contain the whole project directory;
-12. the UI does not become the source of truth.
-
----
-
-## 36. Acceptance Criteria
-
-This architecture is ready for implementation when:
-
-1. authority hierarchy is documented;
-2. project manifest shape is defined;
-3. database role is limited to index and acceleration;
-4. rebuild behaviour is defined;
-5. write ordering is defined;
-6. project locking is defined;
-7. corruption states are defined;
-8. read-only recovery mode is defined;
-9. manual-edit handling is defined;
-10. backup and restoration are defined;
-11. reconciliation is non-destructive;
-12. no durable project state depends solely on SQLite.
-
----
-
-## 37. Next Planning Event
-
-Create:
-
-```text
-docs/architecture/FAILURE_AND_RECOVERY_MODEL.md
-```
-
-That document must define:
-
-* workflow failure classes;
-* retry rules;
-* cancellation;
-* timeouts;
-* partial success;
-* interrupted writes;
-* worker crashes;
-* model-service outages;
-* application restarts;
-* project recovery;
-* user-facing failure messages;
-* diagnostic requirements.
-
-No recovery implementation should begin until failure states and recovery actions are explicitly mapped.
-
+No authority path is verified solely because it is documented or merged.
