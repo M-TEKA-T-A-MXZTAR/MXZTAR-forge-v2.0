@@ -122,6 +122,44 @@ def main() -> int:
         require(project_slug(long_name), "bounded display name did not produce a safe slug")
         print("PASS: long Purpose text derives a bounded display name and safe slug")
 
+        profile_state = {
+            "project_name": "MXZTAR Forge v2.0",
+            "project_role": "Local creative-concept engineering forge",
+            "creator_name": "",
+            "brand_presence": "",
+            "primary_goal": "Keep this optional profile note once.",
+            "workflow_focus": "Reusable shape editing",
+            "updated_utc": "",
+        }
+
+        def fake_load_profile() -> dict[str, str]:
+            return dict(profile_state)
+
+        def fake_save_profile(profile: dict[str, str]) -> dict[str, str]:
+            for key in tuple(profile_state):
+                profile_state[key] = str(profile.get(key, profile_state[key])).strip()
+            return dict(profile_state)
+
+        with (
+            patch("qt_panels.start_here_panel.load_profile", side_effect=fake_load_profile),
+            patch("qt_panels.start_here_panel.save_profile", side_effect=fake_save_profile),
+            patch("qt_panels.start_here_panel.load_settings_notes", return_value=""),
+        ):
+            profile_panel = StartHerePanel(ProjectSession(Path(temporary) / "profile-projects"))
+            require(
+                profile_panel.notes_edit.toPlainText() == profile_state["primary_goal"],
+                "optional profile notes were decorated with UI labels on load",
+            )
+            profile_panel.save_fields()
+            profile_panel.load_all()
+            profile_panel.save_fields()
+            require(
+                profile_state["primary_goal"] == "Keep this optional profile note once.",
+                "repeated profile saves compounded labels or workflow context",
+            )
+            profile_panel.deleteLater()
+        print("PASS: optional profile notes remain stable across repeated load/save cycles")
+
         guided_root = Path(temporary) / "guided-projects"
         guided_session = ProjectSession(guided_root)
         with patch.object(library_module, "scan_source_art", return_value=[]):
