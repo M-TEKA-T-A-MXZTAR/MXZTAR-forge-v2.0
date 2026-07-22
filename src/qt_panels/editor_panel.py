@@ -176,13 +176,8 @@ class EditorPanel(QWidget):
         project_name = state.assessment.manifest.get(
             "project_name", state.assessment.project_dir.name
         )
-        self.refresh_documents()
-        document_count = self.document_selector.count()
-        if document_count:
-            self.set_status(
-                f"Loaded project build: {project_name}; {document_count} shape document(s) available."
-            )
-        else:
+        outcome = self.refresh_documents()
+        if outcome == "empty":
             self.document_label.setText(
                 f"Project: {project_name} | No native shape document exists yet."
             )
@@ -191,7 +186,7 @@ class EditorPanel(QWidget):
             )
         self.update_controls()
 
-    def refresh_documents(self, selected_document_id: str | None = None) -> None:
+    def refresh_documents(self, selected_document_id: str | None = None) -> str:
         self._refreshing_documents = True
         signals_were_blocked = self.document_selector.blockSignals(True)
         self.document_selector.clear()
@@ -202,7 +197,7 @@ class EditorPanel(QWidget):
                 self.scene.clear()
                 self.document_label.setText("No project build is loaded.")
                 self.set_status("Open a project before using the Editor.")
-                return
+                return "detached"
             documents = list_shape_documents(self.project_session)
             for document in documents:
                 self.document_selector.addItem(
@@ -221,13 +216,13 @@ class EditorPanel(QWidget):
                 self.set_status(
                     "This project has no native shape documents. Use Document → New Blank Document."
                 )
-                return
+                return "empty"
         except Exception as exc:
             self.document = None
             self.scene.clear()
             self.document_label.setText("Project build could not be loaded.")
             self.set_status(f"Editor document discovery failed: {exc}")
-            return
+            return "error"
         finally:
             self.document_selector.blockSignals(signals_were_blocked)
             self._refreshing_documents = False
@@ -240,6 +235,7 @@ class EditorPanel(QWidget):
         finally:
             self.document_selector.blockSignals(selection_signals_were_blocked)
         self.open_selected_document()
+        return "loaded"
 
     def open_selected_document(self, *_args) -> None:
         if self._refreshing_documents:
