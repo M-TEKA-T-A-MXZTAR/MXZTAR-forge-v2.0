@@ -17,6 +17,7 @@ AGENT_PAGE_INDEX = 3
 LIBRARY_PAGE_INDEX = 4
 SHAPE_LIBRARY_PAGE_INDEX = 5
 JOBS_PAGE_INDEX = 6
+START_HERE_PAGE_INDEX = 1
 EDITOR_NAV = {
     "icon": "✦",
     "label": "Editor",
@@ -41,6 +42,9 @@ class EditorForgeWindow(MXZTARForgeWindow):
         self.editor_panel.status_changed.connect(self.set_status)
         self.pages.insertWidget(EDITOR_PAGE_INDEX, self.editor_panel)
         self.start_here_panel.project_changed.connect(self.editor_panel.set_project_state)
+        self.start_here_panel.go_to_project_requested.connect(
+            self.open_current_project_in_editor
+        )
         self.editor_panel.set_project_state(self.project_session.state)
 
         editor_item = self.sidebar.item(EDITOR_PAGE_INDEX)
@@ -49,11 +53,29 @@ class EditorForgeWindow(MXZTARForgeWindow):
             item.setToolTip(EDITOR_NAV["tooltip"])
             self.sidebar.insertItem(EDITOR_PAGE_INDEX, item)
 
+        # The official launcher begins at project authority rather than the dashboard.
+        self.pages.setCurrentIndex(START_HERE_PAGE_INDEX)
+        self.sidebar.setCurrentRow(START_HERE_PAGE_INDEX)
+
     def focus_project_name(self) -> None:
         """Compatibility override: guided project identity now begins with Purpose."""
-        self._open_guided_page(1)
+        self._open_guided_page(START_HERE_PAGE_INDEX)
         self.start_here_panel.purpose_edit.setFocus()
         self.set_status("State the project Purpose, then use the pulsing Next control.")
+
+    def open_current_project_in_editor(self, state=None) -> None:
+        if state is None:
+            state = self.project_session.state
+        if state is None:
+            self.set_status("Open a project before going to its Editor build.")
+            return
+        self._open_guided_page(EDITOR_PAGE_INDEX)
+        self.editor_panel.load_project_build()
+        project_name = state.assessment.manifest.get(
+            "project_name", state.assessment.project_dir.name
+        )
+        self.set_status(f"Opened the current project build in Editor: {project_name}.")
+        self.refresh_guided_next_step()
 
     def open_guided_blank_document(self) -> None:
         self._open_guided_page(EDITOR_PAGE_INDEX)
@@ -61,7 +83,7 @@ class EditorForgeWindow(MXZTARForgeWindow):
         self.refresh_guided_next_step()
 
     def refresh_guided_next_step(self) -> None:
-        """Prefer Project Birth and one blank Editor document in the official shell."""
+        """Prefer Project Birth and the current Editor build in the official shell."""
         if not hasattr(self, "editor_panel"):
             super().refresh_guided_next_step()
             return
@@ -72,7 +94,10 @@ class EditorForgeWindow(MXZTARForgeWindow):
         state = self.project_session.state
         if state is None:
             purpose = self.start_here_panel.purpose_edit.text().strip()
-            if self._guided_project_name_edited and self.start_here_panel.create_project_button.isEnabled():
+            if (
+                self._guided_project_name_edited
+                and self.start_here_panel.create_project_button.isEnabled()
+            ):
                 self.set_guidance(
                     "Next: Create project",
                     self.start_here_panel.create_current_project,
@@ -80,8 +105,8 @@ class EditorForgeWindow(MXZTARForgeWindow):
                 )
             elif self.start_here_panel.project_selector.currentData():
                 self.set_guidance(
-                    "Next: Open selected project",
-                    self.start_here_panel.open_selected_project,
+                    "Next: Go to project",
+                    self.start_here_panel.go_to_selected_project,
                     self.start_here_panel.open_project_button,
                 )
             elif purpose and self.start_here_panel.create_project_button.isEnabled():
@@ -107,7 +132,7 @@ class EditorForgeWindow(MXZTARForgeWindow):
             self.set_guidance(
                 "Next: New blank document",
                 self.open_guided_blank_document,
-                self.editor_panel.new_button,
+                self.editor_panel.document_button,
             )
             return
 
@@ -161,7 +186,7 @@ class EditorForgeWindow(MXZTARForgeWindow):
     def open_page(self, index: int):
         self.pages.setCurrentIndex(index)
         if index == EDITOR_PAGE_INDEX:
-            self.editor_panel.refresh_documents()
+            self.editor_panel.load_project_build()
         elif index == SHAPE_LIBRARY_PAGE_INDEX:
             self.shape_panel.ensure_loaded()
 
