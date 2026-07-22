@@ -346,12 +346,7 @@ class StartHerePanel(QWidget):
         for key in self._saved_profile_keys:
             self.profile_fields[key].setText(profile.get(key, ""))
 
-        self.notes_edit.setPlainText(
-            "Workflow focus:\n"
-            f"{profile.get('workflow_focus', '')}\n\n"
-            "Optional profile context:\n"
-            f"{profile.get('primary_goal', '')}\n"
-        )
+        self.notes_edit.setPlainText(profile.get("primary_goal", ""))
 
         self.trust_edit.setPlainText(load_settings_notes())
         self.set_status("Loaded optional profile and trust notes.")
