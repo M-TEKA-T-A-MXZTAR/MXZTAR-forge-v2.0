@@ -1,1093 +1,615 @@
-# MXZTAR-forge v2.0 — Workflow Compatibility Matrix
+# MXZTAR Forge v2.0 — Workflow Compatibility Matrix
 
 ## 1. Purpose
 
-This document defines the input, dependency, readiness, caution, blocking, output, and failure contracts for each first-release MXZTAR-forge workflow.
+This document defines readiness, input, output, blocking, failure, and next-action rules for the 18 first-class Stage One–Two workflow families.
 
-Its purpose is to prevent the application from treating every source/workflow combination as automatically valid.
+It replaces the older assumption that the seven optional AI prompt contracts were the entire product workflow system.
 
-The compatibility layer should answer:
+The optional agent workflows remain supported jobs, but Forge is now organised around creator journeys that produce durable project value.
 
-* Can this workflow run?
-* Should this workflow run now?
-* What is missing?
-* What result should be expected?
-* What workflow should happen next?
-* What must the interface report if execution fails?
+The compatibility layer must answer:
 
-The compatibility layer is part of the product’s workflow intelligence, not merely defensive validation.
+- Can this workflow run?
+- Should it run now?
+- What is missing?
+- What durable result will it create or change?
+- What remains reversible?
+- What must the interface report on failure?
+- What is the next safe action?
+
+A workflow is not complete merely because text appears or a file is written.
 
 ---
 
-## 2. Compatibility States
+## 2. Workflow classes
 
-Every proposed workflow run must resolve to one of three states.
+### Workflow
+
+A user journey that creates a durable state change, reusable asset, validated handoff, or recoverable project result.
+
+### Operation
+
+A reversible or explicitly derived command inside a workflow.
+
+### Job
+
+Bounded work that may take time and must expose progress, elapsed time, cancellation, evidence, and truthful final state.
+
+---
+
+## 3. Compatibility states
+
+Every proposed workflow resolves to one state.
 
 ### READY
 
-The selected source and current project state satisfy the workflow’s required inputs.
+Required inputs and authority are present. The primary action may be enabled.
 
-The interface may enable:
+The UI still shows:
 
-```text
-Run Selected Workflow
-```
-
-The interface must still show:
-
-* selected source;
-* selected workflow;
-* expected output;
-* saved-output destination;
-* estimated resource class where available.
-
----
+- selected project and source where applicable;
+- expected durable output;
+- authority and approval implications;
+- storage destination;
+- reversibility or derivation boundary;
+- estimated resource class where available.
 
 ### CAUTION
 
-The workflow can run, but one or more optional dependencies, prior findings, or user directions are missing.
+The workflow can run, but optional context, validation, scale, prior review, or target-profile information is missing.
 
-The interface may permit execution, but must state:
+The UI states:
 
-* why the result may be weaker;
-* what additional input would improve it;
-* what assumptions the agent may need to make;
-* whether a different workflow should run first.
-
-The user should be able to deliberately continue.
-
----
+- why the result may be weaker;
+- which assumptions will be made;
+- what additional input would improve it;
+- whether another workflow should happen first;
+- whether the user may deliberately continue.
 
 ### BLOCKED
 
-The workflow lacks a required source, prior output, project state, or supported data type.
+A required project, source, artifact, authority, schema, adapter, or runtime dependency is missing or invalid.
 
-The interface must:
+The UI must:
 
-* disable the run action;
-* identify the missing requirement;
-* explain how to resolve it;
-* recommend one valid next action.
+- disable the primary action;
+- identify the missing requirement;
+- explain how to resolve it;
+- recommend one valid next action;
+- avoid creating a misleading output record.
 
-Blocked workflows must not silently submit malformed or meaningless requests to the model.
+### READ_ONLY
 
----
+The project is attached but writable authority is unavailable because of a lock, recovery condition, unsupported schema, or durability uncertainty.
 
-## 3. Shared Input Classes
-
-### IMAGE_SOURCE
-
-A supported visual source file.
-
-Initial supported formats:
-
-```text
-.png
-.jpg
-.jpeg
-.webp
-.bmp
-.tif
-.tiff
-```
-
-Minimum checks:
-
-* file exists;
-* file is readable;
-* extension is supported;
-* file size is greater than zero;
-* image decoder can open it;
-* dimensions are non-zero.
-
-Future checks may include:
-
-* colour mode;
-* resolution;
-* transparency;
-* corruption;
-* unusually large dimensions;
-* likely source suitability.
+Inspection and safe export of already-valid material may remain available. Mutations must be disabled.
 
 ---
 
-### USER_INTENT
+## 4. Shared authority and input classes
 
-Optional or required user direction describing what the creator wants from the source.
+### WRITABLE_PROJECT
 
-Examples:
+A validated project session for which the current Forge process owns the writer lease.
 
-* identify reusable modules;
-* focus on surfaces and panel systems;
-* extract geometric structure;
-* create a concept brief for a game environment;
-* prepare prompts for wall-art variations;
-* recommend the most commercially useful next step.
+### ATTACHED_PROJECT
 
-User intent must remain distinct from machine observations.
+A validated project attached in writable or read-only state.
 
----
+### PROJECT_PURPOSE
 
-### RAW_FINDING
+The exact creator statement used to begin a project. It is not a hidden profile and is preserved as the first project event.
 
-An unapproved workflow result.
+### SOURCE_ASSET
 
-A raw finding may contain useful material, but it has not yet been accepted by the user as project truth.
+A supported project-owned source copy with identity, hash, origin, rights notes where supplied, and unchanged external source bytes.
 
----
+### SOURCE_REGION
 
-### APPROVED_FINDING
+A bounded region of a SOURCE_ASSET with exact source coordinates.
 
-A result or selected portion of a result that the user has accepted for reuse in downstream workflows.
+### SHAPE_DOCUMENT
 
-Approved findings should eventually contain:
+A valid native editable shape document owned by the project.
 
-* source workflow;
-* source result ID;
-* approval time;
-* approved content;
-* optional user correction;
-* provenance reference.
+### SHAPE_CANDIDATE
 
----
+Manual, algorithmic, or model-proposed geometry that is editable but not approved.
 
-### PROJECT_STATE
+### APPROVED_SHAPE
 
-The current known state of a project, including:
+A reviewed Shape Library asset with durable approval and provenance.
 
-* selected source files;
-* completed workflow runs;
-* failed runs;
-* raw findings;
-* approved findings;
-* rejected findings;
-* briefs;
-* prompts;
-* structures;
-* exports;
-* user goal;
-* recommended next action.
+### CONSTRUCTION_RECIPE
+
+A declared reversible operation that derives a 3D component from a shape or primitive.
+
+### COMPONENT
+
+An editable 3D object with recipe, transform, parent, units, and validation state.
+
+### ASSEMBLY
+
+A recoverable hierarchy of components, instances, anchors, connectors, and declared relationships.
+
+### OUTPUT_PROFILE
+
+A named adapter and validator for a downstream format or program.
 
 ---
 
-## 4. Shared Execution Contract
+## 5. Shared execution contract
 
-Every workflow execution must record:
+Every asynchronous job records:
 
-* project identifier where available;
-* workflow key;
-* workflow contract version;
-* selected source;
-* source hash where practical;
-* user notes;
-* model;
-* start time;
-* completion time;
-* elapsed time;
-* compatibility result;
-* success or failure;
-* generated output;
-* error detail;
-* saved result path;
-* recommended next action.
+- project and workflow identifiers;
+- workflow contract version;
+- selected input artifact IDs;
+- source hash where applicable;
+- algorithm or model identity;
+- start and completion time;
+- elapsed time;
+- compatibility result;
+- terminal status;
+- saved evidence path;
+- output artifact IDs;
+- validation result;
+- error detail;
+- recommended next action.
 
-A written diagnostic file does not itself prove success.
-
-The result state must be determined from the workflow result contract.
+A saved diagnostic does not prove workflow success. A successful job does not imply user approval.
 
 ---
 
-# 5. Workflow Matrix
+# 6. Platform workflows
 
-## 5.1 Source-Art Intelligence
+## P1. Project lifecycle
 
-### Workflow key
-
-```text
-source_art_intelligence
-```
-
-### Purpose
-
-Inspect a source image as creative-production material rather than merely describing its visible subject.
-
-### Required input
-
-* one valid `IMAGE_SOURCE`.
-
-### Optional input
-
-* `USER_INTENT`;
-* project name;
-* intended output type;
-* audience or commercial use;
-* prior user notes.
-
-### Dependencies
-
-None.
-
-This is the preferred first workflow for a newly imported image.
-
-### Valid source types
-
-* PNG;
-* JPEG;
-* WEBP;
-* BMP;
-* TIFF.
-
-### READY conditions
-
-The workflow is ready when:
-
-* exactly one valid image is selected;
-* the file exists and is readable;
-* the local model is available;
-* the Ollama API is reachable;
-* no conflicting agent job is active.
-
-### CAUTION conditions
-
-Return caution when:
-
-* no user intent is supplied;
-* the image is extremely simple;
-* the image is unusually large;
-* the image contains very small or unclear detail;
-* the image appears to be a screenshot rather than source art;
-* the source contains many unrelated subjects;
-* the user expects exact factual identification that local visual inference cannot guarantee.
-
-Suggested message:
+**Journey**
 
 ```text
-This workflow can run, but adding a production goal will help the system identify more useful structures, motifs, and asset opportunities.
+Purpose → Create → Open → Work → Close → Reopen → Recover
 ```
 
-### BLOCKED conditions
+**Required input**
 
-Block when:
+- Create: valid PROJECT_PURPOSE and no attached project.
+- Open: selected canonical project and no attached project.
+- Close: attached project and no guarded mutation.
 
-* no source is selected;
-* the selected path does not exist;
-* the file cannot be decoded;
-* the source type is unsupported;
-* Ollama is unavailable;
-* the configured model is missing;
-* another AI workflow is already active.
+**READY**
 
-### Output contract
+- project root is accessible;
+- project name/slug can be derived safely;
+- no collision exists for creation;
+- session authority can be acquired or truthfully classified.
 
-The result should contain:
+**CAUTION**
 
-1. visible content;
-2. structural and layer observations;
-3. reusable motifs;
-4. reusable surfaces;
-5. candidate objects or components;
-6. production possibilities;
-7. uncertainties and quality risks;
-8. recommended next workflow.
+- project is opened read-only;
+- optional project metadata is absent;
+- migration is available but not yet applied.
 
-### Failure contract
+**BLOCKED**
 
-On failure, save:
+- Purpose is empty for creation;
+- path escapes the project root;
+- project already exists under the derived identity;
+- another guarded mutation is active;
+- schema is unsupported and no safe read-only path exists.
 
-* workflow key;
-* source path;
-* model;
-* error category;
-* error detail;
-* elapsed time;
-* diagnostic output path;
-* recovery recommendation.
+**Durable output**
 
-The UI must say:
+- project manifest;
+- writer lock where writable;
+- `project_created`, `project_opened`, `project_closed`, or recovery history event.
 
-```text
-Workflow failed
-```
+**Next**
 
-It must not say:
-
-```text
-Workflow completed successfully
-```
-
-merely because a diagnostic JSON file was saved.
-
-### Recommended next workflows
-
-Depending on findings:
-
-* `shape_structure_harvest`;
-* `modular_set_perspective`;
-* `concept_brief`;
-* `recommend_next_step`.
+- blank shape creation or source intake.
 
 ---
 
-## 5.2 Shape / Structure Harvest
+## P2. Source lifecycle
 
-### Workflow key
-
-```text
-shape_structure_harvest
-```
-
-### Purpose
-
-Identify reusable silhouettes, shapes, curves, layers, structural stacks, repeated forms, and potential extraction zones.
-
-### Required input
-
-* one valid `IMAGE_SOURCE`.
-
-### Optional input
-
-* source-art intelligence result;
-* approved visual findings;
-* user extraction goal;
-* intended output format.
-
-### Dependencies
-
-No mandatory prior workflow for the initial release.
-
-A source-art intelligence result is recommended.
-
-### READY conditions
-
-Ready when:
-
-* a supported image is selected;
-* the user has requested shape, structure, layer, or extraction analysis;
-* the image contains identifiable visual forms.
-
-### CAUTION conditions
-
-Return caution when:
-
-* no source-art intelligence result exists;
-* the image is heavily photographic with few separable structures;
-* the source is low resolution;
-* the user expects automatic vector tracing;
-* transparency or layer boundaries are unclear.
-
-Suggested message:
+**Journey**
 
 ```text
-This workflow can identify candidate structures, but it does not yet perform automatic vector extraction or guarantee clean production cut-outs.
+External source → Import copy → Hash → Preview → Use → Explicitly process project copy
 ```
 
-### BLOCKED conditions
+**Required input**
 
-Block when:
+- WRITABLE_PROJECT;
+- readable supported source file;
+- ownership or rights note when the user supplies one.
 
-* no readable source exists;
-* the selected item is not an image;
-* the file is corrupt;
-* the model or service is unavailable;
-* a job is already active.
+**READY**
 
-### Output contract
+- file can be decoded;
+- size and dimensions are within bounded intake rules;
+- no duplicate source identity conflict exists.
 
-The result should contain:
+**CAUTION**
 
-* major silhouettes;
-* geometric and organic forms;
-* repeated forms;
-* layer relationships;
-* structural stacks;
-* perspective cues;
-* extraction zones;
-* likely SVG/PNG candidates;
-* manual reconstruction guidance;
-* priority ranking.
+- format is importable but not model-ready;
+- source is unusually large or low resolution;
+- rights information is incomplete.
 
-### Failure contract
+**BLOCKED**
 
-The failure result must distinguish between:
+- no writable project;
+- source does not exist or cannot be decoded;
+- source path is unsafe;
+- duplicate handling cannot be resolved truthfully.
 
-* file failure;
-* image decoding failure;
-* model-service failure;
-* timeout;
-* malformed model output;
-* unsupported result shape.
+**Durable output**
 
-### Recommended next workflows
+- unchanged project-owned source copy;
+- source asset record and hash;
+- rebuildable preview;
+- manifest and history updates.
 
-* `modular_set_perspective`;
-* `concept_brief`;
-* `recommend_next_step`.
+**Next**
+
+- source-region/manual-trace, algorithmic extraction, optional AI proposal, or source review.
 
 ---
 
-## 5.3 Modular-Set Perspective
+## P3. Job lifecycle
 
-### Workflow key
-
-```text
-modular_set_perspective
-```
-
-### Purpose
-
-Interpret source art as a possible system of reusable construction modules.
-
-### Required input
-
-Initial release:
-
-* one valid `IMAGE_SOURCE`.
-
-Preferred mature contract:
-
-* one valid `IMAGE_SOURCE`;
-* one approved source-art intelligence or shape-harvest result.
-
-### Optional input
-
-* intended 2D or 3D use;
-* scale assumptions;
-* target engine or application;
-* desired module count;
-* user notes;
-* approved findings.
-
-### Dependencies
-
-Recommended:
-
-1. `source_art_intelligence`;
-2. `shape_structure_harvest`.
-
-### READY conditions
-
-Ready when:
-
-* source art is valid;
-* visible repeated forms or structural relationships exist;
-* the user wants modular, kitbash, environment, blockout, product-system, or component analysis.
-
-### CAUTION conditions
-
-Return caution when:
-
-* no prior findings have been approved;
-* the source contains few repeated forms;
-* the source is primarily photographic;
-* the user has not stated whether the target is 2D, 3D, environment, object, or interface work;
-* the workflow must infer modules not literally present in the image.
-
-All inferred modules must be labelled as speculative.
-
-Suggested message:
+**Journey**
 
 ```text
-This workflow may propose design extensions beyond what is directly visible. Speculative modules will be labelled separately from observed forms.
+Queued → Running → Succeeded / Failed / Cancelled / Timed out → Evidence → Next action
 ```
 
-### BLOCKED conditions
+**Required input**
 
-Block when:
+- declared workflow/job contract;
+- valid inputs;
+- available worker capacity;
+- known cancellation boundary.
 
-* no source is selected;
-* source validation fails;
-* the user requires production-ready geometry;
-* the user requires dimensional accuracy not available from the source;
-* a required approved finding is mandated by a future strict mode but is missing.
+**BLOCKED**
 
-### Output contract
+- conflicting heavy job already active;
+- required worker dependency missing;
+- output destination unavailable;
+- job contract lacks a truthful terminal-state path.
 
-The result should contain separate sections for:
+**Durable output**
 
-#### Observed modules
+- terminal evidence or diagnostic record;
+- elapsed time and execution metadata;
+- output artifact references where successful.
 
-Forms directly supported by the source.
+**Next**
 
-#### Inferred modules
-
-Plausible extensions derived from the source design language.
-
-#### Module families
-
-Groups such as:
-
-* panels;
-* ribs;
-* shells;
-* plates;
-* frames;
-* connectors;
-* joints;
-* towers;
-* surfaces;
-* trims;
-* interfaces.
-
-#### Relationships
-
-* parent/child;
-* attachment;
-* repetition;
-* symmetry;
-* stacking;
-* rotation;
-* scaling;
-* adjacency.
-
-#### Production direction
-
-* suggested naming;
-* extraction order;
-* blockout order;
-* potential 2D outputs;
-* potential future 3D outputs.
-
-### Failure contract
-
-A result must fail rather than fabricate confidence when:
-
-* no useful modular relationship can be identified;
-* the source is too unclear;
-* the model returns unusable or empty output;
-* required provenance cannot be recorded.
-
-### Recommended next workflows
-
-* `concept_brief`;
-* `render_prompt_pack`;
-* `recommend_next_step`.
+- review output, correct input, retry through an explicit action, or choose another workflow.
 
 ---
 
-## 5.4 Prototype Imagination
+## P4. Recovery, migration, and integrity
 
-### Workflow key
+**Required input**
 
-```text
-prototype_imagination
-```
+- ATTACHED_PROJECT or project directory selected for assessment.
 
-### Purpose
+**READY**
 
-Use source art as a design seed for possible products, machines, environments, interfaces, vehicles, tools, systems, or speculative concepts.
+- canonical files validate;
+- any migration has an explicit versioned rule;
+- recovery can preserve last valid truth.
 
-### Required input
+**CAUTION**
 
-* one valid `IMAGE_SOURCE`;
-* one `USER_INTENT`.
+- stale temporary files exist but canonical truth is valid;
+- rebuildable index is missing;
+- project opens read-only pending user action.
 
-### Optional input
+**BLOCKED**
 
-* source-art intelligence result;
-* approved motifs;
-* approved structures;
-* target audience;
-* target industry;
-* physical or digital constraint;
-* production limits.
+- competing authorities cannot be reconciled safely;
+- required migration is unavailable;
+- durability state is uncertain and mutation would risk canonical truth.
 
-### Dependencies
+**Durable output**
 
-Recommended:
+- validation, recovery, migration, or index-rebuild record;
+- no silent modification during assessment.
 
-* `source_art_intelligence`.
+**Next**
 
-### READY conditions
-
-Ready when:
-
-* the source is valid;
-* the user has stated an intended prototype category or problem space;
-* speculative output is acceptable.
-
-### CAUTION conditions
-
-Return caution when:
-
-* user intent is vague;
-* no audience or use case is provided;
-* the source has little connection to functional design;
-* the user may mistake speculative concepts for engineering feasibility.
-
-Suggested message:
-
-```text
-This workflow generates speculative concept directions. It does not verify engineering feasibility, safety, manufacturing suitability, or regulatory compliance.
-```
-
-### BLOCKED conditions
-
-Block when:
-
-* no user intent exists;
-* the user requests certified engineering output;
-* the requested result would require legal, safety, medical, structural, or technical certification;
-* the source is invalid;
-* the model is unavailable.
-
-### Output contract
-
-The result should contain:
-
-* prototype name;
-* user problem;
-* proposed function;
-* observed source influence;
-* speculative extensions;
-* primary components;
-* interaction model;
-* possible audience;
-* production considerations;
-* constraints;
-* risks;
-* next validation step.
-
-### Failure contract
-
-Failure must be reported when:
-
-* the model returns only generic image description;
-* no prototype relationship can be explained;
-* the output does not distinguish observation from speculation;
-* the result makes unsupported feasibility claims.
-
-### Recommended next workflows
-
-* `concept_brief`;
-* `render_prompt_pack`;
-* `recommend_next_step`.
+- reopen writable, remain read-only, restore backup, or apply explicit migration.
 
 ---
 
-## 5.5 Concept Brief
+# 7. Stage One workflows
 
-### Workflow key
+## S1. Blank Shape Creation
 
-```text
-concept_brief
-```
+**Required input:** WRITABLE_PROJECT.
 
-### Purpose
+**READY:** native shape schema supported; no conflicting document transaction active.
 
-Turn selected source art, approved findings, and user intent into a coherent production brief.
+**BLOCKED:** project read-only; storage or manifest transaction unavailable.
 
-### Required input
+**Durable output:** canonical SHAPE_DOCUMENT, manifest registration, history event.
 
-At least one of:
-
-* valid source art plus `USER_INTENT`;
-* approved source-art intelligence plus `USER_INTENT`;
-* approved modular or prototype findings plus `USER_INTENT`.
-
-### Optional input
-
-* target audience;
-* product category;
-* intended deliverables;
-* platform;
-* visual constraints;
-* production budget;
-* hardware constraints;
-* commercial purpose;
-* deadline.
-
-### Dependencies
-
-Preferred:
-
-* one completed source-analysis workflow;
-* at least one approved finding.
-
-### READY conditions
-
-Ready when:
-
-* user intent exists;
-* sufficient project context exists;
-* the desired output can be described.
-
-### CAUTION conditions
-
-Return caution when:
-
-* only raw findings exist;
-* no findings have been approved;
-* audience is unknown;
-* output format is unknown;
-* production limitations are not stated.
-
-Suggested message:
-
-```text
-A brief can be generated now, but approving the most useful findings first will reduce speculation and improve consistency.
-```
-
-### BLOCKED conditions
-
-Block when:
-
-* no source, findings, or project intent exists;
-* the user requests a brief with no identifiable objective;
-* prerequisite project data cannot be read.
-
-### Output contract
-
-The brief should contain:
-
-* title;
-* source references;
-* production objective;
-* user/audience problem;
-* intended use;
-* visual direction;
-* approved motifs and structures;
-* required deliverables;
-* constraints;
-* exclusions;
-* risks;
-* production order;
-* acceptance criteria;
-* recommended next workflow.
-
-### Failure contract
-
-Fail when:
-
-* the output lacks a production objective;
-* the output invents approved findings;
-* source provenance is lost;
-* required sections are missing;
-* the result cannot be parsed or stored.
-
-### Recommended next workflows
-
-* `render_prompt_pack`;
-* concept-folder assembly;
-* `recommend_next_step`.
+**Next:** shape editing.
 
 ---
 
-## 5.6 Render Prompt Pack
+## S2. Source Region and Manual Trace
 
-### Workflow key
+**Required input:** WRITABLE_PROJECT, SOURCE_ASSET, selected SOURCE_REGION.
 
-```text
-render_prompt_pack
-```
+**READY:** source preview and coordinate mapping are available.
 
-### Purpose
+**CAUTION:** scale or perspective is unknown; fine detail may require manual interpretation.
 
-Create reusable visual-generation prompts based on approved project intent and findings.
+**BLOCKED:** no source region; source identity or coordinate mapping unavailable.
 
-### Required input
+**Durable output:** editable SHAPE_CANDIDATE with source coordinates and provenance.
 
-Initial release:
-
-* valid source art or concept brief;
-* `USER_INTENT`.
-
-Preferred contract:
-
-* approved concept brief;
-* approved visual findings.
-
-### Optional input
-
-* target image model;
-* dimensions;
-* aspect ratio;
-* intended medium;
-* material direction;
-* lighting direction;
-* composition;
-* colour constraints;
-* prohibited elements;
-* variation count.
-
-### Dependencies
-
-Preferred:
-
-1. `concept_brief`;
-2. approved findings.
-
-### READY conditions
-
-Ready when:
-
-* a clear intended visual result exists;
-* source provenance is available;
-* the prompt pack can reference approved design intent.
-
-### CAUTION conditions
-
-Return caution when:
-
-* no concept brief exists;
-* findings are still raw;
-* no target generator is specified;
-* no output dimensions or medium are known;
-* the source has licensing or ownership uncertainty.
-
-Suggested message:
-
-```text
-The prompt pack can be generated, but model-specific wording and output controls may need manual adjustment.
-```
-
-### BLOCKED conditions
-
-Block when:
-
-* no intended output is defined;
-* no source or approved project material exists;
-* the request requires prohibited, unlawful, or harmful content;
-* source ownership or permission is explicitly disputed;
-* project data cannot be read.
-
-### Output contract
-
-The pack should contain:
-
-* prompt-pack title;
-* source/project reference;
-* primary prompt;
-* controlled variants;
-* composition variants;
-* material variants;
-* lighting variants;
-* negative constraints;
-* consistency anchors;
-* target-model notes;
-* intended use;
-* provenance record.
-
-### Failure contract
-
-Fail when:
-
-* the result is only one unstructured prompt;
-* source intent is lost;
-* variants contradict approved constraints;
-* provenance is missing;
-* output cannot be stored.
-
-### Recommended next workflows
-
-* manual review;
-* My Prompts save;
-* concept-folder assembly;
-* `recommend_next_step`.
+**Next:** shape editing, review, or rejection.
 
 ---
 
-## 5.7 Recommend Next Step
+## S3. Algorithmic Shape Extraction
 
-### Workflow key
+**Required input:** WRITABLE_PROJECT and SOURCE_REGION.
 
-```text
-recommend_next_step
-```
+**READY:** bounded extraction engine available; settings validate.
 
-### Purpose
+**CAUTION:** photographic or noisy source; uncertain holes or boundaries; low resolution.
 
-Choose one sensible next action based on project state, completed work, missing inputs, and the user’s goal.
+**BLOCKED:** engine unavailable; unsafe workload; unsupported source derivative; conflicting job active.
 
-### Required input
+**Durable output:** one or more raw editable SHAPE_CANDIDATE records plus job evidence.
 
-* readable `PROJECT_STATE`.
-
-For a new untracked source, the selected image may act as minimal project state.
-
-### Optional input
-
-* user goal;
-* time available;
-* preferred output;
-* approved findings;
-* previous failures;
-* resource state.
-
-### Dependencies
-
-None, but its value increases as project history grows.
-
-### READY conditions
-
-Ready when:
-
-* the system can inspect at least one selected source or existing project record.
-
-### CAUTION conditions
-
-Return caution when:
-
-* no user goal is known;
-* project records are incomplete;
-* previous runs exist but have not been reviewed;
-* the recommendation depends on assumptions.
-
-### BLOCKED conditions
-
-Block when:
-
-* no source or project state exists;
-* project state is unreadable;
-* another process is currently modifying the same project state;
-* the system cannot identify any valid next action.
-
-### Output contract
-
-The result must contain exactly one primary recommendation:
-
-* next action;
-* reason;
-* required input;
-* expected result;
-* compatibility state;
-* what not to do yet.
-
-Optional alternatives may be listed after the primary recommendation, but must not replace it with a confusing menu.
-
-### Failure contract
-
-Fail when:
-
-* multiple equal actions are returned without prioritisation;
-* the recommendation refers to unavailable UI controls;
-* the recommendation ignores blocked dependencies;
-* project state was not actually inspected.
-
-### Recommended next workflows
-
-The recommendation itself selects the next workflow.
+**Next:** compare candidates and open one in shape editing.
 
 ---
 
-# 6. Initial Compatibility Summary
+## S4. Optional AI Shape Proposal
 
-| Workflow                  |          Image required | User intent required | Prior approved finding required | Can run as first workflow |
-| ------------------------- | ----------------------: | -------------------: | ------------------------------: | ------------------------: |
-| Source-art intelligence   |                     Yes |                   No |                              No |                       Yes |
-| Shape / structure harvest |                     Yes |                   No |                              No |         Yes, with caution |
-| Modular-set perspective   |                     Yes |                   No |                    No initially |         Yes, with caution |
-| Prototype imagination     |                     Yes |                  Yes |                              No |          Only with intent |
-| Concept brief             |             Conditional |                  Yes |                       Preferred |         Usually not first |
-| Render prompt pack        |             Conditional |                  Yes |                       Preferred |         Usually not first |
-| Recommend next step       | Source or project state |                   No |                              No |                       Yes |
+**Required input:** WRITABLE_PROJECT, model-ready SOURCE_REGION, available configured model.
 
----
+**READY:** local model reachable; no conflicting heavy job; provenance can be recorded.
 
-# 7. Compatibility Assessment Output Shape
+**CAUTION:** model may infer geometry not visibly supported; scale, depth, or hidden surfaces unknown.
 
-The future compatibility assessor should return a stable structure comparable to:
+**BLOCKED:** model missing; service unreachable; source format not model-ready; no source coordinates; user disabled AI.
 
-```json
-{
-  "workflow_key": "modular_set_perspective",
-  "status": "caution",
-  "reason": "The source is valid, but no approved structural findings exist.",
-  "missing_requirements": [],
-  "recommended_improvements": [
-    "Run source_art_intelligence first",
-    "Approve useful structural findings"
-  ],
-  "can_run": true,
-  "recommended_alternative": "source_art_intelligence",
-  "expected_output": "A provisional modular-set proposal with speculative ideas labelled separately."
-}
-```
+**Durable output:** raw proposal/evidence and optional editable SHAPE_CANDIDATE; never automatic approval.
 
-Allowed status values:
-
-```text
-ready
-caution
-blocked
-```
+**Next:** manual correction, rejection, or comparison with source.
 
 ---
 
-# 8. Interface Behaviour Contract
+## S5. Shape Editing
 
-When workflow selection changes, the application should display:
+**Required input:** WRITABLE_PROJECT and valid SHAPE_DOCUMENT or SHAPE_CANDIDATE.
 
-* compatibility state;
-* reason;
-* required inputs;
-* missing inputs;
-* expected output;
-* recommended prior workflow;
-* whether execution is enabled.
+**READY:** command schema supported; document within bounds; writable authority retained.
 
-### READY
+**CAUTION:** candidate contains unresolved self-intersections, open contours, or uncertain scale.
 
-```text
-Status: Ready
-Action: Run Selected Workflow
-```
+**BLOCKED:** document invalid or oversized; project read-only; command unsupported; transaction marker requires recovery.
 
-### CAUTION
+**Durable output:** autosave or canonical shape revision with replayable command history.
 
-```text
-Status: Caution
-Action: Continue deliberately
-Recommended first: [workflow]
-```
-
-### BLOCKED
-
-```text
-Status: Blocked
-Run control: disabled
-Next action: [specific correction]
-```
-
-The compatibility message must be visible before execution begins.
+**Next:** continue editing, 2D composition, review, or export after approval.
 
 ---
 
-# 9. Planning Decisions Still Required
+## S6. 2D Composition
 
-The following require later system-design decisions:
+**Required input:** two or more compatible editable shapes or paths.
 
-1. Whether concept briefs require approved findings in strict mode.
-2. Whether prompt packs may run directly from source art.
-3. How approval and rejection are represented.
-4. How project state is versioned.
-5. How source hashes are stored.
-6. How large-image limits are calculated.
-7. How timeouts differ by hardware class.
-8. Whether a failed workflow can be retried with modified settings.
-9. How compatibility rules are versioned.
-10. How the selected formal open-source licence and official release policy interact
-    with offline installation, updates, forks, and local project access.
+**READY:** selected geometry shares a supported coordinate and unit context.
+
+**CAUTION:** mixed open/closed paths, self-intersections, uncertain winding, or destructive-looking result.
+
+**BLOCKED:** no valid selection; incompatible units or coordinate spaces; operation lacks a reversible/derived result contract.
+
+**Durable output:** grouped relationship, connected path, compound shape, or named boolean derivative with parent IDs.
+
+**Next:** shape editing or review.
 
 ---
 
-# 10. Next Planning Event
+## S7. Review and Shape Library
 
-Create:
+**Required input:** valid reviewed shape revision and WRITABLE_PROJECT.
 
-```text
-docs/product/OUTPUT_ARTIFACT_CONTRACTS.md
-```
+**READY:** provenance, integrity, bounds, and validation state are present.
 
-That document must define the durable files produced by each workflow, including:
+**CAUTION:** dimensional assumptions or source uncertainty remain and must be declared.
 
-* filename pattern;
-* directory;
-* schema version;
-* required fields;
-* provenance;
-* success/failure state;
-* validation;
-* approval state;
-* migration expectations.
+**BLOCKED:** raw model text without editable geometry; invalid document; missing provenance; unresolved corruption.
 
-No new workflow should be considered complete until its output artifact contract is defined and verifiable.
+**Durable output:** approval, rejection, correction-request, version, or supersession record; approved Shape Library asset where accepted.
+
+**Next:** reuse, 2D export, or Stage Two construction recipe.
+
+---
+
+## S8. 2D Export and Forge Pack
+
+**Required input:** APPROVED_SHAPE or approved composition and available OUTPUT_PROFILE.
+
+**READY:** adapter and profile validator pass; destination is writable.
+
+**CAUTION:** target profile requires flattening or loses unsupported features.
+
+**BLOCKED:** no approved input; adapter unverified; validation fails; destination collision unresolved.
+
+**Durable output:** SVG and/or PNG derivative, export report, provenance record, and deterministic Forge Pack where requested.
+
+**Next:** downstream continuation or Stage Two construction.
+
+---
+
+# 8. Stage Two workflows
+
+## T1. Declared 3D Primitive Creation
+
+**Required input:** WRITABLE_PROJECT and supported primitive definition.
+
+**READY:** units, dimensions, origin, and component schema validate.
+
+**BLOCKED:** no writable project; invalid dimensions; unsupported primitive.
+
+**Durable output:** editable COMPONENT and creation recipe.
+
+**Next:** component editing or assembly.
+
+---
+
+## T2. Shape-to-Component Generation
+
+**Required input:** APPROVED_SHAPE and supported CONSTRUCTION_RECIPE.
+
+**READY:** shape topology is compatible with the chosen recipe; units and axis assumptions are declared.
+
+**CAUTION:** open paths, holes, relief depth, or scale require assumptions.
+
+**BLOCKED:** unapproved or invalid shape; unsupported recipe; regeneration cannot preserve parent provenance.
+
+**Durable output:** CONSTRUCTION_RECIPE and editable COMPONENT linked to the parent shape.
+
+**Next:** component editing or assembly.
+
+---
+
+## T3. Component Editing
+
+**Required input:** editable COMPONENT with valid recipe/history.
+
+**READY:** component regenerates within workload and schema bounds.
+
+**CAUTION:** parameter change may create intersections, open boundaries, or export limitations.
+
+**BLOCKED:** baked-only geometry with no editable recipe; invalid parent; project read-only.
+
+**Durable output:** updated recipe/component revision and construction history.
+
+**Next:** assembly, validation, or export.
+
+---
+
+## T4. Assembly and Constraint
+
+**Required input:** two or more COMPONENT records or instances.
+
+**READY:** units and coordinate system compatible; anchors/connectors validate.
+
+**CAUTION:** contact is visually plausible but not dimensionally authoritative; hierarchy may be deep or cyclic.
+
+**BLOCKED:** incompatible units; cyclic hierarchy; missing component identity; unsupported constraint.
+
+**Durable output:** ASSEMBLY with hierarchy, instances, transforms, anchors, connectors, and relationship records.
+
+**Next:** geometry relationship/merge or validation/export.
+
+---
+
+## T5. Geometry Relationship and Merge
+
+**Required input:** compatible selected components and explicit operation choice.
+
+**READY:** operation validator can preview and preserve named inputs or create a declared derivative.
+
+**CAUTION:** tolerance, open boundaries, normals, self-intersections, or topology loss require disclosure.
+
+**BLOCKED:** ambiguous “join” request; unsupported geometry; irreversible bake not explicitly confirmed; result cannot be validated.
+
+**Durable output:** relationship record, reversible history step, or explicit baked derivative with parent mapping.
+
+**Next:** component correction, assembly continuation, or 3D validation/export.
+
+---
+
+## T6. 3D Validation, Export, and Continuation
+
+**Required input:** valid COMPONENT or ASSEMBLY and verified GLB/glTF or OBJ OUTPUT_PROFILE.
+
+**READY:** units, axes, names, hierarchy, geometry, and destination validate.
+
+**CAUTION:** target profile loses materials, instances, hierarchy, or construction history.
+
+**BLOCKED:** adapter unverified; fatal mesh validation; unsupported hierarchy; no named downstream continuation test.
+
+**Durable output:** GLB/glTF or OBJ derivative, validation report, provenance, limitations, and downstream continuation evidence.
+
+**Next:** continue in the named downstream tool or return to Forge for correction.
+
+---
+
+# 9. Optional agent jobs
+
+The seven prompt contracts remain optional assistance:
+
+- `source_art_intelligence`;
+- `modular_set_perspective`;
+- `prototype_imagination`;
+- `shape_structure_harvest`;
+- `concept_brief`;
+- `render_prompt_pack`;
+- `recommend_next_step`.
+
+They use the shared Job lifecycle and must still distinguish READY, CAUTION, and BLOCKED.
+
+Common blocks include:
+
+- no valid source;
+- unsupported or non-model-ready format;
+- model unavailable;
+- Ollama unreachable;
+- conflicting heavy job;
+- missing provenance destination;
+- user-disabled AI.
+
+Their outputs begin as raw findings or planning artifacts. They do not become approved shapes, components, assemblies, or export authority without the corresponding Stage One or Stage Two review path.
+
+---
+
+## 10. Guided next-action rules
+
+The guided Next system may:
+
+- identify the current workflow family;
+- select an exact source or document;
+- navigate to the required workspace;
+- focus the next safe control;
+- explain why an action is READY, CAUTION, BLOCKED, or READ_ONLY.
+
+It must not silently:
+
+- create or switch projects;
+- start a heavy model or extraction job;
+- approve or reject an artifact;
+- apply a boolean, stitch, join, or bake;
+- delete or process a source;
+- export.
+
+---
+
+## 11. Verification requirement
+
+Every workflow family requires proportionate evidence:
+
+- schema and pure-logic validation;
+- authority and persistence tests;
+- failure and recovery tests;
+- UI enable/disable and truthful status tests;
+- thread/cancellation tests for jobs;
+- command undo/redo and replay tests for operations;
+- manual T1700 smoke checks;
+- downstream import or continuation evidence for output profiles.
+
+No workflow is `VERIFIED` solely because its code was merged.
