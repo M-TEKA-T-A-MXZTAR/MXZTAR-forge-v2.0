@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QApplication
 from core.project_access import LOCK_FILENAME, ProjectAccessStatus
 from core import project_session as session_module
 from core.project_access import ProjectLockedError, acquire_project_lock, release_project_lock
-from core.project_manifest import create_project
+from core.project_manifest import create_project, project_name_from_purpose, project_slug
 from core.project_session import (
     ProjectSession,
     ProjectSessionError,
@@ -34,14 +34,19 @@ def main() -> None:
         root = Path(temporary)
         writer_session = ProjectSession(root)
         panel = StartHerePanel(writer_session)
-        panel.profile_fields["project_name"].setText("Session Contract")
-        panel.profile_fields["primary_goal"].setText("Verify truthful project authority.")
+        purpose = "Verify truthful project authority"
+        panel.purpose_edit.setText(purpose)
         panel.create_current_project()
-        project_dir = root / "session-contract"
+        project_name = project_name_from_purpose(purpose)
+        project_dir = root / project_slug(project_name)
         require(writer_session.is_writable, "created project did not acquire a writer lease")
         require((project_dir / LOCK_FILENAME).is_file(), "writer lock was not created")
         require(not panel.create_project_button.isEnabled(), "active session allows another create")
         require(panel.close_project_button.isEnabled(), "active session cannot be closed")
+        require(
+            writer_session.state.assessment.manifest["primary_goal"] == purpose,
+            "created project did not retain its Purpose",
+        )
         print("PASS: Start Here creates one canonical writable project session")
 
         reader_session = ProjectSession(root)
