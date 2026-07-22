@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Purpose-driven Project Birth and its official Editor handoff."""
+"""Verify Purpose-driven Project Birth and official project-to-Editor routing."""
 
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ from core.project_manifest import (  # noqa: E402
     project_slug,
 )
 from core.project_session import ProjectSession  # noqa: E402
+from core.shape_document import create_blank_shape_document  # noqa: E402
 from qt_editor_app import EditorForgeWindow  # noqa: E402
 from qt_panels import my_library_panel as library_module  # noqa: E402
 from qt_panels.start_here_panel import StartHerePanel  # noqa: E402
@@ -60,9 +61,14 @@ def main() -> int:
             panel.project_actions_layout.itemAt(3).widget() is panel.close_project_button,
             "Close Project is not positioned to the right of Create Project",
         )
+        require(
+            [action.text() for action in panel.open_project_menu.actions()]
+            == ["Open Project", "Go to Project"],
+            "Open Selected does not expose the two real project-routing choices",
+        )
         require(not panel.create_project_button.isEnabled(), "blank Purpose enabled creation")
         require(not panel.close_project_button.isEnabled(), "detached panel enabled close")
-        print("PASS: Start Here exposes the required two-row Project Authority layout")
+        print("PASS: Start Here exposes Project Birth and project-routing controls")
 
         panel.purpose_edit.setText("---")
         require(
@@ -107,11 +113,11 @@ def main() -> int:
         index = panel.project_selector.findData(str(expected_dir))
         require(index >= 0, "created project was not discoverable after close")
         panel.project_selector.setCurrentIndex(index)
-        panel.open_selected_project()
+        panel.open_project_action.trigger()
         require(panel.purpose_edit.text() == purpose, "reopen did not display project Purpose")
         require(not panel.purpose_edit.isEnabled(), "reopened project allowed Purpose editing")
         require(panel.close_project(), "reopened project did not close")
-        print("PASS: closing clears fresh input and reopening restores project Purpose")
+        print("PASS: Open Project attaches authority without leaving Start Here")
 
         long_purpose = "Design a modular propulsion housing system " + ("with service panels " * 8)
         long_name = project_name_from_purpose(long_purpose)
@@ -164,6 +170,11 @@ def main() -> int:
         guided_session = ProjectSession(guided_root)
         with patch.object(library_module, "scan_source_art", return_value=[]):
             window = EditorForgeWindow(guided_session)
+            require(
+                window.sidebar.currentRow() == 1
+                and window.pages.currentWidget() is window.start_here_panel,
+                "official launcher did not begin on Start Here",
+            )
             window.start_here_panel.purpose_edit.setText("Create a reusable panel shape")
             window.refresh_guided_next_step()
             require(
@@ -181,8 +192,8 @@ def main() -> int:
                 "Project Birth did not offer the blank Editor path",
             )
             require(
-                window._guided_target is window.editor_panel.new_button,
-                "blank-document guidance did not target the Editor control",
+                window._guided_target is window.editor_panel.document_button,
+                "blank-document guidance did not target the Document menu",
             )
             window.perform_guided_next_step()
             require(window.editor_panel.has_open_document(), "guided blank document was not created")
@@ -194,10 +205,43 @@ def main() -> int:
             window.deleteLater()
         print("PASS: official guided flow moves from Purpose to project to blank Editor document")
 
+        navigation_root = Path(temporary) / "navigation-projects"
+        seed_session = ProjectSession(navigation_root)
+        seed_state = seed_session.create_and_open(
+            "Existing Project Build", "Open the current project build in Editor"
+        )
+        create_blank_shape_document(seed_session, title="Existing Build Document")
+        seed_dir = seed_state.assessment.project_dir
+        seed_session.close()
+
+        navigation_session = ProjectSession(navigation_root)
+        with patch.object(library_module, "scan_source_art", return_value=[]):
+            navigation_window = EditorForgeWindow(navigation_session)
+            project_index = navigation_window.start_here_panel.project_selector.findData(
+                str(seed_dir)
+            )
+            require(project_index >= 0, "existing project was not available in Start Here")
+            navigation_window.start_here_panel.project_selector.setCurrentIndex(project_index)
+            navigation_window.start_here_panel.go_to_project_action.trigger()
+            app.processEvents()
+            require(navigation_session.is_writable, "Go to Project did not acquire project authority")
+            require(
+                navigation_window.pages.currentWidget() is navigation_window.editor_panel,
+                "Go to Project did not navigate to Editor",
+            )
+            require(
+                navigation_window.editor_panel.document is not None
+                and navigation_window.editor_panel.document["title"] == "Existing Build Document",
+                "Editor did not display the selected project's current build",
+            )
+            navigation_session.close()
+            navigation_window.deleteLater()
+        print("PASS: Go to Project opens Editor and displays the current project build")
+
         panel.deleteLater()
         app.processEvents()
 
-    print("PASS: Purpose-driven Project Birth contract verified")
+    print("PASS: Purpose-driven Project Birth and routing contract verified")
     return 0
 
 
