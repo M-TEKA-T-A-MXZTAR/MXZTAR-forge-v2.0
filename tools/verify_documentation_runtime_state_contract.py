@@ -57,7 +57,7 @@ def main() -> int:
     )
 
     require_text(ledger, "**Ledger date:** 27 July 2026", "Progress Ledger date is stale")
-    for pr_number in range(54, 62):
+    for pr_number in range(54, 64):
         require_text(
             ledger,
             f"PR #{pr_number}",
@@ -65,23 +65,33 @@ def main() -> int:
         )
     require_text(
         ledger,
-        "PR #61 mouse-wheel page scrolling and pinned Editor options",
-        "Progress Ledger does not identify the current interaction correction",
+        "PR #63 live 3D output reveal and wheel-event routing",
+        "Progress Ledger does not identify the current live interaction correction",
     )
     require_text(
         ledger,
-        "DETERMINISTICALLY VERIFIED on the PR #61 branch; T1700 live acceptance pending",
-        "Progress Ledger overstates or omits the PR #61 evidence boundary",
+        "DETERMINISTICALLY VERIFIED on the PR #63 branch; T1700 live acceptance pending",
+        "Progress Ledger overstates or omits the PR #63 evidence boundary",
     )
     require_text(
         ledger,
-        "the 3D output consumed every wheel event as zoom",
-        "Progress Ledger does not record the live scrolling defect truthfully",
+        "left the object viewport below the current visible page range",
+        "Progress Ledger does not record the live output-visibility defect",
+    )
+    require_text(
+        ledger,
+        "still allowed the real wheel event to scroll the outer page",
+        "Progress Ledger does not record the live wheel-propagation defect",
+    )
+    require_text(
+        ledger,
+        "real `QWheelEvent` objects are sent through Qt",
+        "Progress Ledger does not preserve real-event verification",
     )
     forbid_text(
         ledger,
-        "Current branch: `agent/smart-positioning-guides`",
-        "Progress Ledger reverted to the merged PR #60 branch",
+        "Current branch: `agent/restore-mouse-wheel-scrolling`",
+        "Progress Ledger reverted to the merged PR #61 branch",
     )
 
     require_text(
@@ -127,28 +137,48 @@ def main() -> int:
     )
     require_text(
         capability,
-        "Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on PR #61 branch",
-        "Capability boundary does not record the PR #61 scrolling correction",
+        "Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main",
+        "Capability boundary does not record the merged default scrolling correction",
     )
     require_text(
         capability,
-        "Pinned Editor options | DETERMINISTICALLY VERIFIED on PR #61 branch",
+        "Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch",
+        "Capability boundary does not record real-event 3D zoom authority",
+    )
+    require_text(
+        capability,
+        "Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch",
+        "Capability boundary does not record active output visibility",
+    )
+    require_text(
+        capability,
+        "Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main",
         "Capability boundary does not preserve always-visible Editor options",
     )
     require_text(
         capability,
-        "`Scroll page` is the default",
+        "`Scroll page` is the first-run default",
         "Capability boundary does not preserve page scrolling as the default wheel mode",
     )
     require_text(
         capability,
-        "Scroll page; Ctrl+wheel zoom",
-        "Capability boundary does not preserve the modifier zoom option",
+        "An authorised 3D zoom event is delivered once, accepted, and consumed before page propagation",
+        "Capability boundary permits zoom events to leak into page scrolling",
+    )
+    require_text(
+        capability,
+        "Selecting 2D or 3D brings the active output into visible page range after layout settles",
+        "Capability boundary does not preserve active-output reveal",
     )
     require_text(
         capability,
         "Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom",
         "Capability boundary does not preserve the pinned options tree requirement",
+    )
+    require_text(
+        capability,
+        "Deterministic verification now uses real `QWheelEvent` delivery through Qt",
+        "Capability boundary relies on fake direct handler verification",
     )
     require_text(
         capability,
@@ -193,9 +223,9 @@ def main() -> int:
     )
 
     print("PASS: README reflects the verified merged shape/object runtime boundary")
-    print("PASS: Progress Ledger records PRs #54-#61 and the current interaction gate")
-    print("PASS: capability authority records merged guides and PR61 wheel routing truthfully")
-    print("PASS: pinned options, tracing, Ollama, library insertion, and merge boundaries remain truthful")
+    print("PASS: Progress Ledger records PRs #54-#63 and the current live interaction gate")
+    print("PASS: capability authority records real wheel delivery and active-output reveal truthfully")
+    print("PASS: pinned options, guides, tracing, Ollama, library insertion, and merge boundaries remain truthful")
     print("PASS: Source Truth protects the present-tense capability authority")
     return 0
 
