@@ -12,6 +12,9 @@ README_PATH = PROJECT_ROOT / "README.md"
 SOURCE_TRUTH_PATH = PROJECT_ROOT / "docs" / "SOURCE_OF_TRUTH.md"
 LEDGER_PATH = PROJECT_ROOT / "docs" / "PROGRESS_LEDGER.md"
 MASTER_PLAN_PATH = PROJECT_ROOT / "docs" / "product" / "MASTER_BUILD_PLAN.md"
+ARCHITECTURE_PATH = (
+    PROJECT_ROOT / "docs" / "product" / "ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md"
+)
 CAPABILITY_PATH = PROJECT_ROOT / "docs" / "product" / "CURRENT_CAPABILITY_BOUNDARY.md"
 
 
@@ -38,6 +41,7 @@ def main() -> int:
     source_truth = read(SOURCE_TRUTH_PATH)
     ledger = read(LEDGER_PATH)
     master = read(MASTER_PLAN_PATH)
+    architecture = read(ARCHITECTURE_PATH)
     capability = read(CAPABILITY_PATH)
 
     require_text(
@@ -118,6 +122,120 @@ def main() -> int:
         master,
         "implement Project Birth and the corrected Start Here authority layout",
         "Master Plan reverted to planning already-completed Project Birth work",
+    )
+
+    require_text(
+        source_truth,
+        "docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md",
+        "Source-of-Truth hierarchy does not promote the active asset-generation addendum",
+    )
+    require_text(
+        source_truth,
+        "Where its nearer engineering sequence conflicts with an older immediate-sequence list, this addendum wins",
+        "Source-of-Truth policy does not resolve active sequencing conflicts",
+    )
+    require_text(
+        source_truth,
+        "a versioned shipped starter source-asset pack",
+        "Source-of-Truth policy does not preserve the brought-forward starter asset decision",
+    )
+    require_text(
+        source_truth,
+        "object groups, recoverable assemblies, visual seams, mesh stitch or weld, join mesh, booleans, separate, and bake",
+        "Source-of-Truth policy collapses distinct Construct operations",
+    )
+
+    require_text(
+        architecture,
+        "founder-authorised active Stage One–Two sequencing addendum",
+        "Asset-generation architecture lacks active founder-authorised status",
+    )
+    require_text(
+        architecture,
+        "editable path authority",
+        "Asset-generation architecture does not begin with editable geometry authority",
+    )
+    require_text(
+        architecture,
+        "shipped starter source assets",
+        "Asset-generation architecture does not bring bundled assets forward",
+    )
+    require_text(
+        architecture,
+        "assets/\n  starter_pack/\n    manifest.json",
+        "Asset-generation architecture lacks a bounded installed starter-pack layout",
+    )
+    require_text(
+        architecture,
+        "copied into a user project before the user edits them",
+        "Bundled starter assets may be mutated in place",
+    )
+    require_text(
+        architecture,
+        "Area or surface subset",
+        "Construct architecture lacks stable area or surface-subset authority",
+    )
+    require_text(
+        architecture,
+        "Primary Focus Surface",
+        "Construct architecture lacks primary focus-surface interaction",
+    )
+    require_text(
+        architecture,
+        "Effect stack",
+        "Construct architecture lacks ordered reversible effect authority",
+    )
+    for effect_name in (
+        "Greebling",
+        "Roughness",
+        "Distortion",
+        "Bend",
+        "Logic wiring",
+        "Brushed Titanium",
+        "Polished Chrome",
+        "Anodized Aluminium",
+        "Oxidized Copper",
+        "Iridescent Nickel",
+    ):
+        require_text(
+            architecture,
+            effect_name,
+            f"Asset-generation architecture omits required effect/profile: {effect_name}",
+        )
+    require_text(
+        architecture,
+        "Randomized",
+        "Logic-wiring architecture lacks seeded randomized routing",
+    )
+    require_text(
+        architecture,
+        "Symbiotic",
+        "Logic-wiring architecture lacks feature-aware symbiotic routing",
+    )
+    require_text(
+        architecture,
+        "Aligned",
+        "Logic-wiring architecture lacks axis/grid-aligned routing",
+    )
+    require_text(
+        architecture,
+        "Merely placing objects around a central point must never trigger F–J automatically",
+        "Construct architecture permits placement to silently become destructive geometry",
+    )
+    require_text(
+        architecture,
+        "The next runtime milestone is **Freeform Path Authority**",
+        "Active architecture does not identify the next common geometry foundation",
+    )
+    require_text(
+        architecture,
+        "No dead interface controls",
+        "Active architecture permits unimplemented context-menu promises",
+    )
+    require_text(
+        architecture,
+        "This architecture does not claim that Forge currently provides",
+        "Active architecture does not separate planning from runtime capability",
     )
 
     require_text(
@@ -225,8 +343,8 @@ def main() -> int:
     print("PASS: README reflects the verified merged shape/object runtime boundary")
     print("PASS: Progress Ledger records PRs #54-#63 and the current live interaction gate")
     print("PASS: capability authority records real wheel delivery and active-output reveal truthfully")
-    print("PASS: pinned options, guides, tracing, Ollama, library insertion, and merge boundaries remain truthful")
-    print("PASS: Source Truth protects the present-tense capability authority")
+    print("PASS: active asset-generation, starter-pack, surface, assembly, and effect architecture is protected")
+    print("PASS: Source Truth separates the brought-forward plan from current runtime claims")
     return 0
 
 
