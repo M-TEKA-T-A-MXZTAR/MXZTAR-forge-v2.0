@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pinned Editor options and explicit mouse-wheel routing."""
+"""Sticky Editor options and explicit mouse-wheel routing."""
 
 from __future__ import annotations
 
@@ -12,6 +12,8 @@ from PySide6.QtWidgets import (
     QMenu,
     QSizePolicy,
     QToolButton,
+    QVBoxLayout,
+    QWidget,
 )
 
 
@@ -27,7 +29,7 @@ VALID_WHEEL_MODES = {
 
 
 class EditorMouseWheelController(QObject):
-    """Keep Editor options visible and route output-wheel events deliberately."""
+    """Keep Editor options at the visible viewport top and route wheel events."""
 
     def __init__(self, window, panel):
         super().__init__(window)
@@ -40,7 +42,14 @@ class EditorMouseWheelController(QObject):
             panel.object_viewport,
         )
 
-        self.bar = QFrame(window.centralWidget())
+        self.viewport_column = QWidget(window.centralWidget())
+        self.viewport_column.setObjectName("editorViewportColumn")
+        self.viewport_column.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Expanding,
+        )
+
+        self.bar = QFrame(self.viewport_column)
         self.bar.setObjectName("editorInteractionBar")
         self.bar.setFrameShape(QFrame.Shape.StyledPanel)
         self.bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -50,7 +59,7 @@ class EditorMouseWheelController(QObject):
         self.options_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         self.options_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         self.options_button.setToolTip(
-            "Pinned access to the Editor action tree while the page is scrolled."
+            "Sticky access to the Editor action tree at the top of the visible workspace."
         )
         self.options_menu = QMenu(self.options_button)
         self._copy_editor_menus()
@@ -85,8 +94,7 @@ class EditorMouseWheelController(QObject):
         layout.addWidget(self.mode_help, 1)
         self.bar.setLayout(layout)
 
-        central_layout = window.centralWidget().layout()
-        central_layout.insertWidget(1, self.bar)
+        self._install_sticky_viewport_column()
 
         for target in self._output_targets:
             target.installEventFilter(self)
@@ -105,6 +113,30 @@ class EditorMouseWheelController(QObject):
             announce=False,
         )
         self._update_visibility()
+
+    def _install_sticky_viewport_column(self) -> None:
+        """Keep the control bar fixed above the scroll viewport, not inside the page."""
+        central = self.window.centralWidget()
+        central_layout = central.layout()
+        main_row_item = central_layout.itemAt(0) if central_layout is not None else None
+        main_row = main_row_item.layout() if main_row_item is not None else None
+        if main_row is None:
+            raise RuntimeError("Forge main content row is unavailable for sticky Editor controls.")
+
+        page_index = main_row.indexOf(self.page_scroll)
+        if page_index < 0:
+            raise RuntimeError("Forge page scroll area is not present in the main content row.")
+
+        main_row.removeWidget(self.page_scroll)
+
+        column_layout = QVBoxLayout()
+        column_layout.setContentsMargins(0, 0, 0, 0)
+        column_layout.setSpacing(0)
+        column_layout.addWidget(self.bar)
+        column_layout.addWidget(self.page_scroll, 1)
+        self.viewport_column.setLayout(column_layout)
+
+        main_row.insertWidget(page_index, self.viewport_column, 1)
 
     def _copy_editor_menus(self) -> None:
         menu_sources = (
@@ -201,12 +233,12 @@ class EditorMouseWheelController(QObject):
             help_text = "Wheel scrolls the page from the 2D or 3D output."
             viewport_tip = (
                 "3D object view: wheel scrolls the Editor page. Choose Zoom 3D view "
-                "or Ctrl+wheel zoom in the pinned selector when needed."
+                "or Ctrl+wheel zoom in the sticky selector when needed."
             )
         self.mode_help.setText(help_text)
         self.panel.object_viewport.setToolTip(viewport_tip)
         self.panel.canvas.setToolTip(
-            "Project-owned shape canvas. Drag pans the canvas; wheel follows the pinned "
+            "Project-owned shape canvas. Drag pans the canvas; wheel follows the sticky "
             "Editor mouse-wheel setting."
         )
 
