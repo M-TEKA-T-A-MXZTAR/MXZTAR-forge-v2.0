@@ -172,15 +172,14 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
         return self.document is not None
 
     def _selected_source_shape_id(self) -> str | None:
+        """Return only the source shape paired with an explicit valid 3D selection."""
+        if not isinstance(self.selected_object_id, str):
+            return None
         selected = self._selected_scene_object()
-        if selected is not None:
-            source_shape_id = selected.get("source_shape_id")
-            if isinstance(source_shape_id, str):
-                return source_shape_id
-        if isinstance(self.document, dict) and self.document.get("objects"):
-            source_shape_id = self.document["objects"][-1].get("object_id")
-            return source_shape_id if isinstance(source_shape_id, str) else None
-        return None
+        if selected is None:
+            return None
+        source_shape_id = selected.get("source_shape_id")
+        return source_shape_id if isinstance(source_shape_id, str) else None
 
     def _update_delete_controls(self) -> None:
         if not hasattr(self, "delete_selected_action"):
