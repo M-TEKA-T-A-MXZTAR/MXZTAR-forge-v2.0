@@ -73,6 +73,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/editor_authority_guard.py \
   src/qt_panels/editor_panel.py \
   src/qt_panels/editor_usability_panel.py \
+  src/qt_panels/editor_wheel_controls.py \
   src/qt_panels/jobs_panel.py \
   src/qt_panels/my_library_panel.py \
   src/qt_panels/object_cad_panel.py \
@@ -82,6 +83,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_codeql_configuration_contract.py \
   tools/verify_documentation_runtime_state_contract.py \
+  tools/verify_editor_mouse_wheel_contract.py \
   tools/verify_editor_project_authoring_contract.py \
   tools/verify_editor_single_object_workspace_contract.py \
   tools/verify_jobs_panel_contract.py \
@@ -127,6 +129,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_edito
 echo
 echo "=== POSITIONING GUIDES AND VIEWPORT NAVIGATION CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_positioning_guides_contract.py
+
+echo
+echo "=== EDITOR MOUSE-WHEEL AND PINNED OPTIONS CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_mouse_wheel_contract.py
 
 echo
 echo "=== EDITOR PROJECT AUTHORING CONTRACT ==="
