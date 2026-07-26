@@ -158,8 +158,8 @@ class StartHereProjectController:
         panel.refresh_projects()
         self.window.editor_panel.refresh_project_choices()
         if result.was_active:
+            panel.refresh_attached_project_state(None)
             panel.project_changed.emit(None)
-            panel.project_status_label.setText("No project is open.")
         self.update_controls()
         panel.set_status(
             f"Moved project {project_name} to recoverable Project Trash: "
@@ -223,7 +223,8 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
     def accept_editor_project_authority(self, state, action: str) -> None:
         self.start_here_panel.refresh_projects()
         if state is None:
-            self.start_here_panel.project_status_label.setText("No project is open.")
+            self.start_here_panel.refresh_attached_project_state(None)
+            self.start_here_panel.project_changed.emit(None)
         else:
             self.start_here_panel._show_project_state(state, action)
         if hasattr(self, "start_here_project_controller"):
