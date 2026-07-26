@@ -75,7 +75,9 @@ Historical PR #63 branch labels retained for evidence traceability: `Explicit 3D
 
 The earlier interaction wording remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
 
-Deterministic verification uses real `QWheelEvent` delivery, real tree-item mouse clicks, fixed window-relative geometry, isolated settings, canonical project discovery and real filesystem moves inside a temporary projects root.
+Deterministic verification now uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
+
+Deterministic verification also uses real tree-item mouse clicks, fixed window-relative geometry, isolated settings, canonical project discovery and real filesystem moves inside a temporary projects root.
 
 ## 4. Image-to-shape authority
 
