@@ -9,7 +9,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication, QStackedWidget
 
 from qt_app import SETTINGS_APP, SETTINGS_ORG
-from qt_editor_app import EDITOR_PAGE_INDEX, START_HERE_PAGE_INDEX, EditorForgeWindow
+from qt_editor_app import START_HERE_PAGE_INDEX, EditorForgeWindow
 from qt_panels.editor_usability_panel import SingleObjectWorkspacePanel
 
 
@@ -74,6 +74,7 @@ class UsableEditorForgeWindow(EditorForgeWindow):
         try:
             self.start_here_panel.project_changed.disconnect(old_editor.set_project_state)
         except (RuntimeError, TypeError):
+            # Safe during replacement: the connection may already be absent or its QObject destroyed.
             pass
 
         self.pages.removeWidget(old_editor)
