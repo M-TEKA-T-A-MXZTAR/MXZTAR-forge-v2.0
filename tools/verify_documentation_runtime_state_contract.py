@@ -92,6 +92,16 @@ def main() -> int:
         "real `QWheelEvent` objects are sent through Qt",
         "Progress Ledger does not preserve real-event verification",
     )
+    require_text(
+        ledger,
+        "Construct | Current 3D object-scene foundation only; areas, anchors, groups, assemblies, effect stacks, and explicit connection operations remain planned",
+        "Progress Ledger overstates brought-forward Construct capabilities",
+    )
+    require_text(
+        ledger,
+        "No downstream export, production mesh, manufacturing, tracing, approved library, persistent surface-area, effect-stack, or advanced assembly acceptance is implied.",
+        "Progress Ledger omits the current non-acceptance boundary for planned Construct capabilities",
+    )
     forbid_text(
         ledger,
         "Current branch: `agent/restore-mouse-wheel-scrolling`",
@@ -240,6 +250,41 @@ def main() -> int:
 
     require_text(
         capability,
+        "Status: **FOUNDER-AUTHORISED ACTIVE PLAN; NO NEW RUNTIME CAPABILITY CLAIMED**.",
+        "Capability boundary does not label the architecture as planning-only",
+    )
+    for capability_name in (
+        "Shipped starter source-asset pack",
+        "Persistent object areas or surface subsets",
+        "Primary focus object or surface",
+        "Anchors, sockets and central construct placement",
+        "Object groups",
+        "Recoverable assemblies",
+        "Reversible surface-effect stacks",
+        "Visual seams",
+    ):
+        require_text(
+            capability,
+            f"{capability_name} | PLANNED — brought forward",
+            f"Capability boundary does not preserve PLANNED state for: {capability_name}",
+        )
+    for non_claim in (
+        "- a shipped starter asset pack;",
+        "- stable selectable surface subsets;",
+        "- primary focus surfaces;",
+        "- anchors, sockets, object groups, or recoverable assemblies;",
+        "- surface-effect stacks;",
+        "- greebling, roughness, distortion, bend, logic wiring, or metallic profiles;",
+        "- visual seams;",
+    ):
+        require_text(
+            capability,
+            non_claim,
+            f"Capability boundary omits current non-claim: {non_claim}",
+        )
+
+    require_text(
+        capability,
         "Turn native shapes into 3D objects | DETERMINISTICALLY VERIFIED foundation",
         "Capability boundary does not record the implemented five-primitive 3D foundation",
     )
@@ -343,7 +388,7 @@ def main() -> int:
     print("PASS: README reflects the verified merged shape/object runtime boundary")
     print("PASS: Progress Ledger records PRs #54-#63 and the current live interaction gate")
     print("PASS: capability authority records real wheel delivery and active-output reveal truthfully")
-    print("PASS: active asset-generation, starter-pack, surface, assembly, and effect architecture is protected")
+    print("PASS: brought-forward starter, surface, assembly, seam, and effect capabilities remain PLANNED")
     print("PASS: Source Truth separates the brought-forward plan from current runtime claims")
     return 0
 
