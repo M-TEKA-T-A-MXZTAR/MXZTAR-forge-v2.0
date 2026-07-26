@@ -18,7 +18,11 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from core.object_scene import load_object_scene  # noqa: E402
-from core.project_session import ProjectSession  # noqa: E402
+from core.project_authoring_workflow import (  # noqa: E402
+    create_fresh_project,
+    switch_project,
+)
+from core.project_session import ProjectSession, ProjectSessionError  # noqa: E402
 from core.shape_document import load_shape_document  # noqa: E402
 from qt_editor_app import EDITOR_PAGE_INDEX  # noqa: E402
 from qt_editor_authoring_app import AuthoringEditorForgeWindow  # noqa: E402
@@ -37,7 +41,7 @@ def select_combo_data(combo, value: str) -> None:
 
 
 def main() -> int:
-    app = QApplication.instance() or QApplication([])
+    QApplication.instance() or QApplication([])
     with tempfile.TemporaryDirectory(prefix="mxztar-editor-authoring-") as temporary:
         projects_root = Path(temporary) / "projects"
         session = ProjectSession(projects_root)
@@ -73,7 +77,21 @@ def main() -> int:
             and len(window.editor_panel.object_scene["objects"]) == 2,
             "two created shapes are synchronized into paired 3D objects",
         )
-        deleted_source_id = window.editor_panel._selected_source_shape_id()
+        window.editor_panel.select_cad_object(None)
+        require(
+            not window.editor_panel.delete_selected_action.isEnabled()
+            and not window.editor_panel.delete_selected_shape_object(confirm=False)
+            and len(window.editor_panel.document["objects"]) == 2
+            and len(window.editor_panel.object_scene["objects"]) == 2,
+            "direct deletion requires an explicit selection and never targets the last shape",
+        )
+        selected_object = window.editor_panel.object_scene["objects"][-1]
+        window.editor_panel.select_cad_object(selected_object["object_id"])
+        deleted_source_id = selected_object["source_shape_id"]
+        require(
+            window.editor_panel.delete_selected_action.isEnabled(),
+            "direct deletion enables after one valid shape/object is selected",
+        )
         require(
             window.editor_panel.delete_selected_shape_object(confirm=False),
             "Delete Selected Shape/Object succeeds without using Undo",
@@ -95,6 +113,19 @@ def main() -> int:
             and len(reloaded_scene["objects"]) == 1,
             "paired deletion persists across document and scene reload",
         )
+
+        invalid_target = projects_root.parent / "outside-canonical-projects"
+        try:
+            switch_project(session, invalid_target)
+        except ProjectSessionError as exc:
+            require(
+                session.project_dir == first_project
+                and session.state is not None
+                and "restored" in str(exc).lower(),
+                "failed project switching restores the previously open project authority",
+            )
+        else:
+            raise AssertionError("invalid project switch unexpectedly succeeded")
 
         second_session = ProjectSession(projects_root)
         second_state = second_session.create_and_open(
@@ -133,6 +164,26 @@ def main() -> int:
             and window.editor_panel.document["document_id"] == first_document_id,
             "Editor project switching reloads that project's document chooser and document",
         )
+
+        original_create_and_open = session.create_and_open
+
+        def fail_create_and_open(_project_name: str, _primary_goal: str = ""):
+            raise OSError("simulated fresh-project storage failure")
+
+        session.create_and_open = fail_create_and_open
+        try:
+            create_fresh_project(session)
+        except ProjectSessionError as exc:
+            require(
+                session.project_dir == first_project
+                and session.state is not None
+                and "restored" in str(exc).lower(),
+                "failed fresh-project creation restores the previously open project authority",
+            )
+        else:
+            raise AssertionError("simulated fresh-project failure unexpectedly succeeded")
+        finally:
+            session.create_and_open = original_create_and_open
 
         fresh_state = window.start_here_project_controller.create_fresh_project_document()
         require(
