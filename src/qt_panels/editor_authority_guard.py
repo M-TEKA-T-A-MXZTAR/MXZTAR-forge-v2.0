@@ -12,6 +12,10 @@ class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
     def __init__(self, project_session):
         self._project_mutation_sources: set[str] = set()
         super().__init__(project_session)
+        self.project_selector.currentIndexChanged.connect(
+            lambda _index: self._update_project_controls()
+        )
+        self._update_project_controls()
 
     def _authority_unlocked(self) -> bool:
         return not self._project_mutation_sources
