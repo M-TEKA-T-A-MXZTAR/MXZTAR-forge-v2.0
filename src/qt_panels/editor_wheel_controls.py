@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtCore import QEvent, QObject, QPoint, QTimer, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -92,6 +92,7 @@ class EditorMouseWheelController(QObject):
             target.installEventFilter(self)
         self.mode_combo.currentIndexChanged.connect(self._mode_changed)
         window.pages.currentChanged.connect(self._update_visibility)
+        panel.view_stack.currentChanged.connect(self._active_output_changed)
 
         stored_mode = str(window.settings.value(WHEEL_MODE_SETTING, WHEEL_MODE_SCROLL))
         self.set_mode(
@@ -117,7 +118,28 @@ class EditorMouseWheelController(QObject):
                     target.addAction(action)
 
     def _update_visibility(self, *_args) -> None:
-        self.bar.setVisible(self.window.pages.currentWidget() is self.panel)
+        editor_active = self.window.pages.currentWidget() is self.panel
+        self.bar.setVisible(editor_active)
+        if editor_active:
+            QTimer.singleShot(0, self._reveal_active_output)
+
+    def _active_output_changed(self, *_args) -> None:
+        """Bring a newly selected 2D or 3D output into the visible page range."""
+        QTimer.singleShot(0, self._reveal_active_output)
+
+    def _reveal_active_output(self) -> None:
+        if self.window.pages.currentWidget() is not self.panel:
+            return
+        target = self.panel.view_stack.currentWidget()
+        content = self.page_scroll.widget()
+        if target is None or content is None:
+            return
+        target_top = target.mapTo(content, QPoint(0, 0)).y()
+        scrollbar = self.page_scroll.verticalScrollBar()
+        desired = target_top - 12
+        scrollbar.setValue(
+            max(scrollbar.minimum(), min(scrollbar.maximum(), desired))
+        )
 
     def current_mode(self) -> str:
         mode = self.mode_combo.currentData()
@@ -202,10 +224,16 @@ class EditorMouseWheelController(QObject):
         scrollbar.setValue(scrollbar.value() - round(distance))
         event.accept()
 
+    def _zoom_3d(self, event) -> None:
+        """Deliver zoom once and consume it before the page scroll area sees it."""
+        self.panel.object_viewport.wheelEvent(event)
+        event.accept()
+
     def eventFilter(self, watched, event) -> bool:
         if event.type() != QEvent.Type.Wheel or watched not in self._output_targets:
             return False
         if self._should_zoom_3d(watched, event):
-            return False
+            self._zoom_3d(event)
+            return True
         self._scroll_page(event)
         return True
