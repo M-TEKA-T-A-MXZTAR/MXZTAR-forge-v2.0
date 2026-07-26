@@ -6,11 +6,15 @@ from __future__ import annotations
 import json
 import os
 import stat
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
-from core.project_access import read_project_lock
+from core.project_access import (
+    ProjectLockLease,
+    acquire_project_lock,
+    release_project_lock,
+)
 from core.project_manifest import fsync_directory
 from core.project_session import ProjectSession, ProjectSessionError
 
@@ -117,8 +121,28 @@ def _write_receipt(
         try:
             temporary.unlink(missing_ok=True)
         except OSError:
+            # Cleanup is best-effort; preserve the original receipt-write failure.
             pass
         raise
+
+
+def _remove_installed_receipt(project_dir: Path) -> None:
+    """Remove a receipt durably before a moved project is rolled back."""
+    receipt_path = project_dir / PROJECT_TRASH_RECEIPT
+    if not receipt_path.exists() and not receipt_path.is_symlink():
+        return
+    metadata = receipt_path.lstat()
+    if not stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+        raise ProjectSessionError(
+            "Project Trash rollback found an unsafe recovery-receipt path."
+        )
+    receipt_path.unlink()
+    fsync_directory(project_dir)
+
+
+def _lease_at(lease: ProjectLockLease, project_dir: Path) -> ProjectLockLease:
+    """Point the same owned lease at the directory after an atomic rename."""
+    return replace(lease, project_dir=project_dir)
 
 
 def _restore_active_session_after_failure(
@@ -144,18 +168,25 @@ def move_project_to_trash(
     *,
     timestamp: datetime | None = None,
 ) -> ProjectTrashResult:
-    """Move one selected project into recoverable trash without following symlinks."""
+    """Move one selected project into recoverable trash under an exclusive lease."""
     target = _validated_project_target(session, project_dir)
-    active = bool(
-        session.project_dir is not None
-        and session.project_dir.resolve() == target
-        and session.state is not None
-    )
     moment = timestamp or datetime.now(timezone.utc)
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=timezone.utc)
 
     with session.mutation_guard():
+        state = session.state
+        active = bool(
+            session.project_dir is not None
+            and session.project_dir.resolve() == target
+            and state is not None
+        )
+        if active and not state.writable:
+            raise ProjectSessionError(
+                "The active project is attached read-only or locked by another writer and "
+                "cannot be moved to Project Trash."
+            )
+
         if active:
             close_result = session.close()
             if close_result.warning:
@@ -164,56 +195,88 @@ def move_project_to_trash(
                     target,
                     ProjectSessionError(close_result.warning),
                 )
-        else:
-            try:
-                lock = read_project_lock(target)
-            except Exception as exc:
-                raise ProjectSessionError(
-                    f"Could not validate the selected project's writer lock: {exc}"
-                ) from exc
-            if lock is not None:
-                raise ProjectSessionError(
-                    "Selected project is locked by another writer and cannot be moved to "
-                    "Project Trash."
-                )
 
+        try:
+            deletion_lease = acquire_project_lock(
+                target,
+                writer_id=f"project_trash_{os.getpid()}",
+            )
+        except Exception as exc:
+            error = ProjectSessionError(
+                f"Could not acquire exclusive Project Trash authority: {exc}"
+            )
+            if active:
+                _restore_active_session_after_failure(session, target, error)
+            raise error from exc
+
+        lease_location = target
+        trash_root: Path | None = None
+        destination: Path | None = None
+        moved = False
         try:
             trash_root = _prepare_trash_root(session)
             destination = _allocate_destination(trash_root, target, moment)
             target.rename(destination)
+            moved = True
+            lease_location = destination
             fsync_directory(session.projects_root)
             fsync_directory(trash_root)
-        except Exception as exc:
-            if active:
-                _restore_active_session_after_failure(session, target, exc)
-            raise ProjectSessionError(f"Could not move project to Project Trash: {exc}") from exc
 
-        try:
             _write_receipt(
                 destination,
                 target,
                 moved_at=moment,
                 was_active=active,
             )
+            release_project_lock(_lease_at(deletion_lease, destination))
+            deletion_lease = None
         except Exception as exc:
-            rollback_error = None
-            try:
-                destination.rename(target)
-                fsync_directory(session.projects_root)
-                fsync_directory(trash_root)
-            except Exception as rollback_exc:
-                rollback_error = rollback_exc
+            rollback_error: Exception | None = None
+            release_error: Exception | None = None
+
+            if moved and destination is not None and trash_root is not None:
+                try:
+                    _remove_installed_receipt(destination)
+                    destination.rename(target)
+                    moved = False
+                    lease_location = target
+                    fsync_directory(session.projects_root)
+                    fsync_directory(trash_root)
+                except Exception as rollback_exc:
+                    rollback_error = rollback_exc
+
+            if deletion_lease is not None:
+                try:
+                    release_project_lock(_lease_at(deletion_lease, lease_location))
+                except Exception as cleanup_exc:
+                    release_error = cleanup_exc
+
             if rollback_error is not None:
+                suffix = (
+                    f" The deletion lease also could not be released: {release_error}."
+                    if release_error is not None
+                    else ""
+                )
                 raise ProjectSessionError(
-                    f"Project moved to {destination}, but its trash receipt failed and "
-                    f"automatic rollback also failed: {rollback_error}"
+                    f"Project moved toward Project Trash, but automatic rollback failed: "
+                    f"{rollback_error}.{suffix}"
                 ) from exc
+
+            if release_error is not None:
+                raise ProjectSessionError(
+                    f"Project Trash failed and the project was restored, but its deletion "
+                    f"lease could not be released: {release_error}"
+                ) from exc
+
             if active:
                 _restore_active_session_after_failure(session, target, exc)
             raise ProjectSessionError(
-                f"Project Trash receipt failed; the project was restored: {exc}"
+                f"Project Trash failed; the project remained or was restored at its "
+                f"canonical path: {exc}"
             ) from exc
 
+    if destination is None:
+        raise ProjectSessionError("Project Trash completed without a destination path.")
     return ProjectTrashResult(
         original_project_dir=target,
         trashed_project_dir=destination,
