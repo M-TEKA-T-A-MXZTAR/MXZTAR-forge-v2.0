@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QApplication, QPushButton
 from qt_app import SETTINGS_APP, SETTINGS_ORG
 from qt_editor_app import EDITOR_PAGE_INDEX, START_HERE_PAGE_INDEX
 from qt_editor_usability_app import UsableEditorForgeWindow
-from qt_panels.editor_authoring_panel import ProjectAwareEditorPanel
+from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel
 from core.project_authoring_workflow import switch_project
 
 
@@ -139,7 +139,7 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
             pass
 
         self.pages.removeWidget(old_editor)
-        editor = ProjectAwareEditorPanel(self.project_session)
+        editor = GuardedProjectAwareEditorPanel(self.project_session)
         editor.status_changed.connect(self.set_status)
         editor.project_authority_changed.connect(self.accept_editor_project_authority)
         self.pages.insertWidget(editor_index, editor)
