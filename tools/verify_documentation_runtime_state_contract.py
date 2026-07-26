@@ -55,28 +55,28 @@ def main() -> int:
         "Ollama assessment is not shape extraction",
         "README does not distinguish AI assessment from editable extraction",
     )
-    require_text(
-        readme,
-        "transient smart positioning guidance",
-        "README does not name the next smart-guide milestone",
-    )
 
-    require_text(ledger, "**Ledger date:** 26 July 2026", "Progress Ledger date is stale")
-    for pr_number in range(54, 59):
+    require_text(ledger, "**Ledger date:** 27 July 2026", "Progress Ledger date is stale")
+    for pr_number in range(54, 61):
         require_text(
             ledger,
             f"PR #{pr_number}",
-            f"Progress Ledger does not record merged PR #{pr_number}",
+            f"Progress Ledger does not record PR #{pr_number}",
         )
     require_text(
         ledger,
-        "documentation reconciliation before smart positioning guides",
+        "PR #60 transient smart positioning guides and measurements",
         "Progress Ledger does not identify the current delivery gate",
+    )
+    require_text(
+        ledger,
+        "DETERMINISTICALLY VERIFIED on the PR branch; T1700 live acceptance pending merge",
+        "Progress Ledger overstates or omits the PR #60 evidence boundary",
     )
     forbid_text(
         ledger,
-        "Current branch: `agent/object-cad-3d-foundation`",
-        "Progress Ledger reverted to the retired PR #54 branch",
+        "Current branch: `agent/reconcile-runtime-documentation`",
+        "Progress Ledger reverted to the retired documentation branch",
     )
 
     require_text(
@@ -87,12 +87,7 @@ def main() -> int:
     require_text(
         master,
         "### Milestone D — Smart guides and manipulation clarity",
-        "Master Plan does not place smart guides at the next runtime gate",
-    )
-    require_text(
-        master,
-        "implement smart guides, live measurements, optional snapping",
-        "Master Plan immediate sequence does not begin from the actual next gate",
+        "Master Plan does not preserve the current direct-manipulation milestone",
     )
     require_text(
         master,
@@ -117,8 +112,33 @@ def main() -> int:
     )
     require_text(
         capability,
+        "Smart positioning guides | DETERMINISTICALLY VERIFIED on PR #60 branch",
+        "Capability boundary does not record the PR #60 guide implementation",
+    )
+    require_text(
+        capability,
+        "Optional snapping | DETERMINISTICALLY VERIFIED on PR #60 branch",
+        "Capability boundary does not record explicit optional snapping",
+    )
+    require_text(
+        capability,
+        "Guides appear only while moving one selected object",
+        "Capability boundary does not preserve transient guide lifetime",
+    )
+    require_text(
+        capability,
+        "Turning guides off also disables snapping",
+        "Capability boundary permits invisible forced snapping",
+    )
+    require_text(
+        capability,
+        "bounded from 1 to 50 scene units",
+        "Capability boundary does not preserve bounded tolerance",
+    )
+    require_text(
+        capability,
         "Extract shapes from a 2D image by tracing | PLANNED",
-        "Capability boundary incorrectly omits the unimplemented tracing state",
+        "Capability boundary incorrectly claims tracing exists",
     )
     require_text(
         capability,
@@ -129,11 +149,6 @@ def main() -> int:
         capability,
         "Stitch, weld, join mesh or boolean merge | PLANNED",
         "Capability boundary does not state that merge operations are unimplemented",
-    )
-    require_text(
-        capability,
-        "Guides appear only while moving an object",
-        "Capability boundary does not preserve the transient guide requirement",
     )
 
     require_text(
@@ -147,9 +162,9 @@ def main() -> int:
         "Source-of-Truth policy does not define documentation drift prevention",
     )
 
-    print("PASS: README reflects the verified shape/object runtime boundary")
-    print("PASS: Progress Ledger records PRs #54-#58 and the current delivery gate")
-    print("PASS: Master Plan starts from smart guides instead of completed Project Birth work")
+    print("PASS: README reflects the verified merged shape/object runtime boundary")
+    print("PASS: Progress Ledger records PRs #54-#60 and the current delivery gate")
+    print("PASS: capability authority records transient guides and optional snapping truthfully")
     print("PASS: tracing, Ollama, Shape Library insertion, and merge boundaries remain truthful")
     print("PASS: Source Truth protects the present-tense capability authority")
     return 0
