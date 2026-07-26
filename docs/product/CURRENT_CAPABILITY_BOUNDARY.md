@@ -1,21 +1,21 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 27 July 2026  
-**Merged runtime baseline:** `main` through PR #62 at `6a0b558`  
-**Active branch evidence:** PR #63 real wheel-event routing and active-output reveal pass Source Truth; T1700 live acceptance remains pending
+**Merged runtime baseline:** `main` through PR #63 at `b84f188`  
+**Active branch evidence:** PR #64 documents the brought-forward asset-generation and Construct architecture; it adds no runtime capability
 
 ## 1. Purpose
 
-This document is the concise present-tense companion to the Master Build Plan.
+This document is the concise present-tense companion to the Master Build Plan and the active Asset Generation and Construct Architecture addendum.
 
 It distinguishes:
 
 1. capability available on merged `main`;
-2. capability implemented and deterministically verified on the active PR branch;
+2. capability implemented and deterministically verified but still awaiting applicable live acceptance;
 3. incomplete foundations;
 4. planned capability.
 
-The Master Build Plan remains the finished-product and sequence authority. The Progress Ledger records dated delivery history.
+The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md` controls the nearer engineering sequence. The Progress Ledger records dated delivery history.
 
 ## 2. Status vocabulary
 
@@ -41,19 +41,27 @@ The Master Build Plan remains the finished-product and sequence authority. The P
 | Direct delete | DETERMINISTICALLY VERIFIED | Explicit selection is required; paired 2D shape and 3D object deletion persists without misusing Undo |
 | Turn native shapes into 3D objects | DETERMINISTICALLY VERIFIED foundation | The five implemented primitives become real extruded project-owned 3D objects |
 | Edit one 3D object | DETERMINISTICALLY VERIFIED | Position, width, height, depth, three-axis rotation, colour and opacity persist; nonselected objects remain unchanged |
-| 3D viewport navigation | DETERMINISTICALLY VERIFIED on PR #63 branch | Empty-space drag orbits; explicit zoom is consumed by the 3D viewport without also scrolling the page; merged-main live acceptance remains pending |
-| Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch | Switching between 2D and 3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
+| 3D viewport navigation | DETERMINISTICALLY VERIFIED on merged main | Empty-space drag orbits; real wheel zoom is consumed by the 3D viewport without also scrolling the page; final manual PR #63 acceptance remains pending |
+| Active output reveal | DETERMINISTICALLY VERIFIED on merged main | Switching or explicitly reselecting 2D/3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
 | Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main | PR #60 provides transient X/Y lines, X/Y/Z centre deltas, nearest-object measurements and rotation-aware bounds |
 | Optional snapping | DETERMINISTICALLY VERIFIED on merged main | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
-| Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | PR #61 makes wheel over 2D or 3D output scroll the existing outer page by default without changing 3D zoom |
-| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
+| Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
+| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on merged main | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
 | Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main | Document, Shape, Edit, Object and View remain accessible outside the scroll area at any page position |
-| Extract shapes from a 2D image by tracing | PLANNED | Source intake and previews exist, but no manual tracing path creates editable geometry |
-| Extract shapes algorithmically | PLANNED | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
+| Extract shapes from a 2D image by tracing | PLANNED — brought forward | Source intake and previews exist, but no manual tracing path creates editable geometry |
+| Extract shapes algorithmically | PLANNED — brought forward | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
 | Extract shapes through Ollama | PARTIAL evidence only | Ollama may assess source art and describe likely shapes or extraction zones; it does not create authoritative editable geometry |
-| Approve a reusable Shape Library asset | PLANNED | Shape Library is an evidence browser; approval, rejection, versioning and supersession authority are absent |
-| Insert Shape Library assets into a document | PLANNED | No approved reusable asset schema and no `Insert into Current Document` operation are exposed |
-| Group or assemble 3D objects | PLANNED | Scene membership exists, but hierarchy, anchors, connectors and recoverable assembly authority do not |
+| Shipped starter source-asset pack | PLANNED — brought forward | The application has an `assets` root, but no versioned starter-pack manifest, bundled editable-copy workflow, or installed asset set exists |
+| Approve a reusable Shape Library asset | PLANNED — brought forward | Shape Library is an evidence browser; approval, rejection, versioning and supersession authority are absent |
+| Insert Shape Library assets into a document | PLANNED — brought forward | No approved reusable asset schema and no `Insert into Current Document` operation are exposed |
+| Shape-to-component recipe registry | PLANNED — brought forward | Current primitive extrusion is integrated, but there is no general reviewed-shape recipe registry or parameterized parent-history contract |
+| Persistent object areas or surface subsets | PLANNED — brought forward | No stable area IDs, face/panel/edge subsets, local frames, normals, or stale-parent repair authority exist |
+| Primary focus object or surface | PLANNED — brought forward | The viewport can select one object, but no persisted focus target, focus pivot, named surface focus, or context-command framework exists |
+| Anchors, sockets and central construct placement | PLANNED — brought forward | Current scene-centre guidance exists, but no persistent anchors, sockets, surface-normal alignment, compatibility rules, or construct-origin placement workflow exists |
+| Object groups | PLANNED — brought forward | No persistent named selection sets, shared movement/visibility authority, or group-targeted effects exist |
+| Recoverable assemblies | PLANNED — brought forward | Scene membership exists, but hierarchy, anchors, contacts, constraints, replacement, and assembly recovery authority do not |
+| Reversible surface-effect stacks | PLANNED — brought forward | Greebling, roughness, distortion, bend, logic wiring, and metallic hue profiles are architecture only |
+| Visual seams | PLANNED — brought forward | No area-to-area seam, gasket, rim, trim, conduit, or bridging-detail command exists |
 | Stitch, weld, join mesh or boolean merge | PLANNED | These operations are deliberately distinct and not implemented |
 | Advanced 3D creation from scratch | PARTIAL | Primitive extrusion and numeric editing exist; revolve, sweep, loft, shell, relief, bevel, vertex/face editing and sculpting do not |
 | SVG, PNG, GLB/glTF or OBJ export | PLANNED | No named validated downstream output profile is exposed |
@@ -75,20 +83,36 @@ Forge must not confuse visual assessment with geometry extraction.
 ### Required implemented path
 
 ```text
-2D image
+2D image or bundled source asset
 → exact source region
 → manual trace or deterministic contour proposal
 → editable candidate geometry
 → user correction
 → review and approval
 → optional Shape Library reuse
+→ declared shape-to-component recipe
 ```
 
 Ollama may classify, name, rank or explain candidate geometry. It may not become the sole geometry authority. Coordinates, editable paths, user correction and explicit approval establish project truth.
 
-## 5. Current 2D-to-3D authority
+## 5. Starter source-asset boundary
 
-Each supported native shape becomes one extruded object linked by source shape ID.
+The application path registry already defines an `assets` root, but Forge does not yet ship a governed starter pack.
+
+Before bundled assets may be advertised, Forge needs:
+
+- a versioned starter-pack manifest;
+- stable IDs, hashes, provenance, licence, compatibility and dependency metadata;
+- read-only installed assets;
+- an explicit copy-into-project command before editing;
+- integrity checks and failure handling;
+- offline availability;
+- migration and update rules;
+- separation between bundled, project-owned and private user assets.
+
+## 6. Current 2D-to-3D authority
+
+Each supported native primitive becomes one extruded object linked by source shape ID.
 
 Current object authority includes:
 
@@ -104,20 +128,11 @@ Current object authority includes:
 
 This is a real 3D blockout foundation. It is not the complete Construct workflow or a production mesh modeller.
 
-## 6. PR #60 smart-guide authority
+## 7. Smart-guide authority
 
-PR #60 is merged. Its focused verifier and the complete T1700 Source Truth suite exit `0`.
+PR #60 is merged. Its focused verifier and complete T1700 Source Truth suite exit `0`.
 
-While moving one selected object, Forge calculates:
-
-- difference from the stable scene centre on X, Y and Z;
-- nearest neighbouring object by centre distance;
-- nearest-object surface distance using rotation-aware rendered bounds;
-- nearest-object Z difference;
-- centre and min/max edge alignments against scene centre and neighbouring objects;
-- X/Y snapping candidates within a bounded tolerance.
-
-Interaction rules:
+Interaction rules include:
 
 1. Guides appear only while moving one selected object.
 2. Measurements update continuously during movement.
@@ -128,21 +143,17 @@ Interaction rules:
 7. Tolerance is explicitly bounded from 1 to 50 scene units.
 8. Snapping changes only the selected object's X/Y position.
 9. Nonselected objects remain unchanged.
-10. Guide evidence is transient and is not persisted as project authority.
-11. The final freely moved or explicitly snapped position is saved through the existing reversible object command.
-12. Empty-space drag remains orbit and never displays object-movement guides.
+10. Empty-space drag remains orbit.
 
 Not included yet:
 
 - equal-gap or distribution guides;
 - persistent user guide objects;
 - transform gizmos;
-- anchor or connector snapping;
+- anchor, socket, pivot, or surface-normal snapping;
 - dimensional engineering tolerance claims.
 
-## 7. PR #61–PR #63 mouse-wheel and visible-output authority
-
-PR #61 introduced one pinned interaction controller:
+## 8. PR #61–PR #63 mouse-wheel and visible-output authority
 
 ```text
 Scroll page                  → wheel over 2D or 3D output moves the outer page
@@ -150,81 +161,128 @@ Zoom 3D view                 → wheel over 3D output zooms; wheel over 2D scrol
 Scroll page; Ctrl+wheel zoom → normal wheel scrolls; Ctrl+wheel over 3D zooms
 ```
 
-PR #62 isolated verifier settings and guaranteed Qt background-thread cleanup.
-
-Live T1700 use then found two unproven cases:
-
-1. changing to `3D Object View` could leave the object viewport below the visible page range;
-2. a real zoom wheel event could continue into the parent page scroll area.
-
-PR #63 corrects and verifies those cases.
-
 Required interaction rules:
 
 1. `Scroll page` is the first-run default.
 2. Page scrolling uses the existing outer `QScrollArea`; no competing scroll authority is created.
 3. Selecting 2D or 3D brings the active output into visible page range after layout settles.
-4. Scroll mode never changes 3D zoom.
-5. Zoom occurs only when the selected mode authorises it.
-6. An authorised 3D zoom event is delivered once, accepted, and consumed before page propagation.
-7. Direct zoom and Ctrl+wheel zoom leave the page scrollbar unchanged.
-8. Wheel over 2D output continues to scroll the page in every mode.
-9. Sidebar navigation is not intercepted.
-10. The selected mode persists through existing application settings.
-11. A fixed `Editor Options` tree remains outside the scrolling page.
-12. Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
-13. The fixed strip appears only while Editor is active.
+4. Explicitly reselecting the already-active output reveals it again.
+5. Scroll mode never changes 3D zoom.
+6. Zoom occurs only when the selected mode authorises it.
+7. An authorised 3D zoom event is delivered once, accepted, and consumed before page propagation.
+8. Direct zoom and Ctrl+wheel zoom leave the page scrollbar unchanged.
+9. Wheel over 2D output continues to scroll the page in every mode.
+10. Sidebar navigation is not intercepted.
+11. The selected mode persists through existing application settings.
+12. A fixed `Editor Options` tree remains outside the scrolling page.
+13. Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
 14. Project files, geometry and object-scene schema are unchanged.
 
-Deterministic verification now uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
+Deterministic verification now uses real `QWheelEvent` delivery through Qt. Focused and complete post-merge T1700 automated outputs pass; final manual live acceptance remains pending.
 
-## 8. Viewport interaction contract
+## 9. Brought-forward Construct authority
+
+The active architecture defines future stable records for:
 
 ```text
-Select 2D or 3D output → reveal that output inside the visible page range
-Drag selected object   → move that object; show transient guidance
-Drag resize handle     → resize that object; no movement guides
-Click empty viewport   → clear selection
-Drag empty viewport    → orbit or reorient perspective
-Mouse wheel            → follow the pinned mouse-wheel selector
-Guides off             → visual guidance off and snapping forced off
-Snap off               → measurements only; no forced position
-Snap on                → selected-object X/Y may snap inside bounded tolerance
+source asset
+→ editable shape
+→ component
+→ module
+→ area or surface subset
+→ anchor or socket
+→ object group
+→ assembly
+→ effect stack
+→ connection or stitch record
 ```
 
-## 9. Shape Library completion boundary
+### Focus and perspective
 
-Before `Insert into Current Document` may appear, Forge needs:
+Planned context-command families include:
 
-- an editable approved-shape schema;
-- provenance and integrity validation;
-- approval, rejection, correction, version and supersession records;
-- bounded library discovery;
-- compatibility checks for the current document coordinate and unit context;
-- insertion as a reversible command;
-- duplicate-instance and source-identity rules;
-- restart and copied-project recovery tests.
+- focus construct origin;
+- frame entire construct;
+- set primary focus object;
+- set primary focus surface;
+- view along surface normal;
+- perspective, orthographic front/right/top and isometric views;
+- saved named views.
 
-Raw findings remain evidence and cannot be inserted as approved geometry.
+No context-menu item may appear before its complete command, persistence, Undo/Redo, error and verifier path exists.
 
-## 10. Merge and assembly completion boundary
+### Initial effect families
 
-Forge must distinguish group, assembly, contact or mate, stitch or weld, join mesh, boolean union/difference/intersection, separate, and bake.
+Planned reversible effect families are:
 
-Each operation requires named inputs, preview, persistence, undo or declared derivative behaviour, validation, failure handling and parent mapping.
+- Greebling;
+- Roughness;
+- Distortion;
+- Bend with bounded intensity;
+- Logic wiring with Randomized, Symbiotic, Aligned, Radial and Parallel routing;
+- metallic visual profiles: Brushed Titanium, Polished Chrome, Anodized Aluminium, Oxidized Copper and Iridescent Nickel.
+
+These are visual-design systems, not engineering material or electronics claims.
+
+## 10. Group, assembly and connection boundary
+
+Forge must distinguish:
+
+1. placement only;
+2. snap or align;
+3. object group;
+4. recoverable assembly connection;
+5. visual seam;
+6. mesh stitch or weld;
+7. join mesh;
+8. boolean union, difference or intersection;
+9. separate;
+10. bake.
+
+Merely placing objects together around the central construct point creates none of operations 3–10 automatically.
+
+Each consequential operation requires named inputs, preview, persistence, Undo/Redo or declared derivative behaviour, validation, failure handling, parent mapping and recovery.
 
 ## 11. Immediate engineering order
 
-After PR #63 review, merge, synchronization, focused verification, complete Source Truth, and live acceptance:
+PR #63 manual live acceptance remains the gate before new runtime work.
 
-1. freeform editable paths, nodes and handles;
+The active order is:
+
+1. freeform editable paths, nodes, handles and segments;
 2. source-region selection and manual tracing;
-3. deterministic contour and mask candidates;
-4. Ollama-assisted candidate assessment through the same editable path;
-5. review, approval and real Shape Library insertion;
-6. 2D composition, alignment, grouping and explicit booleans;
-7. advanced reversible 3D construction recipes;
-8. assemblies, anchors, connectors and distinct merge operations;
-9. verified 2D and 3D output profiles.
+3. deterministic contour, threshold, edge, mask and silhouette candidates;
+4. starter source-asset pack and copy-into-project command;
+5. optional AI assessment or proposals through editable candidate authority;
+6. review, approval and real Shape Library insertion;
+7. shape-to-component recipe registry;
+8. area, surface, pivot, anchor, focus and named-view authority;
+9. modular placement around the central construct point;
+10. object groups and recoverable assemblies;
+11. effect-stack core;
+12. initial surface effects and metallic profiles;
+13. visual seams and separately verified stitch/weld/join/boolean/separate/bake operations;
+14. verified 2D and 3D output profiles;
+15. release asset-pack installation, update, migration, backup, licence and recovery gates.
 
 Every item remains subject to focused PR scope, deterministic verification, T1700 evidence and truthful documentation updates.
+
+## 12. Current non-claims
+
+Forge does not currently claim:
+
+- freeform paths or tracing;
+- automatic editable extraction;
+- a shipped starter source-asset pack;
+- approved Shape Library insertion;
+- a general shape-to-component recipe registry;
+- persistent area or surface subsets;
+- primary focus surfaces;
+- anchors, sockets, groups or recoverable assemblies;
+- surface-effect stacks;
+- greebling, roughness, distortion, bend, logic wiring or metallic profiles;
+- visual seams;
+- stitch, weld, join mesh, booleans, separate or bake;
+- engineering material properties;
+- manufacturing-safe geometry;
+- verified SVG, PNG, GLB/glTF or OBJ continuation.
