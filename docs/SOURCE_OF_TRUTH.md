@@ -35,14 +35,21 @@ The active documentation hierarchy is:
 
 1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished-product boundary, product principles, 18 workflow families, architecture, acceptance criteria, milestones, and engineering sequence.
 2. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, blocking, and next-action rules.
-3. **`docs/PROGRESS_LEDGER.md`** — current verified, merged, partial, planned, blocked, and deferred implementation state.
-4. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
-5. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, and export artifact requirements.
-6. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
-7. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
-8. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
+3. **`docs/PROGRESS_LEDGER.md`** — dated verified, merged, partial, planned, blocked, and deferred implementation state.
+4. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense audit of what works now, what is partial, and what remains planned.
+5. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
+6. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, object-scene, component, assembly, and export artifact requirements.
+7. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
+8. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
+9. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
 
-When two documents appear to conflict, the higher applicable authority wins. The conflict should then be corrected in a dedicated documentation change rather than allowed to persist.
+When two documents appear to conflict, the higher applicable authority wins. The conflict must then be corrected in a dedicated documentation change rather than allowed to persist.
+
+### Planning versus current-state rule
+
+The Master Build Plan may describe the finished product. The Current Capability Boundary and Progress Ledger must identify whether each relevant capability is implemented, partial, planned, blocked, or deferred.
+
+Planned capability must never be described in the README or interface as current capability.
 
 ---
 
@@ -59,7 +66,24 @@ Future Product Levels Three and Four remain deferred. Their documents preserve l
 
 ---
 
-## 5. Change rule
+## 5. Runtime evidence rule
+
+A merged PR is not sufficient evidence by itself.
+
+Runtime capability claims must identify the applicable evidence class:
+
+- deterministic contract;
+- Source Truth verification;
+- T1700 live interaction;
+- recovery or interruption test;
+- downstream import or continuation test;
+- release installation test.
+
+A capability may be described as deterministically verified while still requiring visual, downstream, or release acceptance.
+
+---
+
+## 6. Change rule
 
 Every meaningful change should record:
 
@@ -78,7 +102,7 @@ No verification pass may be claimed without evidence from the environment that a
 
 ---
 
-## 6. Drift prevention
+## 7. Drift prevention
 
 Before working:
 
@@ -86,22 +110,41 @@ Before working:
 2. check Git status;
 3. pull or fetch the latest remote state;
 4. confirm the intended product stage and workflow family;
-5. inspect the current Master Build Plan and Progress Ledger;
+5. inspect the Master Build Plan, Progress Ledger, and Current Capability Boundary;
 6. verify the application still compiles, imports, or launches at the relevant gate.
 
 After working:
 
 1. compile changed code files where applicable;
 2. run the targeted verifier;
-3. run source-truth and whitespace checks;
+3. run Source Truth and whitespace checks;
 4. perform required live acceptance;
-5. update the Progress Ledger truthfully;
-6. commit and review known-good state through a pull request;
-7. create a dated VX12 backup only when a stable stage warrants it.
+5. update the Progress Ledger and Current Capability Boundary truthfully;
+6. update README claims when public capability materially changes;
+7. commit and review known-good state through a pull request;
+8. create a dated VX12 backup only when a stable stage warrants it.
 
 ---
 
-## 7. Public-claim rule
+## 8. Documentation drift contract
+
+Source Truth must fail when core documents revert to known stale claims.
+
+At minimum, automated documentation checks protect:
+
+- the presence of the Current Capability Boundary;
+- merged PR coverage in the Progress Ledger;
+- the current smart-guide-first engineering sequence;
+- the distinction between Ollama assessment and editable extraction;
+- the implemented five-primitive 2D-to-3D foundation;
+- the absence of approved Shape Library insertion and merge/stitch claims;
+- README linkage to current capability authority.
+
+The check does not prove every sentence is correct. It prevents known high-impact contradictions from silently returning.
+
+---
+
+## 9. Public-claim rule
 
 The README and repository metadata are product-discovery surfaces. They should clearly state:
 
