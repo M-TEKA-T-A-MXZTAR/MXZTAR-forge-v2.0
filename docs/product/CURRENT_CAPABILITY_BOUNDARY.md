@@ -1,8 +1,8 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 27 July 2026  
-**Merged runtime baseline:** `main` through PR #59 at `61ab6c4`  
-**Active branch evidence:** PR #60 smart positioning guide contract passes Source Truth; merged-main T1700 acceptance remains pending
+**Merged runtime baseline:** `main` through PR #60 at `fc0963f`  
+**Active branch evidence:** PR #61 mouse-wheel scrolling and pinned-options contract passes Source Truth; T1700 live acceptance remains pending
 
 ## 1. Purpose
 
@@ -41,9 +41,12 @@ The Master Build Plan remains the finished-product and sequence authority. The P
 | Direct delete | DETERMINISTICALLY VERIFIED | Explicit selection is required; paired 2D shape and 3D object deletion persists without misusing Undo |
 | Turn native shapes into 3D objects | DETERMINISTICALLY VERIFIED foundation | The five implemented primitives become real extruded project-owned 3D objects |
 | Edit one 3D object | DETERMINISTICALLY VERIFIED | Position, width, height, depth, three-axis rotation, colour and opacity persist; nonselected objects remain unchanged |
-| 3D viewport navigation | DETERMINISTICALLY VERIFIED | Empty-space drag orbits, wheel input zooms, and perspective/grid/line state persists |
-| Smart positioning guides | DETERMINISTICALLY VERIFIED on PR #60 branch | Movement shows transient X/Y lines, X/Y/Z centre deltas and nearest-object measurements; merged-main T1700 acceptance remains pending |
-| Optional snapping | DETERMINISTICALLY VERIFIED on PR #60 branch | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
+| 3D viewport navigation | DETERMINISTICALLY VERIFIED | Empty-space drag orbits and perspective/grid/line state persists; wheel behavior is being corrected by PR #61 |
+| Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main | PR #60 provides transient X/Y lines, X/Y/Z centre deltas, nearest-object measurements and rotation-aware bounds; full live acceptance awaits PR #61 |
+| Optional snapping | DETERMINISTICALLY VERIFIED on merged main | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
+| Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on PR #61 branch | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
+| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #61 branch | The pinned selector can choose direct 3D zoom or page scrolling with Ctrl+wheel zoom |
+| Pinned Editor options | DETERMINISTICALLY VERIFIED on PR #61 branch | Document, Shape, Edit, Object and View remain accessible outside the scroll area at any page position |
 | Extract shapes from a 2D image by tracing | PLANNED | Source intake and previews exist, but no manual tracing path creates editable geometry |
 | Extract shapes algorithmically | PLANNED | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
 | Extract shapes through Ollama | PARTIAL evidence only | Ollama may assess source art and describe likely shapes or extraction zones; it does not create authoritative editable geometry |
@@ -102,22 +105,16 @@ This is a real 3D blockout foundation. It is not the complete Construct workflow
 
 ## 6. PR #60 smart-guide authority
 
-PR #60 adds transient, CPU-safe positioning guidance to the official authoring Editor.
+PR #60 is merged. Its focused verifier and the complete T1700 Source Truth suite exit `0`.
 
 While moving one selected object, Forge calculates:
 
 - difference from the stable scene centre on X, Y and Z;
 - nearest neighbouring object by centre distance;
-- nearest-object surface distance using axis-aligned bounds;
+- nearest-object surface distance using rotation-aware rendered bounds;
 - nearest-object Z difference;
 - centre and min/max edge alignments against scene centre and neighbouring objects;
 - X/Y snapping candidates within a bounded tolerance.
-
-The viewport displays:
-
-- dashed X/Y guide lines for applicable alignments;
-- a compact live measurement block;
-- explicit snapped-state wording where snapping applies.
 
 Interaction rules:
 
@@ -142,20 +139,45 @@ Not included yet:
 - anchor or connector snapping;
 - dimensional engineering tolerance claims.
 
-## 7. Viewport interaction contract
+## 7. PR #61 mouse-wheel and pinned-options authority
+
+The live PR #60 check revealed that the 3D output consumed every wheel event as zoom, preventing normal page scrolling while the pointer was over the output.
+
+PR #61 corrects this through one explicit interaction controller:
+
+```text
+Scroll page                  → wheel over 2D or 3D output moves the outer page
+Zoom 3D view                 → wheel over 3D output zooms; wheel over 2D scrolls
+Scroll page; Ctrl+wheel zoom → normal wheel scrolls; Ctrl+wheel over 3D zooms
+```
+
+Required interaction rules:
+
+1. `Scroll page` is the default.
+2. Page scrolling uses the existing outer `QScrollArea`; no competing scroll authority is created.
+3. Scroll mode never changes 3D zoom.
+4. Zoom occurs only when the selected mode authorises it.
+5. Sidebar navigation is not intercepted.
+6. The selected mode persists through existing application settings.
+7. A fixed `Editor Options` tree remains outside the scrolling page.
+8. Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
+9. The fixed strip appears only while Editor is active.
+10. Project files, geometry and object-scene schema are unchanged.
+
+## 8. Viewport interaction contract
 
 ```text
 Drag selected object     → move that object; show transient guidance
 Drag resize handle       → resize that object; no movement guides
 Click empty viewport     → clear selection
 Drag empty viewport      → orbit or reorient perspective
-Mouse wheel              → zoom
+Mouse wheel              → follow the pinned mouse-wheel selector
 Guides off               → visual guidance off and snapping forced off
 Snap off                 → measurements only; no forced position
 Snap on                  → selected-object X/Y may snap inside bounded tolerance
 ```
 
-## 8. Shape Library completion boundary
+## 9. Shape Library completion boundary
 
 Before `Insert into Current Document` may appear, Forge needs:
 
@@ -170,26 +192,15 @@ Before `Insert into Current Document` may appear, Forge needs:
 
 Raw findings remain evidence and cannot be inserted as approved geometry.
 
-## 9. Merge and assembly completion boundary
+## 10. Merge and assembly completion boundary
 
-Forge must distinguish:
-
-- group;
-- assembly;
-- contact or mate;
-- stitch or weld;
-- join mesh;
-- boolean union;
-- boolean difference;
-- boolean intersection;
-- separate;
-- bake.
+Forge must distinguish group, assembly, contact or mate, stitch or weld, join mesh, boolean union/difference/intersection, separate, and bake.
 
 Each operation requires named inputs, preview, persistence, undo or declared derivative behaviour, validation, failure handling and parent mapping.
 
-## 10. Immediate engineering order
+## 11. Immediate engineering order
 
-After PR #60 review, merge, synchronization and live acceptance:
+After PR #61 review, merge, synchronization and live acceptance:
 
 1. freeform editable paths, nodes and handles;
 2. source-region selection and manual tracing;
