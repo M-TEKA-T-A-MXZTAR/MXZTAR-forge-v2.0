@@ -3,9 +3,9 @@
 **Ledger date:** 27 July 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
 **Active product horizon:** integrated shape/object CAD, Stage One and Stage Two  
-**Merged runtime baseline:** `1cbcc50` through PR #64  
-**Current delivery gate:** PR #65 sticky Editor controls at the visible viewport top  
-**Current branch:** `agent/fix-sticky-editor-options-viewport`
+**Merged runtime baseline:** `7db74ed` through PR #65  
+**Current delivery gate:** PR #66 persistent Editor action tree and recoverable Project Trash  
+**Current branch:** `agent/persistent-editor-options-and-project-trash`
 
 This ledger records current product truth and priority changes. Detailed commit history remains available in Git.
 
@@ -51,11 +51,13 @@ Asset extraction and generation are brought forward because they create the reus
 
 The software will ship with a founder-controlled starter source-asset pack. Bundled assets remain read-only application assets and must be copied into a user project before editing.
 
-Interaction controls must remain reachable while the user is working. The Editor Options tree and wheel selector must remain at the top of the currently visible Editor workspace while the page scrolls beneath them. Selecting a 2D or 3D output must bring that output into visible range, and an explicitly selected zoom mode must not also scroll the page.
+Interaction controls must remain reachable while the user is working. The complete Editor Options tree and wheel selector must remain continuously visible at the top of the currently visible Editor workspace while the page scrolls beneath them. Selecting an option must not close the tree, even when that option reveals another output and moves the page. Selecting a 2D or 3D output must bring that output into visible range, and an explicitly selected zoom mode must not also scroll the page.
+
+Project switching must include deliberate project deletion. Forge uses recoverable Project Trash rather than irreversible erasure: the exact selected canonical project moves out of discovery only after typed-name confirmation, lock checks, active-work checks, and receipt creation.
 
 Moving objects together around a central construct point must never silently group, assemble, stitch, weld, join, boolean, separate, or bake them.
 
-This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, engineering-material claims, or dead context-menu options.
+This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, engineering-material claims, dead context-menu options, or permanent project erasure from the current interface.
 
 ---
 
@@ -86,6 +88,7 @@ This direction does not authorise fake perspective effects, unsupported automati
 - PR #62 — isolated wheel-verifier settings and guaranteed Qt background-thread cleanup.
 - PR #63 — real wheel-event consumption, active-output reveal, and reselecting an already-active output to reveal it again.
 - PR #64 — brought-forward asset generation, shipped starter-asset planning, and modular Construct architecture.
+- PR #65 — sticky Editor control bar at the visible viewport top.
 
 ---
 
@@ -174,7 +177,7 @@ Recorded evidence:
 
 ### PR #65 sticky viewport-top controls
 
-Status: **DETERMINISTICALLY VERIFIED on the PR #65 branch; T1700 live acceptance pending**.
+Status at merge: **DETERMINISTICALLY VERIFIED on the PR #65 branch; T1700 live acceptance pending**.
 
 Correction:
 
@@ -195,14 +198,57 @@ Strengthened evidence:
 - returning to Editor must restore the controls at that same viewport-top position;
 - Python Compile Check, Security & Code Scan, Source Truth, and CodeQL Advanced pass.
 
+Post-merge focused and complete Source Truth outputs passed on the T1700. Live inspection then found a narrower usability defect: the sticky row remained visible, but `Editor Options` was still an auto-closing popup. Choosing an action dismissed the actual option tree, forcing the user to reopen it.
+
+### PR #66 persistent Editor actions and recoverable Project Trash
+
+Status: **DETERMINISTICALLY VERIFIED on the PR #66 branch; T1700 live acceptance pending**.
+
+Persistent-action correction:
+
+- the popup-only Editor Options control is replaced by an always-open `QTreeWidget`;
+- Document, Shape, Edit, Object, and View categories remain visible inside the fixed row;
+- real QAction enabled, visible, checked, label, and tooltip state is mirrored;
+- clicking a real tree item triggers the existing action without dismissing the tree;
+- action-driven output reveal may move the page, but the tree retains its window-relative position, current item, and mouse reachability;
+- the existing wheel selector remains in the same fixed control row.
+
+Project Trash correction:
+
+- Editor places `Delete Project…` directly beside `Switch Project`;
+- Start Here exposes `Delete Selected Project…` beside open/switch controls;
+- user-facing deletion requires the exact selected directory name to be typed;
+- only real non-symlink, non-hidden direct children of the canonical projects root are accepted;
+- another writer lock and active local-AI/source-intake work block deletion;
+- the selected project moves atomically into hidden `.project-trash` rather than being permanently erased;
+- a durable receipt records original identity, trash location, time, and active-project state;
+- deleting a non-active project preserves current authority;
+- deleting the active project closes its lease and leaves Forge detached;
+- no permanent-delete command is exposed.
+
+Deterministic evidence:
+
+- Python Compile Check passes;
+- Security & Code Scan passes;
+- Source Truth Check passes;
+- CodeQL Advanced passes;
+- a real `QTest.mouseClick` activates the 3D View tree item;
+- the tree remains visible and fixed after action-driven and maximum page movement;
+- a locked project cannot be trashed;
+- active work cannot trash a project;
+- canonical discovery excludes the moved project;
+- recovery receipts preserve identity;
+- out-of-root paths are rejected;
+- active project deletion detaches safely.
+
 ---
 
 ## 5. Current workspace truth
 
 | Workspace | Current truth |
 |---|---|
-| Start Here | Purpose-driven Project Birth, discovery, open/switch, close, and guided blank-document path are implemented |
-| Editor | Primary integrated 2D shape and 3D object workspace; PR #65 corrects sticky viewport-top access to Editor Options and wheel controls |
+| Start Here | Purpose-driven Project Birth, discovery, open/switch, close, guided blank-document path, and PR #66 recoverable Delete Selected Project are implemented on the active branch |
+| Editor | Primary integrated 2D shape and 3D object workspace; PR #66 keeps the complete action tree continuously visible and adds Delete Project beside Switch Project |
 | My Library | Verified bounded source intake, previews, exact handoff, and guarded lifecycle |
 | Shape Library | Evidence browser only; approved editable lifecycle and insertion are not implemented |
 | Agent Workflows | Optional local-AI assessment and planning foundation; not geometry authority |
@@ -316,7 +362,7 @@ These are planned visual-design systems, not engineering material or electronics
 
 ## 8. Brought-forward engineering sequence
 
-PR #65 manual live acceptance remains the final gate before new runtime work begins.
+PR #66 manual live acceptance remains the final gate before new asset-generation runtime work begins.
 
 The active sequence is:
 
@@ -356,6 +402,7 @@ focused branch
 Forge does not currently claim:
 
 - a completed CAD release;
+- permanent project erasure from the interface;
 - freeform editable paths;
 - editable tracing from arbitrary source images;
 - automatic editable extraction;
