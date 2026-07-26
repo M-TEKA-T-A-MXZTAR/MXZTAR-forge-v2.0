@@ -160,6 +160,31 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
         if hasattr(self, "start_here_project_controller"):
             self.start_here_project_controller.update_controls()
 
+    def refresh_guided_next_step(self) -> None:
+        """Keep Project Birth pointed at one blank document before source workflows."""
+        if not hasattr(self, "editor_panel"):
+            super().refresh_guided_next_step()
+            return
+        if self.agent_panel.has_active_job() or self._guided_evidence_ready:
+            super().refresh_guided_next_step()
+            return
+
+        state = self.project_session.state
+        if (
+            state is not None
+            and state.writable
+            and not self.library_panel.has_active_intake()
+            and not self.editor_panel.has_open_document()
+        ):
+            self.set_guidance(
+                "Next: New blank document",
+                self.open_guided_blank_document,
+                self.editor_panel.document_button,
+            )
+            return
+
+        super().refresh_guided_next_step()
+
     def _ensure_editor_ready(self) -> bool:
         return self.editor_panel.ensure_ready_document()
 
@@ -193,12 +218,14 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
         self.refresh_guided_next_step()
 
     def open_guided_blank_document(self) -> None:
-        had_project = self.project_session.state is not None
-        if not self._ensure_editor_ready():
-            return
+        if self.project_session.state is None:
+            if self.editor_panel.create_fresh_project_and_document() is None:
+                return
+        else:
+            self.editor_panel.load_project_build()
+            if not self.editor_panel.has_open_document():
+                self.editor_panel.create_blank_document()
         self._open_guided_page(EDITOR_PAGE_INDEX)
-        if had_project:
-            self.editor_panel.create_blank_document()
         self.refresh_guided_next_step()
 
 
