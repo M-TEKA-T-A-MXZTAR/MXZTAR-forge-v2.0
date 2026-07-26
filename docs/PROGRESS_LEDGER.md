@@ -1,13 +1,13 @@
 # MXZTAR Forge v2.0 — Progress Ledger
 
-**Ledger date:** 26 July 2026  
+**Ledger date:** 27 July 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
 **Active product horizon:** integrated shape/object CAD, Stage One and Stage Two  
-**Merged runtime baseline:** `dc55f5f` plus CodeQL workflow merge `6958c67`  
-**Current delivery gate:** documentation reconciliation before smart positioning guides  
-**Current branch:** `agent/reconcile-runtime-documentation`
+**Merged runtime baseline:** `61ab6c4` through PR #59  
+**Current delivery gate:** PR #60 transient smart positioning guides and measurements  
+**Current branch:** `agent/smart-positioning-guides`
 
-This ledger records current product truth and priority changes. Detailed history remains available in Git.
+This ledger records current product truth and priority changes. Detailed commit history remains available in Git.
 
 ---
 
@@ -16,9 +16,9 @@ This ledger records current product truth and priority changes. Detailed history
 | Status | Meaning |
 |---|---|
 | VERIFIED | Required automated and recorded T1700 evidence exists for the stated boundary |
-| DETERMINISTICALLY VERIFIED | Automated contracts passed; additional visual or downstream acceptance may remain |
-| MERGED | Code is on `main`; merge alone does not prove the whole product gate |
-| PARTIAL | Useful implementation exists, but the workflow is incomplete |
+| DETERMINISTICALLY VERIFIED | Automated contracts pass; required visual or downstream acceptance may remain |
+| MERGED | Code is on `main`; merge alone does not prove the complete product gate |
+| PARTIAL | Useful implementation exists, but the complete user workflow does not |
 | PLANNED | Required but not implemented |
 | BLOCKED | A named dependency or founder decision prevents safe progress |
 | DEFERRED | Outside the active product horizon |
@@ -29,21 +29,19 @@ This ledger records current product truth and priority changes. Detailed history
 
 Forge is developing as a sophisticated but approachable local CAD workbench based on shapes and objects.
 
-The active integrated workflow is:
-
 ```text
 Purpose
 → project
 → source image or blank document
 → editable shape
 → real 3D object
-→ direct manipulation
+→ direct manipulation and positioning guidance
 → composition and construction
 → review and reusable library
 → portable outputs
 ```
 
-This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, or vague one-button merge behaviour.
+This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, or a vague one-button merge operation.
 
 ---
 
@@ -64,35 +62,26 @@ This direction does not authorise fake perspective effects, unsupported automati
 - PR #52 — Purpose-driven Project Birth.
 - PR #53 — Start Here default launch, project routing, Editor menus, and five reversible primitives.
 - PR #54 — project-owned 3D object-scene foundation and CPU-rendered 3D workspace.
-- PR #55 — single-object movement isolation, visible non-overlapping placement, immediate 3D synchronization, and stable Editor layout.
-- PR #56 — fresh project/document creation, project switching from Start Here and Editor, and explicit paired deletion.
-- PR #57 — restored Project Birth blank-document guidance and protected the working CodeQL Advanced workflow.
+- PR #55 — single-object movement isolation, visible placement, immediate 3D synchronization, and stable layout.
+- PR #56 — fresh project/document creation, project switching, and explicit paired deletion.
+- PR #57 — restored Project Birth blank-document guidance and protected CodeQL Advanced.
 - PR #58 — GitHub-generated CodeQL Advanced workflow for Actions and Python.
+- PR #59 — reconciled README, Master Build Plan, Progress Ledger, capability boundary, and documentation-drift verification.
 
 ---
 
-## 4. T1700 evidence recorded on 26 July 2026
+## 4. Recorded T1700 evidence
 
-### Project Birth focused verification
-
-Status: **VERIFIED for the focused automated boundary**.
-
-Recorded evidence:
-
-- Start Here exposes Project Birth and routing controls;
-- Purpose is preserved and safe identity is derived;
-- Open Project attaches authority without leaving Start Here;
-- the guided path creates exactly one blank Editor document;
-- Go to Project opens the Editor and displays the current project build;
-- focused verifier exit code `0`.
-
-### Complete Source Truth verification
+### PR #57 and PR #59 merged-main verification
 
 Status: **VERIFIED for the deterministic repository boundary**.
 
 Recorded evidence includes:
 
+- Project Birth focused verifier exit code `0`;
+- complete Source Truth verification exit code `0`;
 - required documentation files present;
+- documentation runtime-state contract passes;
 - listed Python files compile;
 - CodeQL Advanced contract passes;
 - launcher import contract passes;
@@ -100,11 +89,10 @@ Recorded evidence includes:
 - native shape document and primitive commands pass;
 - 3D object CAD contract passes;
 - single-object usability contract passes;
-- Editor project authoring and deletion contract passes;
-- all seven optional prompt contracts build;
-- root verifier exit code `0`.
+- Editor project authoring and paired deletion pass;
+- all seven optional prompt contracts build.
 
-No downstream export or production mesh acceptance is implied by these results.
+No downstream export, production mesh, manufacturing, tracing, approved library, or advanced assembly acceptance is implied.
 
 ---
 
@@ -112,13 +100,13 @@ No downstream export or production mesh acceptance is implied by these results.
 
 | Workspace | Current truth |
 |---|---|
-| Start Here | Purpose-driven Project Birth, project discovery, open/switch, close, and guided blank-document path are implemented |
-| Editor | Primary integrated 2D shape and 3D object workspace |
+| Start Here | Purpose-driven Project Birth, discovery, open/switch, close, and guided blank-document path are implemented |
+| Editor | Primary integrated 2D shape and 3D object workspace; PR #60 adds transient movement guidance on its branch |
 | My Library | Verified bounded source intake, previews, exact handoff, and guarded lifecycle |
 | Shape Library | Evidence browser only; approved editable lifecycle and insertion are not implemented |
 | Agent Workflows | Optional local-AI assessment and planning foundation; not geometry authority |
 | Jobs | Verified read-only evidence browser |
-| Construct | Advanced construction and assembly workspace is not yet exposed as a separate complete workflow |
+| Construct | Advanced construction and assembly workspace is not yet a complete exposed workflow |
 | Review | Planned |
 | Export | Verified SVG, PNG, GLB/glTF, and OBJ adapters are not implemented |
 
@@ -153,13 +141,13 @@ Not implemented:
 - pen or Bezier paths;
 - freehand drawing;
 - node and handle editing;
-- layers, groups, locking, visibility, arrays, mirrors, snapping, or 2D booleans.
+- layers, groups, locking, visibility, arrays, mirrors, 2D snapping, or 2D booleans.
 
 ### Project-owned 3D object scene
 
 Status: **DETERMINISTICALLY VERIFIED foundation**.
 
-Implemented:
+Implemented on merged `main`:
 
 - five native shapes become real extruded 3D objects;
 - source shape and object membership remain linked;
@@ -170,16 +158,34 @@ Implemented:
 - object selection;
 - drag movement and resize;
 - numeric Object Inspector;
-- orbit and zoom;
+- empty-space orbit and wheel zoom;
 - perspective, grid, line, camera, and zoom persistence;
 - reversible object edits;
-- paired membership during Undo, Redo, and direct deletion;
+- paired membership during Undo, Redo, and deletion;
 - atomic save, rollback, and restart restoration;
 - moving one selected object leaves nonselected objects unchanged.
 
-Not implemented:
+### PR #60 smart positioning gate
 
-- smart alignment guides or distance labels;
+Status: **DETERMINISTICALLY VERIFIED on the PR branch; T1700 live acceptance pending merge**.
+
+Implemented on the branch:
+
+- transient X/Y alignment lines while moving one selected object;
+- centre and axis-aligned edge comparison against scene centre and neighbouring objects;
+- live centre delta values for X, Y, and Z;
+- nearest-object centre distance, surface distance, and Z difference;
+- separate `Position Guides` and `Snap to Guides` controls;
+- snapping off by default;
+- bounded configurable tolerance from 1 to 50 scene units;
+- disabling guides also disables snapping so movement is never invisibly forced;
+- guide state disappears immediately on release;
+- final freely moved or explicitly snapped position uses the existing reversible object command;
+- empty-space drag remains perspective orbit and shows no movement guides.
+
+Not included in PR #60:
+
+- equal-gap distribution guidance;
 - transform gizmos;
 - anchors, connectors, hierarchy, or assemblies;
 - stitch, weld, join mesh, 3D booleans, separate, or bake;
@@ -216,13 +222,11 @@ Ollama findings remain evidence or guidance. They do not become editable or appr
 
 Status: **PARTIAL evidence browser**.
 
-Current Shape Library can inspect bounded raw workflow evidence.
-
-It does not currently provide:
+The current Shape Library does not provide:
 
 - approved editable shape records;
 - approval, rejection, correction, versioning, or supersession;
-- Insert into Current Document;
+- `Insert into Current Document`;
 - reversible library insertion;
 - compatibility validation against the current document;
 - reusable component or assembly insertion.
@@ -231,46 +235,31 @@ It does not currently provide:
 
 ## 9. Security and repository controls
 
-- Python Compile Check: passing on the reconciled runtime head.
-- Security & Code Scan: passing.
-- Source Truth Check: passing.
-- CodeQL Advanced `Analyze (actions)`: passing.
-- CodeQL Advanced `Analyze (python)`: passing.
+Current PR #60 evidence:
 
-The repository now contains a source-truth contract protecting the advanced CodeQL workflow from silent removal or incompatible replacement.
+- Python Compile Check: passing;
+- Security & Code Scan: passing;
+- Source Truth Check: passing, including the positioning-guide verifier;
+- CodeQL Advanced: required before ready-for-review status.
 
----
-
-## 10. Current documentation gate
-
-This branch reconciles:
-
-- public README capability claims;
-- the Master Build Plan delivery sequence;
-- this Progress Ledger;
-- the present-tense capability boundary;
-- Source-of-Truth documentation hierarchy;
-- automated documentation drift checks.
-
-No runtime feature is added by this gate.
+The repository source-truth gate now compiles the guide calculation and viewport modules and executes the full interaction contract.
 
 ---
 
-## 11. Next permitted engineering sequence
+## 10. Next permitted engineering sequence
 
-1. smart guides, live measurements, optional snapping, and empty-space orbit regressions;
-2. freeform editable paths, nodes, and handles;
-3. source-region selection and manual tracing;
-4. bounded deterministic contour and mask candidates;
-5. Ollama-assisted candidate assessment through the same editable path;
-6. review, approval, versioning, and real Shape Library insertion;
-7. 2D composition, alignment, groups, arrays, and explicit booleans;
-8. advanced reversible 3D construction recipes;
-9. assemblies, anchors, connectors, hierarchy, and distinct merge operations;
-10. verified SVG, PNG, GLB/glTF, and OBJ output profiles;
-11. release installation, migration, backup, recovery, licence, and documentation gates.
+After PR #60 review, merge, T1700 synchronization, and live acceptance:
 
-The standard sequence remains:
+1. freeform editable paths, nodes, and handles;
+2. source-region selection and manual tracing;
+3. bounded deterministic contour and mask candidates;
+4. Ollama-assisted candidate assessment through the same editable path;
+5. review, approval, versioning, and real Shape Library insertion;
+6. 2D composition, alignment, groups, arrays, and explicit booleans;
+7. advanced reversible 3D construction recipes;
+8. assemblies, anchors, connectors, hierarchy, and distinct merge operations;
+9. verified SVG, PNG, GLB/glTF, and OBJ output profiles;
+10. release installation, migration, backup, recovery, licence, and documentation gates.
 
 ```text
 focused branch
@@ -285,7 +274,7 @@ focused branch
 
 ---
 
-## 12. Current non-claims
+## 11. Current non-claims
 
 Forge does not currently claim:
 
@@ -294,6 +283,7 @@ Forge does not currently claim:
 - automatic production-ready reconstruction;
 - approved Shape Library insertion;
 - advanced assembly or constraint solving;
+- equal-gap or distribution guides;
 - engineering-grade dimensions or tolerances;
 - manufacturing safety;
 - watertight or repaired meshes;
@@ -304,7 +294,7 @@ Forge does not currently claim:
 
 ---
 
-## 13. Verification rule
+## 12. Verification rule
 
 No capability becomes VERIFIED solely because code was committed or merged.
 
