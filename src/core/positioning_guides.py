@@ -21,21 +21,103 @@ def clamp_snap_tolerance(value: float) -> float:
     return max(MIN_SNAP_TOLERANCE, min(MAX_SNAP_TOLERANCE, float(value)))
 
 
+def _rotate_point(
+    point: tuple[float, float, float], rotation: dict
+) -> tuple[float, float, float]:
+    """Apply the same X, Y, then Z rotation order as the CPU viewport."""
+    x, y, z = point
+    rx = math.radians(float(rotation["x"]))
+    ry = math.radians(float(rotation["y"]))
+    rz = math.radians(float(rotation["z"]))
+
+    cosine, sine = math.cos(rx), math.sin(rx)
+    y, z = y * cosine - z * sine, y * sine + z * cosine
+
+    cosine, sine = math.cos(ry), math.sin(ry)
+    x, z = x * cosine + z * sine, -x * sine + z * cosine
+
+    cosine, sine = math.cos(rz), math.sin(rz)
+    x, y = x * cosine - y * sine, x * sine + y * cosine
+    return x, y, z
+
+
+def _base_polygon(item: dict) -> list[tuple[float, float]]:
+    """Return the same bounded primitive outline used by the CPU viewport."""
+    width = float(item["size"]["x"])
+    height = float(item["size"]["y"])
+    primitive = item["primitive_type"]
+    if primitive in {"rectangle", "square"}:
+        return [
+            (-width / 2.0, -height / 2.0),
+            (width / 2.0, -height / 2.0),
+            (width / 2.0, height / 2.0),
+            (-width / 2.0, height / 2.0),
+        ]
+    if primitive in {"circle", "ellipse"}:
+        return [
+            (
+                math.cos(index * math.tau / 24.0) * width / 2.0,
+                math.sin(index * math.tau / 24.0) * height / 2.0,
+            )
+            for index in range(24)
+        ]
+    if primitive == "star":
+        parameters = item.get("primitive_parameters", {})
+        points = int(parameters.get("points", 5))
+        inner_ratio = float(parameters.get("inner_ratio", 0.45))
+        result = []
+        for index in range(points * 2):
+            angle = -math.pi / 2.0 + index * math.pi / points
+            ratio = 1.0 if index % 2 == 0 else inner_ratio
+            result.append(
+                (
+                    math.cos(angle) * width / 2.0 * ratio,
+                    math.sin(angle) * height / 2.0 * ratio,
+                )
+            )
+        return result
+    raise ValueError(f"Unsupported guide primitive: {primitive!r}.")
+
+
+def _rotated_local_bounds(item: dict) -> dict[str, tuple[float, float]]:
+    """Derive exact viewport-matching local AABB offsets after object rotation."""
+    depth = float(item["size"]["z"])
+    points = []
+    for x, y in _base_polygon(item):
+        points.append(_rotate_point((x, y, -depth / 2.0), item["rotation_deg"]))
+        points.append(_rotate_point((x, y, depth / 2.0), item["rotation_deg"]))
+    return {
+        axis: (
+            min(point[index] for point in points),
+            max(point[index] for point in points),
+        )
+        for index, axis in enumerate(AXES)
+    }
+
+
 def _axis_features(item: dict, axis: str) -> dict[str, float]:
     center = float(item["position"][axis])
-    half_size = float(item["size"][axis]) / 2.0
+    local_min, local_max = _rotated_local_bounds(item)[axis]
     return {
-        "min": center - half_size,
+        "min": center + local_min,
         "center": center,
-        "max": center + half_size,
+        "max": center + local_max,
     }
+
+
+def _axis_surface_gap(first: dict[str, float], second: dict[str, float]) -> float:
+    return max(
+        0.0,
+        first["min"] - second["max"],
+        second["min"] - first["max"],
+    )
 
 
 def _nearest_object(moving: dict, others: list[dict]) -> dict | None:
     if not others:
         return None
     moving_position = moving["position"]
-    moving_size = moving["size"]
+    moving_bounds = {axis: _axis_features(moving, axis) for axis in AXES}
     best: dict | None = None
     for item in others:
         deltas = {
@@ -43,12 +125,11 @@ def _nearest_object(moving: dict, others: list[dict]) -> dict | None:
             for axis in AXES
         }
         center_distance = math.sqrt(sum(value * value for value in deltas.values()))
-        surface_axis_gaps = {}
-        for axis in AXES:
-            half_extent = (
-                float(moving_size[axis]) + float(item["size"][axis])
-            ) / 2.0
-            surface_axis_gaps[axis] = max(0.0, abs(deltas[axis]) - half_extent)
+        item_bounds = {axis: _axis_features(item, axis) for axis in AXES}
+        surface_axis_gaps = {
+            axis: _axis_surface_gap(moving_bounds[axis], item_bounds[axis])
+            for axis in AXES
+        }
         surface_distance = math.sqrt(
             sum(value * value for value in surface_axis_gaps.values())
         )
@@ -122,8 +203,9 @@ def calculate_positioning_guides(
 ) -> tuple[dict, dict]:
     """Calculate transient guide evidence and optionally snap X/Y movement.
 
-    Guide calculations are derived from axis-aligned object bounds in current scene
-    units. They never mutate the input object or any nonselected scene member.
+    Guide calculations use axis-aligned bounds derived from the same rotated primitive
+    geometry rendered by the CPU viewport. They never mutate the input object or any
+    nonselected scene member.
     """
     bounded_tolerance = clamp_snap_tolerance(tolerance)
     updated = copy.deepcopy(moving_object)
