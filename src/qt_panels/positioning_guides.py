@@ -3,10 +3,8 @@
 
 from __future__ import annotations
 
-import copy
-
-from PySide6.QtCore import QPointF, QRectF, Qt
-from PySide6.QtGui import QAction, QPainter, QPen
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QAction, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QDoubleSpinBox, QLabel
 
 from core.positioning_guides import (
@@ -97,9 +95,8 @@ class GuidedObjectViewport(StableObjectViewport):
             return
 
         target = self._scene_target()
-        highlight = self.palette().color(self.palette().ColorRole.Highlight)
-        pen = QPen(highlight, 1.5, Qt.PenStyle.DashDotLine)
-        painter.setPen(pen)
+        highlight = self.palette().color(QPalette.ColorRole.Highlight)
+        painter.setPen(QPen(highlight, 1.5, Qt.PenStyle.DashDotLine))
         extent = 1600.0
         selected_z = float(selected["position"]["z"])
         for alignment in state.get("alignments", []):
@@ -128,10 +125,10 @@ class GuidedObjectViewport(StableObjectViewport):
         line_height = 18.0
         box_height = 10.0 + line_height * len(lines)
         box = QRectF(10.0, 34.0, max(200.0, self.width() - 20.0), box_height)
-        background = self.palette().color(self.palette().ColorRole.Base)
+        background = self.palette().color(QPalette.ColorRole.Base)
         background.setAlpha(215)
         painter.fillRect(box, background)
-        painter.setPen(self.palette().color(self.palette().ColorRole.Text))
+        painter.setPen(self.palette().color(QPalette.ColorRole.Text))
         for index, line in enumerate(lines):
             painter.drawText(
                 QRectF(16.0, 38.0 + index * line_height, box.width() - 12.0, line_height),
@@ -225,8 +222,9 @@ def install_positioning_guides(panel) -> None:
         "Scene-unit threshold used for alignment detection and optional X/Y snapping."
     )
     inspector_layout = panel.inspector.layout()
-    inspector_layout.addWidget(panel.guide_tolerance_label, 5, 0)
-    inspector_layout.addWidget(panel.guide_tolerance_spin, 5, 1, 1, 3)
+    inspector_layout.addWidget(panel.guide_tolerance_label, 6, 0)
+    inspector_layout.addWidget(panel.guide_tolerance_spin, 6, 1, 1, 3)
+    inspector_layout.setRowStretch(7, 1)
 
     panel.guides_action.triggered.connect(
         lambda _checked=False: apply_positioning_guide_options(panel, announce=True)
@@ -237,7 +235,16 @@ def install_positioning_guides(panel) -> None:
     panel.guide_tolerance_spin.valueChanged.connect(
         lambda _value: apply_positioning_guide_options(panel, announce=False)
     )
+
+    original_update_cad_controls = panel._update_cad_controls
+
+    def update_cad_controls_with_guides() -> None:
+        original_update_cad_controls()
+        update_positioning_guide_controls(panel)
+
+    panel._update_cad_controls = update_cad_controls_with_guides
     apply_positioning_guide_options(panel, announce=False)
+    update_positioning_guide_controls(panel)
 
 
 def apply_positioning_guide_options(panel, *, announce: bool) -> None:
