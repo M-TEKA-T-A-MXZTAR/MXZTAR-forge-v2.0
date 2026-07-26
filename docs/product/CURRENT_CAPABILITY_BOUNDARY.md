@@ -69,6 +69,12 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 
 Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that the controls were outside the scroll content. PR #65 adds the stronger viewport-top geometry requirement.
 
+Historical PR #63 branch labels retained for evidence traceability: `Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch` and `Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch`.
+
+The earlier interaction wording remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
+
+Deterministic verification now uses real `QWheelEvent` delivery through Qt; PR #65 additionally verifies the control bar's window-relative geometry.
+
 ## 4. Image-to-shape authority
 
 Forge must not confuse visual assessment with geometry extraction.
