@@ -3,9 +3,9 @@
 **Ledger date:** 27 July 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
 **Active product horizon:** integrated shape/object CAD, Stage One and Stage Two  
-**Merged runtime baseline:** `b84f188` through PR #63  
-**Current delivery gate:** PR #64 asset-generation and Construct architecture reconciliation  
-**Current branch:** `agent/bring-forward-asset-generation-construct-architecture`
+**Merged runtime baseline:** `1cbcc50` through PR #64  
+**Current delivery gate:** PR #65 sticky Editor controls at the visible viewport top  
+**Current branch:** `agent/fix-sticky-editor-options-viewport`
 
 This ledger records current product truth and priority changes. Detailed commit history remains available in Git.
 
@@ -51,7 +51,7 @@ Asset extraction and generation are brought forward because they create the reus
 
 The software will ship with a founder-controlled starter source-asset pack. Bundled assets remain read-only application assets and must be copied into a user project before editing.
 
-Interaction controls must remain reachable while the user is working. Selecting a 2D or 3D output must bring that output into visible range, and an explicitly selected zoom mode must not also scroll the page.
+Interaction controls must remain reachable while the user is working. The Editor Options tree and wheel selector must remain at the top of the currently visible Editor workspace while the page scrolls beneath them. Selecting a 2D or 3D output must bring that output into visible range, and an explicitly selected zoom mode must not also scroll the page.
 
 Moving objects together around a central construct point must never silently group, assemble, stitch, weld, join, boolean, separate, or bake them.
 
@@ -82,9 +82,10 @@ This direction does not authorise fake perspective effects, unsupported automati
 - PR #58 — GitHub-generated CodeQL Advanced workflow for Actions and Python.
 - PR #59 — reconciled README, Master Build Plan, Progress Ledger, capability boundary, and documentation-drift verification.
 - PR #60 — transient positioning guides, measurements, optional snapping, rotation-aware bounds, and preserved empty-space orbit.
-- PR #61 — default mouse-wheel page scrolling, selectable 3D zoom modes, and pinned Editor options.
+- PR #61 — default mouse-wheel page scrolling, selectable 3D zoom modes, and nominally pinned Editor options.
 - PR #62 — isolated wheel-verifier settings and guaranteed Qt background-thread cleanup.
 - PR #63 — real wheel-event consumption, active-output reveal, and reselecting an already-active output to reveal it again.
+- PR #64 — brought-forward asset generation, shipped starter-asset planning, and modular Construct architecture.
 
 ---
 
@@ -128,7 +129,7 @@ Recorded evidence:
 - focused isolated wheel verifier exit code `0`;
 - complete T1700 Source Truth exit code `0`;
 - page scrolling is the first-run default;
-- pinned Editor options remain outside the scroll area;
+- Editor options remain outside the scroll area;
 - settings persistence and Qt thread cleanup pass.
 
 Live T1700 inspection then found:
@@ -140,7 +141,7 @@ The earlier verifier called handlers directly and therefore did not prove real Q
 
 ### PR #63 live 3D output reveal and wheel-event routing
 
-Status: **DETERMINISTICALLY VERIFIED on the PR #63 branch; T1700 live acceptance pending**.
+Status at merge: **DETERMINISTICALLY VERIFIED on the PR #63 branch; T1700 live acceptance pending**.
 
 Recorded post-merge T1700 automated evidence:
 
@@ -155,9 +156,44 @@ Recorded post-merge T1700 automated evidence:
 - real `QWheelEvent` objects are sent through Qt;
 - no Qt thread shutdown warning appears.
 
-Final manual live acceptance of those corrected interactions remains required before the interaction gate becomes fully VERIFIED.
+Live T1700 acceptance confirmed the output reveal and zoom-routing corrections, but exposed a separate control-placement failure: the Editor Options tree did not remain at the top of the currently visible workspace while the page scrolled.
 
 No downstream export, production mesh, manufacturing, tracing, approved library, persistent surface-area, effect-stack, or advanced assembly acceptance is implied.
+
+### PR #64 architecture evidence
+
+Status: **MERGED and VERIFIED at the documentation-and-architecture boundary**.
+
+Recorded evidence:
+
+- synchronized to merge commit `1cbcc50`;
+- complete post-merge Source Truth exit code `0`;
+- asset-generation and Construct addendum is present and authoritative;
+- starter assets, surfaces, groups, assemblies, seams, and effects remain explicitly PLANNED;
+- no new runtime capability is claimed.
+
+### PR #65 sticky viewport-top controls
+
+Status: **DETERMINISTICALLY VERIFIED on the PR #65 branch; T1700 live acceptance pending**.
+
+Correction:
+
+- the Editor interaction bar is no longer inserted beneath the full main content row;
+- a dedicated expanding right-hand column now contains the sticky control bar followed by `page_scroll`;
+- the bar is outside the scrollable content and directly above its visible viewport;
+- scrolling the Editor page cannot change the bar's window-relative top coordinate;
+- the bar hides on unrelated pages and the scroll viewport expands into the released space;
+- project files, geometry, object-scene state, and wheel-mode settings remain unchanged.
+
+Strengthened evidence:
+
+- the verifier checks the sticky-column widget order;
+- the verifier checks that the bar is not a descendant of `page_scroll`;
+- the verifier records the bar's window-relative top coordinate;
+- the page is scrolled to its maximum value;
+- the verifier requires the bar to remain at the exact same top coordinate;
+- returning to Editor must restore the controls at that same viewport-top position;
+- Python Compile Check, Security & Code Scan, Source Truth, and CodeQL Advanced pass.
 
 ---
 
@@ -166,7 +202,7 @@ No downstream export, production mesh, manufacturing, tracing, approved library,
 | Workspace | Current truth |
 |---|---|
 | Start Here | Purpose-driven Project Birth, discovery, open/switch, close, and guided blank-document path are implemented |
-| Editor | Primary integrated 2D shape and 3D object workspace; five primitives, direct manipulation, guides, wheel routing, and active-output reveal exist |
+| Editor | Primary integrated 2D shape and 3D object workspace; PR #65 corrects sticky viewport-top access to Editor Options and wheel controls |
 | My Library | Verified bounded source intake, previews, exact handoff, and guarded lifecycle |
 | Shape Library | Evidence browser only; approved editable lifecycle and insertion are not implemented |
 | Agent Workflows | Optional local-AI assessment and planning foundation; not geometry authority |
@@ -280,7 +316,7 @@ These are planned visual-design systems, not engineering material or electronics
 
 ## 8. Brought-forward engineering sequence
 
-PR #63 manual live acceptance remains the final gate before new runtime work begins.
+PR #65 manual live acceptance remains the final gate before new runtime work begins.
 
 The active sequence is:
 
