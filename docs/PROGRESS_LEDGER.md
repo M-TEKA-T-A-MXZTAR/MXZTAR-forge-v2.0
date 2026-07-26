@@ -3,9 +3,9 @@
 **Ledger date:** 27 July 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
 **Active product horizon:** integrated shape/object CAD, Stage One and Stage Two  
-**Merged runtime baseline:** `fc0963f` through PR #60  
-**Current delivery gate:** PR #61 mouse-wheel page scrolling and pinned Editor options  
-**Current branch:** `agent/restore-mouse-wheel-scrolling`
+**Merged runtime baseline:** `6a0b558` through PR #62  
+**Current delivery gate:** PR #63 live 3D output reveal and wheel-event routing  
+**Current branch:** `agent/fix-live-3d-wheel-routing`
 
 This ledger records current product truth and priority changes. Detailed commit history remains available in Git.
 
@@ -41,7 +41,7 @@ Purpose
 → portable outputs
 ```
 
-Interaction controls must remain reachable while the user is working. A user must not be forced to drag a scrollbar or return to the top of a long Editor page merely to change output settings.
+Interaction controls must remain reachable while the user is working. A user must not be forced to drag a scrollbar or return to the top of a long Editor page merely to change output settings. Selecting a 2D or 3D output must bring that output into visible range, and an explicitly selected zoom mode must not also scroll the page.
 
 This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, or a vague one-button merge operation.
 
@@ -70,12 +70,14 @@ This direction does not authorise fake perspective effects, unsupported automati
 - PR #58 — GitHub-generated CodeQL Advanced workflow for Actions and Python.
 - PR #59 — reconciled README, Master Build Plan, Progress Ledger, capability boundary, and documentation-drift verification.
 - PR #60 — transient positioning guides, measurements, optional snapping, rotation-aware bounds, and preserved empty-space orbit.
+- PR #61 — default mouse-wheel page scrolling, selectable 3D zoom modes, and pinned Editor options.
+- PR #62 — isolated wheel-verifier settings and guaranteed Qt background-thread cleanup.
 
 ---
 
 ## 4. Recorded T1700 evidence
 
-### PR #57 and PR #59 merged-main verification
+### Established merged-main repository boundary
 
 Status: **VERIFIED for the deterministic repository boundary**.
 
@@ -88,25 +90,40 @@ Recorded evidence includes:
 - listed Python files compile;
 - CodeQL Advanced contract passes;
 - launcher import contract passes;
-- native shape, 3D object, single-object usability, project authoring, and paired deletion contracts pass;
-- all seven optional prompt contracts build.
+- native shape, 3D object, single-object usability, project authoring, paired deletion, positioning-guide, and prompt contracts pass.
 
-### PR #60 merged-main automated verification
+### PR #60 smart-guide evidence
 
-Status: **DETERMINISTICALLY VERIFIED on merged `main`; full live acceptance interrupted by the scrolling defect now addressed in PR #61**.
+Status: **DETERMINISTICALLY VERIFIED on merged `main`; final live acceptance remains coupled to the corrected viewport interaction gate**.
 
 Recorded evidence:
 
-- T1700 synchronized to merge commit `fc0963f`;
 - focused positioning-guide contract exit code `0`;
-- complete Source Truth verification exit code `0`;
-- rotation-aware 90-degree and 45-degree guide bounds pass;
+- complete Source Truth exit code `0`;
+- rotation-aware 90-degree and 45-degree bounds pass;
 - guidance-only movement does not force position;
 - snapping remains separate and off by default;
 - nonselected objects remain unchanged;
 - empty-space drag remains orbit.
 
-Live inspection then revealed that the 3D output consumed every wheel event as zoom, preventing normal mouse-wheel page scrolling while the pointer was over the output. This is a usability regression, not a project-authority or geometry failure.
+### PR #61 and PR #62 interaction evidence
+
+Status: **MERGED and deterministically verified; live acceptance found two remaining defects**.
+
+Recorded evidence:
+
+- focused isolated wheel verifier exit code `0`;
+- complete T1700 Source Truth exit code `0`;
+- page scrolling is the first-run default;
+- pinned Editor options remain outside the scroll area;
+- settings persistence and Qt thread cleanup pass.
+
+Live T1700 inspection then found:
+
+1. switching to `3D Object View` left the object viewport below the current visible page range;
+2. selecting `Zoom 3D view` still allowed the real wheel event to scroll the outer page.
+
+The earlier verifier called handlers directly and therefore did not prove real Qt event delivery or parent propagation. These are interaction defects, not project-authority, geometry, or object-scene failures.
 
 No downstream export, production mesh, manufacturing, tracing, approved library, or advanced assembly acceptance is implied.
 
@@ -117,7 +134,7 @@ No downstream export, production mesh, manufacturing, tracing, approved library,
 | Workspace | Current truth |
 |---|---|
 | Start Here | Purpose-driven Project Birth, discovery, open/switch, close, and guided blank-document path are implemented |
-| Editor | Primary integrated 2D shape and 3D object workspace; PR #60 is merged; PR #61 corrects wheel scrolling and keeps options visible while scrolled |
+| Editor | Primary integrated 2D shape and 3D object workspace; PR #63 corrects live output reveal and real wheel-event consumption |
 | My Library | Verified bounded source intake, previews, exact handoff, and guarded lifecycle |
 | Shape Library | Evidence browser only; approved editable lifecycle and insertion are not implemented |
 | Agent Workflows | Optional local-AI assessment and planning foundation; not geometry authority |
@@ -177,9 +194,9 @@ Implemented on merged `main`:
 - atomic save, rollback, and restart restoration;
 - moving one selected object leaves nonselected objects unchanged.
 
-### PR #60 smart positioning gate
+### Smart positioning gate
 
-Status: **DETERMINISTICALLY VERIFIED on merged `main`; final live acceptance resumes after PR #61**.
+Status: **DETERMINISTICALLY VERIFIED on merged `main`**.
 
 Implemented:
 
@@ -206,36 +223,31 @@ Not included:
 
 ---
 
-## 7. PR #61 mouse-wheel and pinned-options correction
+## 7. PR #63 live viewport interaction correction
 
-Status: **DETERMINISTICALLY VERIFIED on the PR #61 branch; T1700 live acceptance pending**.
+Status: **DETERMINISTICALLY VERIFIED on the PR #63 branch; T1700 live acceptance pending**.
 
-Defect:
+Correction:
 
-- the 3D output consumed every wheel event as zoom;
-- users hovering the output could not scroll the outer Editor page with the wheel;
-- the implemented Editor action menus remained at the top of the scrolling page.
+- 2D/3D stacked-view changes use the existing outer `QScrollArea` authority;
+- after layout settles, the newly active output is repositioned into the visible page range;
+- authorized 3D zoom is delivered exactly once to the object viewport;
+- the zoom event is explicitly accepted and consumed before it can propagate to page scrolling;
+- `Scroll page` continues to scroll over 2D or 3D output;
+- `Zoom 3D view` zooms over 3D while 2D wheel input still scrolls;
+- modifier mode scrolls normally and uses Ctrl+wheel for 3D zoom;
+- project files, geometry, object-scene schema, and saved user preference authority remain unchanged.
 
-Implemented on the branch:
+Strengthened deterministic evidence:
 
-- `Scroll page` is the default wheel mode;
-- wheel over either 2D or 3D output moves the existing outer page scrollbar;
-- scroll mode does not change 3D zoom;
-- `Zoom 3D view` explicitly restores wheel zoom over 3D output;
-- `Scroll page; Ctrl+wheel zoom` preserves normal scrolling and enables modifier zoom;
-- the mode persists through existing application settings;
-- sidebar navigation is not intercepted;
-- a fixed `Editor Options` tree remains outside the scroll area;
-- Document, Shape, Edit, Object and View actions remain reachable after scrolling to the bottom;
-- the fixed strip appears only while Editor is active;
-- project files, geometry and object-scene schema remain unchanged.
-
-Deterministic evidence:
-
+- real `QWheelEvent` objects are sent through Qt rather than calling fake handlers directly;
+- switching from 2D to 3D places the object viewport inside the visible scroll viewport;
+- real wheel delivery in zoom mode changes zoom and leaves the page scrollbar unchanged;
+- real Ctrl+wheel zoom changes zoom and leaves the page scrollbar unchanged;
 - Python Compile Check passes;
 - Security & Code Scan passes;
-- Source Truth passes, including a real Qt vertical scroll range and output-wheel event routing;
-- CodeQL Advanced remains a required final gate.
+- Source Truth Check passes;
+- CodeQL Advanced passes for Actions and Python.
 
 ---
 
@@ -273,20 +285,20 @@ The current Shape Library does not provide approved editable shape records, appr
 
 ## 10. Security and repository controls
 
-Current PR #61 evidence:
+Current PR #63 evidence:
 
 - Python Compile Check: passing;
 - Security & Code Scan: passing;
-- Source Truth Check: passing, including the mouse-wheel and pinned-options verifier;
-- CodeQL Advanced: required before ready-for-review status.
+- Source Truth Check: passing with real wheel-event delivery and output-reveal assertions;
+- CodeQL Advanced: passing for Actions and Python.
 
-The root source-truth gate compiles the wheel controller and executes the full event-routing contract.
+The root source-truth gate compiles the wheel controller and executes the complete real-event routing contract.
 
 ---
 
 ## 11. Next permitted engineering sequence
 
-After PR #61 review, merge, T1700 synchronization, and live acceptance:
+After PR #63 review, merge, T1700 synchronization, focused output, complete Source Truth output, and live acceptance:
 
 1. freeform editable paths, nodes, and handles;
 2. source-region selection and manual tracing;
@@ -306,6 +318,8 @@ focused branch
 → review comments
 → merge confirmation
 → T1700 sync
+→ focused output and inspection
+→ complete Source Truth output and inspection
 → applicable live acceptance
 → ledger and capability-boundary update
 ```
@@ -336,6 +350,4 @@ Forge does not currently claim:
 
 No capability becomes VERIFIED solely because code was committed or merged.
 
-Evidence may include compile and import checks, schema and command replay, project integrity, interruption and rollback, Qt lifecycle and offscreen rendering, manual T1700 interaction, and downstream continuation tests.
-
-The environment that ran each verification must be identified truthfully.
+Evidence may include compile and import checks, schema and command replay, project integrity, interruption and rollback, Qt lifecycle and offscreen rendering, real event delivery, manual T1700 interaction, and downstream continuation tests.

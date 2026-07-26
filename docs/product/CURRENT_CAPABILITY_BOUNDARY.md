@@ -1,8 +1,8 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 27 July 2026  
-**Merged runtime baseline:** `main` through PR #60 at `fc0963f`  
-**Active branch evidence:** PR #61 mouse-wheel scrolling and pinned-options contract passes Source Truth; T1700 live acceptance remains pending
+**Merged runtime baseline:** `main` through PR #62 at `6a0b558`  
+**Active branch evidence:** PR #63 real wheel-event routing and active-output reveal pass Source Truth; T1700 live acceptance remains pending
 
 ## 1. Purpose
 
@@ -41,12 +41,13 @@ The Master Build Plan remains the finished-product and sequence authority. The P
 | Direct delete | DETERMINISTICALLY VERIFIED | Explicit selection is required; paired 2D shape and 3D object deletion persists without misusing Undo |
 | Turn native shapes into 3D objects | DETERMINISTICALLY VERIFIED foundation | The five implemented primitives become real extruded project-owned 3D objects |
 | Edit one 3D object | DETERMINISTICALLY VERIFIED | Position, width, height, depth, three-axis rotation, colour and opacity persist; nonselected objects remain unchanged |
-| 3D viewport navigation | DETERMINISTICALLY VERIFIED | Empty-space drag orbits and perspective/grid/line state persists; wheel behavior is being corrected by PR #61 |
-| Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main | PR #60 provides transient X/Y lines, X/Y/Z centre deltas, nearest-object measurements and rotation-aware bounds; full live acceptance awaits PR #61 |
+| 3D viewport navigation | DETERMINISTICALLY VERIFIED on PR #63 branch | Empty-space drag orbits; explicit zoom is consumed by the 3D viewport without also scrolling the page; merged-main live acceptance remains pending |
+| Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch | Switching between 2D and 3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
+| Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main | PR #60 provides transient X/Y lines, X/Y/Z centre deltas, nearest-object measurements and rotation-aware bounds |
 | Optional snapping | DETERMINISTICALLY VERIFIED on merged main | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
-| Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on PR #61 branch | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
-| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #61 branch | The pinned selector can choose direct 3D zoom or page scrolling with Ctrl+wheel zoom |
-| Pinned Editor options | DETERMINISTICALLY VERIFIED on PR #61 branch | Document, Shape, Edit, Object and View remain accessible outside the scroll area at any page position |
+| Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | PR #61 makes wheel over 2D or 3D output scroll the existing outer page by default without changing 3D zoom |
+| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
+| Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main | Document, Shape, Edit, Object and View remain accessible outside the scroll area at any page position |
 | Extract shapes from a 2D image by tracing | PLANNED | Source intake and previews exist, but no manual tracing path creates editable geometry |
 | Extract shapes algorithmically | PLANNED | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
 | Extract shapes through Ollama | PARTIAL evidence only | Ollama may assess source art and describe likely shapes or extraction zones; it does not create authoritative editable geometry |
@@ -139,11 +140,9 @@ Not included yet:
 - anchor or connector snapping;
 - dimensional engineering tolerance claims.
 
-## 7. PR #61 mouse-wheel and pinned-options authority
+## 7. PR #61–PR #63 mouse-wheel and visible-output authority
 
-The live PR #60 check revealed that the 3D output consumed every wheel event as zoom, preventing normal page scrolling while the pointer was over the output.
-
-PR #61 corrects this through one explicit interaction controller:
+PR #61 introduced one pinned interaction controller:
 
 ```text
 Scroll page                  → wheel over 2D or 3D output moves the outer page
@@ -151,30 +150,46 @@ Zoom 3D view                 → wheel over 3D output zooms; wheel over 2D scrol
 Scroll page; Ctrl+wheel zoom → normal wheel scrolls; Ctrl+wheel over 3D zooms
 ```
 
+PR #62 isolated verifier settings and guaranteed Qt background-thread cleanup.
+
+Live T1700 use then found two unproven cases:
+
+1. changing to `3D Object View` could leave the object viewport below the visible page range;
+2. a real zoom wheel event could continue into the parent page scroll area.
+
+PR #63 corrects and verifies those cases.
+
 Required interaction rules:
 
-1. `Scroll page` is the default.
+1. `Scroll page` is the first-run default.
 2. Page scrolling uses the existing outer `QScrollArea`; no competing scroll authority is created.
-3. Scroll mode never changes 3D zoom.
-4. Zoom occurs only when the selected mode authorises it.
-5. Sidebar navigation is not intercepted.
-6. The selected mode persists through existing application settings.
-7. A fixed `Editor Options` tree remains outside the scrolling page.
-8. Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
-9. The fixed strip appears only while Editor is active.
-10. Project files, geometry and object-scene schema are unchanged.
+3. Selecting 2D or 3D brings the active output into visible page range after layout settles.
+4. Scroll mode never changes 3D zoom.
+5. Zoom occurs only when the selected mode authorises it.
+6. An authorised 3D zoom event is delivered once, accepted, and consumed before page propagation.
+7. Direct zoom and Ctrl+wheel zoom leave the page scrollbar unchanged.
+8. Wheel over 2D output continues to scroll the page in every mode.
+9. Sidebar navigation is not intercepted.
+10. The selected mode persists through existing application settings.
+11. A fixed `Editor Options` tree remains outside the scrolling page.
+12. Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
+13. The fixed strip appears only while Editor is active.
+14. Project files, geometry and object-scene schema are unchanged.
+
+Deterministic verification now uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
 
 ## 8. Viewport interaction contract
 
 ```text
-Drag selected object     → move that object; show transient guidance
-Drag resize handle       → resize that object; no movement guides
-Click empty viewport     → clear selection
-Drag empty viewport      → orbit or reorient perspective
-Mouse wheel              → follow the pinned mouse-wheel selector
-Guides off               → visual guidance off and snapping forced off
-Snap off                 → measurements only; no forced position
-Snap on                  → selected-object X/Y may snap inside bounded tolerance
+Select 2D or 3D output → reveal that output inside the visible page range
+Drag selected object   → move that object; show transient guidance
+Drag resize handle     → resize that object; no movement guides
+Click empty viewport   → clear selection
+Drag empty viewport    → orbit or reorient perspective
+Mouse wheel            → follow the pinned mouse-wheel selector
+Guides off             → visual guidance off and snapping forced off
+Snap off               → measurements only; no forced position
+Snap on                → selected-object X/Y may snap inside bounded tolerance
 ```
 
 ## 9. Shape Library completion boundary
@@ -200,7 +215,7 @@ Each operation requires named inputs, preview, persistence, undo or declared der
 
 ## 11. Immediate engineering order
 
-After PR #61 review, merge, synchronization and live acceptance:
+After PR #63 review, merge, synchronization, focused verification, complete Source Truth, and live acceptance:
 
 1. freeform editable paths, nodes and handles;
 2. source-region selection and manual tracing;
