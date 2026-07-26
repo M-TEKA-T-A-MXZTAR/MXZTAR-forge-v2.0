@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Forge shell with project authoring, pinned options, and explicit wheel routing."""
+"""Forge shell with project authoring, persistent options, and Project Trash."""
 
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
-from PySide6.QtWidgets import QApplication, QPushButton
+from PySide6.QtWidgets import QApplication, QInputDialog, QPushButton
 
 from qt_app import SETTINGS_APP, SETTINGS_ORG
 from qt_editor_app import EDITOR_PAGE_INDEX, START_HERE_PAGE_INDEX
@@ -13,6 +14,7 @@ from qt_editor_usability_app import UsableEditorForgeWindow
 from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel
 from qt_panels.editor_wheel_controls import EditorMouseWheelController
 from core.project_authoring_workflow import switch_project
+from core.project_trash import move_project_to_trash
 
 
 class StartHereProjectController:
@@ -27,12 +29,24 @@ class StartHereProjectController:
             "Close the current project safely, create a fresh project, and open a blank "
             "Editor document."
         )
+        self.delete_project_button = QPushButton("Delete Selected Project…")
+        self.delete_project_button.setToolTip(
+            "Move the exactly selected project into recoverable Project Trash after typing "
+            "its directory name. Active work and locked projects are protected."
+        )
+        insert_at = max(0, self.panel.project_actions_layout.count() - 1)
         self.panel.project_actions_layout.insertWidget(
-            max(0, self.panel.project_actions_layout.count() - 1),
+            insert_at,
+            self.delete_project_button,
+        )
+        self.panel.project_actions_layout.insertWidget(
+            insert_at + 1,
             self.new_project_document_button,
         )
         self.new_project_document_button.clicked.connect(self.create_fresh_project_document)
+        self.delete_project_button.clicked.connect(self.delete_selected_project)
         self.panel.new_project_document_button = self.new_project_document_button
+        self.panel.delete_project_button = self.delete_project_button
         self.panel.open_project_button.setText("Open / Switch Selected")
 
         self._disconnect(self.panel.open_project_action.triggered, self.panel.open_selected_project)
@@ -70,6 +84,7 @@ class StartHereProjectController:
         panel.open_project_button.setEnabled(switch_available)
         panel.open_project_action.setEnabled(switch_available)
         panel.go_to_project_action.setEnabled(switch_available)
+        self.delete_project_button.setEnabled(bool(unlocked and selection_available))
         panel.project_selector.setEnabled(unlocked and panel.project_selector.count() > 0)
         panel.refresh_projects_button.setEnabled(unlocked)
         panel.purpose_edit.setEnabled(not attached and unlocked)
@@ -106,6 +121,52 @@ class StartHereProjectController:
             f"Switched to project {state.assessment.project_dir.name}; loading its Editor build."
         )
         return state
+
+    def delete_selected_project(self, *_args) -> bool:
+        panel = self.panel
+        if panel._project_mutation_sources:
+            panel.set_status("Finish active project work before deleting a project.")
+            return False
+        selected = panel.project_selector.currentData()
+        if not selected:
+            panel.set_status("Choose one canonical project before using Delete Project.")
+            return False
+        selected_path = Path(str(selected)).expanduser().resolve()
+        project_name = selected_path.name
+        typed, accepted = QInputDialog.getText(
+            panel,
+            "Move project to Project Trash",
+            f"Type the exact project directory name to continue:\n\n{project_name}",
+        )
+        if not accepted:
+            panel.set_status("Project deletion cancelled; no project was moved.")
+            return False
+        if typed.strip() != project_name:
+            panel.set_status(
+                "Project deletion cancelled; the typed project name did not match."
+            )
+            return False
+
+        try:
+            result = move_project_to_trash(panel.project_session, selected_path)
+        except Exception as exc:
+            panel.set_status(f"Could not move selected project to Project Trash: {exc}")
+            panel.refresh_projects()
+            self.update_controls()
+            return False
+
+        panel.refresh_projects()
+        self.window.editor_panel.refresh_project_choices()
+        if result.was_active:
+            panel.project_changed.emit(None)
+            panel.project_status_label.setText("No project is open.")
+        self.update_controls()
+        panel.set_status(
+            f"Moved project {project_name} to recoverable Project Trash: "
+            f"{result.trashed_project_dir.name}."
+        )
+        self.window.refresh_guided_next_step()
+        return True
 
     def create_fresh_project_document(self, *_args):
         state = self.window.editor_panel.create_fresh_project_and_document()
@@ -161,9 +222,13 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
 
     def accept_editor_project_authority(self, state, action: str) -> None:
         self.start_here_panel.refresh_projects()
-        self.start_here_panel._show_project_state(state, action)
+        if state is None:
+            self.start_here_panel.project_status_label.setText("No project is open.")
+        else:
+            self.start_here_panel._show_project_state(state, action)
         if hasattr(self, "start_here_project_controller"):
             self.start_here_project_controller.update_controls()
+        self.refresh_guided_next_step()
 
     def refresh_guided_next_step(self) -> None:
         """Keep Project Birth pointed at one blank document before source workflows."""
