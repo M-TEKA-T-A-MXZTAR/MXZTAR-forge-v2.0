@@ -84,6 +84,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_codeql_configuration_contract.py \
   tools/verify_documentation_runtime_state_contract.py \
+  tools/verify_sticky_editor_options_documentation_contract.py \
   tools/verify_editor_mouse_wheel_contract.py \
   tools/verify_editor_project_authoring_contract.py \
   tools/verify_editor_single_object_workspace_contract.py \
@@ -102,6 +103,10 @@ echo "PASS: listed Python files compile"
 echo
 echo "=== DOCUMENTATION RUNTIME-STATE CONTRACT ==="
 PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_documentation_runtime_state_contract.py
+
+echo
+echo "=== STICKY EDITOR OPTIONS DOCUMENTATION CONTRACT ==="
+PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_sticky_editor_options_documentation_contract.py
 
 echo
 echo "=== CODEQL CONFIGURATION CONTRACT ==="
@@ -132,7 +137,7 @@ echo "=== POSITIONING GUIDES AND VIEWPORT NAVIGATION CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_positioning_guides_contract.py
 
 echo
-echo "=== EDITOR MOUSE-WHEEL AND PINNED OPTIONS CONTRACT ==="
+echo "=== EDITOR MOUSE-WHEEL AND STICKY OPTIONS CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_mouse_wheel_contract.py
 
 echo

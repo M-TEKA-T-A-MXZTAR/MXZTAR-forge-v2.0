@@ -1,8 +1,8 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 27 July 2026  
-**Merged runtime baseline:** `main` through PR #63 at `b84f188`  
-**Active branch evidence:** PR #64 documents the brought-forward asset-generation and Construct architecture; it adds no runtime capability
+**Merged runtime baseline:** `main` through PR #64 at `1cbcc50`  
+**Active branch evidence:** PR #65 makes Editor Options genuinely sticky at the visible viewport top; deterministic and live acceptance remain separate gates
 
 ## 1. Purpose
 
@@ -41,13 +41,13 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Direct delete | DETERMINISTICALLY VERIFIED | Explicit selection is required; paired 2D shape and 3D object deletion persists without misusing Undo |
 | Turn native shapes into 3D objects | DETERMINISTICALLY VERIFIED foundation | The five implemented primitives become real extruded project-owned 3D objects |
 | Edit one 3D object | DETERMINISTICALLY VERIFIED | Position, width, height, depth, three-axis rotation, colour and opacity persist; nonselected objects remain unchanged |
-| 3D viewport navigation | DETERMINISTICALLY VERIFIED on merged main | Empty-space drag orbits; real wheel zoom is consumed by the 3D viewport without also scrolling the page; final manual PR #63 acceptance remains pending |
-| Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch; now merged | Switching or explicitly reselecting 2D/3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
+| 3D viewport navigation | DETERMINISTICALLY VERIFIED on merged main | Empty-space drag orbits; real wheel zoom is consumed by the 3D viewport without also scrolling the page; final manual interaction acceptance remains pending |
+| Active output reveal | DETERMINISTICALLY VERIFIED on merged main | Switching or explicitly reselecting 2D/3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
 | Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main | PR #60 provides transient X/Y lines, X/Y/Z centre deltas, nearest-object measurements and rotation-aware bounds |
 | Optional snapping | DETERMINISTICALLY VERIFIED on merged main | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
 | Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
-| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch; now merged | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
-| Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main | Document, Shape, Edit, Object and View remain accessible outside the scroll area at any page position |
+| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on merged main | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
+| Sticky Editor options | DETERMINISTICALLY VERIFIED on PR #65 branch | The Editor Options tree and wheel selector occupy a fixed viewport-top row directly above the scroll area; page scrolling cannot move them away |
 | Extract shapes from a 2D image by tracing | PLANNED — brought forward | Source intake and previews exist, but no manual tracing path creates editable geometry |
 | Extract shapes algorithmically | PLANNED — brought forward | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
 | Extract shapes through Ollama | PARTIAL evidence only | Ollama may assess source art and describe likely shapes or extraction zones; it does not create authoritative editable geometry |
@@ -66,6 +66,14 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Advanced 3D creation from scratch | PARTIAL | Primitive extrusion and numeric editing exist; revolve, sweep, loft, shell, relief, bevel, vertex/face editing and sculpting do not |
 | SVG, PNG, GLB/glTF or OBJ export | PLANNED | No named validated downstream output profile is exposed |
 | CodeQL Advanced security analysis | VERIFIED repository control | GitHub Actions and Python analyses run through the merged advanced workflow |
+
+Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that the controls were outside the scroll content. PR #65 adds the stronger viewport-top geometry requirement.
+
+Historical PR #63 branch labels retained for evidence traceability: `Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch` and `Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch`.
+
+The earlier interaction wording remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
+
+Deterministic verification now uses real `QWheelEvent` delivery through Qt; PR #65 additionally verifies the control bar's window-relative geometry.
 
 ## 4. Image-to-shape authority
 
@@ -153,7 +161,7 @@ Not included yet:
 - anchor, socket, pivot, or surface-normal snapping;
 - dimensional engineering tolerance claims.
 
-## 8. PR #61–PR #63 mouse-wheel and visible-output authority
+## 8. PR #61–PR #65 scrolling, zoom and visible-control authority
 
 ```text
 Scroll page                  → wheel over 2D or 3D output moves the outer page
@@ -174,11 +182,13 @@ Required interaction rules:
 9. Wheel over 2D output continues to scroll the page in every mode.
 10. Sidebar navigation is not intercepted.
 11. The selected mode persists through existing application settings.
-12. A fixed `Editor Options` tree remains outside the scrolling page.
-13. Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
-14. Project files, geometry and object-scene schema are unchanged.
+12. The sticky Editor controls occupy a dedicated row directly above `page_scroll`, outside the scrolling content.
+13. The control bar retains the same window-relative top coordinate while the Editor page scrolls from top to maximum.
+14. The sticky row hides on unrelated pages and returns to the same viewport-top position in Editor.
+15. Document, Shape, Edit, Object and View actions remain available at every Editor scroll position.
+16. Project files, geometry and object-scene schema are unchanged.
 
-Deterministic verification now uses real `QWheelEvent` delivery through Qt. Focused and complete post-merge T1700 automated outputs pass; final manual live acceptance remains pending.
+Deterministic verification uses real `QWheelEvent` delivery through Qt and geometric viewport-position assertions. PR #65 branch checks pass; final manual T1700 acceptance remains required.
 
 ## 9. Brought-forward Construct authority
 
@@ -245,7 +255,7 @@ Each consequential operation requires named inputs, preview, persistence, Undo/R
 
 ## 11. Immediate engineering order
 
-PR #63 manual live acceptance remains the gate before new runtime work.
+PR #65 manual live acceptance remains the gate before new asset-generation runtime work.
 
 The active order is:
 
