@@ -16,6 +16,7 @@ for f in \
   docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md \
   docs/product/OUTPUT_ARTIFACT_CONTRACTS.md \
   docs/product/MASTER_BUILD_PLAN.md \
+  docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md \
   docs/product/CURRENT_CAPABILITY_BOUNDARY.md \
   docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
   docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md \
