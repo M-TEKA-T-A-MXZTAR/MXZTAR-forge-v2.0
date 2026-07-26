@@ -19,6 +19,7 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 import core.object_scene as object_scene_module  # noqa: E402
+import qt_panels.object_cad_panel as object_cad_panel_module  # noqa: E402
 from core.object_scene import (  # noqa: E402
     create_object_scene,
     load_object_scene,
@@ -40,7 +41,10 @@ from core.shape_document import (  # noqa: E402
     save_shape_document,
     write_shape_document_autosave,
 )
-from qt_panels.object_cad_panel import ObjectCadEditorPanel  # noqa: E402
+from qt_panels.object_cad_panel import (  # noqa: E402
+    ObjectCadEditorPanel,
+    ObjectViewport,
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -196,6 +200,40 @@ def main() -> int:
             panel.inspector.isEnabled() and panel.selected_object_id is not None,
             "opening the 3D scene selects an object and enables the numeric inspector",
         )
+        require(
+            ObjectViewport._opacity_alpha(0.0) == 0
+            and ObjectViewport._opacity_alpha(0.5) == 128
+            and ObjectViewport._opacity_alpha(1.0) == 255,
+            "viewport opacity maps canonical 0.0–1.0 values across the full alpha range",
+        )
+
+        original_panel_save = object_cad_panel_module.save_object_scene
+        panel_save_count = 0
+
+        def count_panel_save(project_session: ProjectSession, scene_value: dict):
+            nonlocal panel_save_count
+            panel_save_count += 1
+            return original_panel_save(project_session, scene_value)
+
+        object_cad_panel_module.save_object_scene = count_panel_save
+        try:
+            first_zoom = {**panel.object_scene["view"], "zoom": 1.4}
+            final_zoom = {**panel.object_scene["view"], "zoom": 1.65}
+            panel.schedule_view_state_commit(first_zoom)
+            panel.schedule_view_state_commit(final_zoom)
+            require(
+                panel._view_commit_timer.isActive() and panel_save_count == 0,
+                "rapid zoom previews schedule one delayed save without immediate disk writes",
+            )
+            panel.flush_pending_view_state()
+            require(
+                panel_save_count == 1
+                and panel.object_scene["view"]["zoom"] == 1.65
+                and not panel._view_commit_timer.isActive(),
+                "settled zoom persistence coalesces multiple previews into one canonical save",
+            )
+        finally:
+            object_cad_panel_module.save_object_scene = original_panel_save
 
         selected = panel._selected_scene_object()
         changed_from_panel = copy.deepcopy(selected)
