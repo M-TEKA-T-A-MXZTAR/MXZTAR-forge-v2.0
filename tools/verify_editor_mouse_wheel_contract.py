@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify page scrolling, live 3D zoom delivery, and pinned Editor options."""
+"""Verify page scrolling, live 3D zoom delivery, and sticky Editor options."""
 
 from __future__ import annotations
 
@@ -156,10 +156,19 @@ def main() -> int:
                 controller.current_mode() == WHEEL_MODE_SCROLL,
                 "page scrolling is the first-run default mouse-wheel mode",
             )
+
+            central = window.centralWidget()
+            sticky_layout = controller.viewport_column.layout()
+            bar_top = controller.bar.mapTo(central, QPoint(0, 0)).y()
+            page_top = window.page_scroll.mapTo(central, QPoint(0, 0)).y()
             require(
                 controller.bar.isVisible()
-                and not window.page_scroll.isAncestorOf(controller.bar),
-                "Editor interaction controls stay visible outside the scrolling page",
+                and not window.page_scroll.isAncestorOf(controller.bar)
+                and sticky_layout.indexOf(controller.bar) == 0
+                and sticky_layout.indexOf(window.page_scroll) == 1
+                and bar_top < page_top
+                and bar_top + controller.bar.height() <= page_top,
+                "Editor interaction controls are fixed directly above the visible scroll viewport",
             )
             menu_titles = {
                 action.menu().title()
@@ -168,7 +177,7 @@ def main() -> int:
             }
             require(
                 menu_titles == {"Document", "Shape", "Edit", "Object", "View"},
-                "pinned Editor Options exposes the complete implemented action tree",
+                "sticky Editor Options exposes the complete implemented action tree",
             )
 
             window.pages.setMinimumHeight(window.page_scroll.viewport().height() + 900)
@@ -294,11 +303,17 @@ def main() -> int:
                 "a fresh settings reader restores the selected mouse-wheel mode",
             )
 
+            sticky_top_before = controller.bar.mapTo(central, QPoint(0, 0)).y()
             scrollbar.setValue(scrollbar.maximum())
-            app.processEvents()
+            process_deferred(app)
+            sticky_top_after = controller.bar.mapTo(central, QPoint(0, 0)).y()
+            visible_page_top = window.page_scroll.mapTo(central, QPoint(0, 0)).y()
             require(
-                controller.bar.isVisible(),
-                "pinned Editor options remain visible after scrolling to the bottom",
+                controller.bar.isVisible()
+                and scrollbar.value() == scrollbar.maximum()
+                and sticky_top_after == sticky_top_before
+                and sticky_top_after + controller.bar.height() <= visible_page_top,
+                "sticky Editor options remain at the visible viewport top after scrolling to the bottom",
             )
             window.pages.setCurrentIndex(START_HERE_PAGE_INDEX)
             app.processEvents()
@@ -309,8 +324,9 @@ def main() -> int:
             window.pages.setCurrentIndex(EDITOR_PAGE_INDEX)
             process_deferred(app)
             require(
-                controller.bar.isVisible(),
-                "pinned interaction controls return whenever Editor is active",
+                controller.bar.isVisible()
+                and controller.bar.mapTo(central, QPoint(0, 0)).y() == sticky_top_before,
+                "sticky interaction controls return at the viewport top whenever Editor is active",
             )
 
             scene_before_cleanup = copy.deepcopy(panel.object_viewport.scene_data)
@@ -323,7 +339,7 @@ def main() -> int:
             if session.state is not None:
                 session.close()
 
-    print("PASS: Editor mouse-wheel scrolling and pinned-options contract verified")
+    print("PASS: Editor mouse-wheel scrolling and sticky-options contract verified")
     return 0
 
 
