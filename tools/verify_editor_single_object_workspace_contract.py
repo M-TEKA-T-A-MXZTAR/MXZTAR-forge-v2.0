@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify visible shape placement, isolated object edits, and current-page Editor sizing."""
+"""Verify visible placement, synchronized history, isolated edits, and Editor sizing."""
 
 from __future__ import annotations
 
@@ -19,9 +19,13 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtCore import QSize  # noqa: E402
 from PySide6.QtWidgets import QApplication, QWidget  # noqa: E402
 
+from core.object_scene import load_object_scene  # noqa: E402
 from core.project_session import ProjectSession  # noqa: E402
 from qt_editor_usability_app import CurrentPageStack  # noqa: E402
-from qt_panels.editor_usability_panel import SingleObjectWorkspacePanel  # noqa: E402
+from qt_panels.editor_usability_panel import (  # noqa: E402
+    SingleObjectWorkspacePanel,
+    StableObjectViewport,
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -88,7 +92,8 @@ def main() -> int:
             "each new shape appears in the 3D Editor immediately without manual resynchronization",
         )
         newest_shape = shapes[-1]
-        expected_selected = f"cad_{newest_shape['object_id'].removeprefix('object_')}"
+        newest_source_id = newest_shape["object_id"]
+        expected_selected = f"cad_{newest_source_id.removeprefix('object_')}"
         require(
             panel.selected_object_id == expected_selected,
             "the newest created object becomes the single active selection",
@@ -99,6 +104,63 @@ def main() -> int:
             and panel.workspace_splitter.widget(0) is panel.view_stack
             and panel.workspace_splitter.widget(1) is panel.inspector,
             "visual output and Object Inspector share one side-by-side Editor workspace",
+        )
+
+        five_object_anchor = panel.object_viewport._scene_target()
+        panel.undo_command()
+        app.processEvents()
+        require(
+            len(panel.document["objects"]) == 4
+            and len(panel.object_scene["objects"]) == 4
+            and all(
+                item["source_shape_id"] != newest_source_id
+                for item in panel.object_scene["objects"]
+            ),
+            "shape Undo removes the matching object from both 2D and 3D authority",
+        )
+        persisted_after_undo = load_object_scene(
+            session,
+            panel.document["document_id"],
+        )
+        require(
+            len(persisted_after_undo["objects"]) == 4
+            and all(
+                item["source_shape_id"] != newest_source_id
+                for item in persisted_after_undo["objects"]
+            ),
+            "shape Undo persists without a ghost object after reload",
+        )
+        four_object_anchor = panel.object_viewport._scene_target()
+        require(
+            four_object_anchor == StableObjectViewport._anchor_for_scene(panel.object_scene)
+            and four_object_anchor != five_object_anchor,
+            "camera anchor refreshes when Undo removes a scene member",
+        )
+
+        panel.redo_command()
+        app.processEvents()
+        require(
+            len(panel.document["objects"]) == 5
+            and len(panel.object_scene["objects"]) == 5
+            and any(
+                item["source_shape_id"] == newest_source_id
+                for item in panel.object_scene["objects"]
+            ),
+            "shape Redo restores matching membership in both 2D and 3D authority",
+        )
+        persisted_after_redo = load_object_scene(
+            session,
+            panel.document["document_id"],
+        )
+        require(
+            len(persisted_after_redo["objects"]) == 5,
+            "shape Redo persists the restored 3D membership",
+        )
+        require(
+            panel.object_viewport._scene_target()
+            == StableObjectViewport._anchor_for_scene(panel.object_scene)
+            and panel.object_viewport._scene_target() != four_object_anchor,
+            "camera anchor refreshes when Redo restores a scene member",
         )
 
         target_before = panel.object_viewport._scene_target()
@@ -124,6 +186,38 @@ def main() -> int:
                 for item in panel.object_scene["objects"]
             ),
             "moving the selected object leaves every nonselected object unchanged",
+        )
+
+        panel.add_rectangle_command()
+        panel.add_square_command()
+        panel.add_circle_command()
+        panel.add_ellipse_command()
+        app.processEvents()
+        nine_shapes = panel.document["objects"]
+        require(
+            len(nine_shapes) == panel.GRID_CAPACITY
+            and len(panel.object_scene["objects"]) == panel.GRID_CAPACITY,
+            "the visible placement grid accepts exactly nine synchronized objects",
+        )
+        require(
+            not any(
+                overlaps(nine_shapes[first], nine_shapes[second])
+                for first in range(len(nine_shapes))
+                for second in range(first + 1, len(nine_shapes))
+            ),
+            "all nine capacity slots remain non-overlapping",
+        )
+        revision_before_rejected_add = panel.document["revision"]
+        scene_revision_before_rejected_add = panel.object_scene["revision"]
+        panel.add_star_command()
+        app.processEvents()
+        require(
+            len(panel.document["objects"]) == panel.GRID_CAPACITY
+            and len(panel.object_scene["objects"]) == panel.GRID_CAPACITY
+            and panel.document["revision"] == revision_before_rejected_add
+            and panel.object_scene["revision"] == scene_revision_before_rejected_add
+            and "placement grid is full" in panel.status_label.text().lower(),
+            "a tenth primitive is rejected clearly without overlap or state mutation",
         )
 
         pages = CurrentPageStack()
