@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify page scrolling, explicit 3D zoom, and pinned Editor options."""
+"""Verify page scrolling, live 3D zoom delivery, and pinned Editor options."""
 
 from __future__ import annotations
 
@@ -17,7 +17,8 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from PySide6.QtCore import QEvent, QPoint, QSettings, Qt  # noqa: E402
+from PySide6.QtCore import QEvent, QPoint, QPointF, QSettings, Qt  # noqa: E402
+from PySide6.QtGui import QWheelEvent  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from core.project_session import ProjectSession  # noqa: E402
@@ -38,33 +39,39 @@ def require(condition: bool, message: str) -> None:
     print(f"PASS: {message}")
 
 
-class FakeWheelEvent:
-    def __init__(
-        self,
-        angle_y: int,
-        *,
-        modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier,
-        pixel_y: int = 0,
-    ):
-        self._angle = QPoint(0, angle_y)
-        self._pixel = QPoint(0, pixel_y)
-        self._modifiers = modifiers
-        self.accepted = False
+def make_wheel_event(
+    target,
+    angle_y: int,
+    *,
+    modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier,
+    pixel_y: int = 0,
+) -> QWheelEvent:
+    """Create a real Qt wheel event positioned over the requested widget."""
+    local_center = target.rect().center()
+    global_center = target.mapToGlobal(local_center)
+    event = QWheelEvent(
+        QPointF(local_center),
+        QPointF(global_center),
+        QPoint(0, pixel_y),
+        QPoint(0, angle_y),
+        Qt.MouseButton.NoButton,
+        modifiers,
+        Qt.ScrollPhase.ScrollUpdate,
+        False,
+    )
+    event.setAccepted(False)
+    return event
 
-    def type(self):
-        return QEvent.Type.Wheel
 
-    def angleDelta(self) -> QPoint:
-        return self._angle
+def deliver_wheel(app: QApplication, target, event: QWheelEvent) -> None:
+    QApplication.sendEvent(target, event)
+    app.processEvents()
 
-    def pixelDelta(self) -> QPoint:
-        return self._pixel
 
-    def modifiers(self):
-        return self._modifiers
-
-    def accept(self) -> None:
-        self.accepted = True
+def process_deferred(app: QApplication) -> None:
+    """Run queued single-shot layout and scroll corrections."""
+    app.processEvents()
+    app.processEvents()
 
 
 def close_window_safely(window, app: QApplication) -> None:
@@ -142,8 +149,7 @@ def main() -> int:
                 panel.create_blank_document()
             panel.add_rectangle_command()
             panel.add_square_command()
-            panel.show_3d_view()
-            app.processEvents()
+            process_deferred(app)
 
             controller = window.editor_mouse_wheel_controller
             require(
@@ -167,79 +173,101 @@ def main() -> int:
 
             window.pages.setMinimumHeight(window.page_scroll.viewport().height() + 900)
             window.pages.updateGeometry()
-            app.processEvents()
+            process_deferred(app)
             scrollbar = window.page_scroll.verticalScrollBar()
             require(scrollbar.maximum() > 0, "Editor page exposes a real vertical scroll range")
 
-            scrollbar.setValue(min(100, scrollbar.maximum()))
-            scroll_before = scrollbar.value()
-            zoom_before = panel.object_viewport.scene_data["view"]["zoom"]
-            scroll_event = FakeWheelEvent(-120)
-            handled = controller.eventFilter(panel.object_viewport, scroll_event)
+            # Reproduce the live transition: start at the top in 2D, then request 3D.
+            panel.show_2d_view()
+            process_deferred(app)
+            scrollbar.setValue(0)
+            panel.show_3d_view()
+            process_deferred(app)
+            output_top = panel.object_viewport.mapTo(
+                window.page_scroll.viewport(), QPoint(0, 0)
+            ).y()
             require(
-                handled
-                and scroll_event.accepted
-                and scrollbar.value() > scroll_before
-                and panel.object_viewport.scene_data["view"]["zoom"] == zoom_before,
-                "wheel over 3D output scrolls the outer page without changing zoom by default",
+                scrollbar.value() > 0
+                and 0 <= output_top < window.page_scroll.viewport().height(),
+                "switching to 3D brings the newly active output into visible page range",
             )
 
-            scrollbar.setValue(0)
-            canvas_event = FakeWheelEvent(-120)
+            scrollbar.setValue(min(100, max(0, scrollbar.maximum() - 100)))
+            scroll_before = scrollbar.value()
+            zoom_before = panel.object_viewport.scene_data["view"]["zoom"]
+            scroll_event = make_wheel_event(panel.object_viewport, -120)
+            deliver_wheel(app, panel.object_viewport, scroll_event)
             require(
-                controller.eventFilter(panel.canvas.viewport(), canvas_event)
-                and canvas_event.accepted
-                and scrollbar.value() > 0,
-                "wheel over 2D output also scrolls the outer page",
+                scroll_event.isAccepted()
+                and scrollbar.value() > scroll_before
+                and panel.object_viewport.scene_data["view"]["zoom"] == zoom_before,
+                "real wheel delivery over 3D scrolls the page without zoom by default",
             )
+
+            panel.show_2d_view()
+            process_deferred(app)
+            scrollbar.setValue(0)
+            canvas_event = make_wheel_event(panel.canvas.viewport(), -120)
+            deliver_wheel(app, panel.canvas.viewport(), canvas_event)
             require(
-                not controller.eventFilter(window.sidebar, FakeWheelEvent(-120)),
+                canvas_event.isAccepted() and scrollbar.value() > 0,
+                "real wheel delivery over 2D also scrolls the outer page",
+            )
+            sidebar_event = make_wheel_event(window.sidebar, -120)
+            require(
+                not controller.eventFilter(window.sidebar, sidebar_event),
                 "wheel routing does not interfere with sidebar navigation",
             )
 
+            panel.show_3d_view()
+            process_deferred(app)
             controller.set_mode(WHEEL_MODE_ZOOM, announce=False)
+            scroll_before = scrollbar.value()
             zoom_before = panel.object_viewport.scene_data["view"]["zoom"]
-            zoom_event = FakeWheelEvent(120)
+            zoom_event = make_wheel_event(panel.object_viewport, 120)
+            deliver_wheel(app, panel.object_viewport, zoom_event)
             require(
-                not controller.eventFilter(panel.object_viewport, zoom_event),
-                "explicit 3D zoom mode releases the wheel event to the viewport",
-            )
-            panel.object_viewport.wheelEvent(zoom_event)
-            require(
-                panel.object_viewport.scene_data["view"]["zoom"] > zoom_before,
-                "explicit 3D zoom mode changes the viewport zoom",
+                zoom_event.isAccepted()
+                and panel.object_viewport.scene_data["view"]["zoom"] > zoom_before
+                and scrollbar.value() == scroll_before,
+                "real wheel delivery in 3D zoom mode zooms without scrolling the page",
             )
 
+            panel.show_2d_view()
+            process_deferred(app)
             scrollbar.setValue(0)
-            zoom_mode_canvas_event = FakeWheelEvent(-120)
+            zoom_mode_canvas_event = make_wheel_event(panel.canvas.viewport(), -120)
+            deliver_wheel(app, panel.canvas.viewport(), zoom_mode_canvas_event)
             require(
-                controller.eventFilter(panel.canvas.viewport(), zoom_mode_canvas_event)
-                and scrollbar.value() > 0,
+                zoom_mode_canvas_event.isAccepted() and scrollbar.value() > 0,
                 "3D zoom mode still scrolls the page when the wheel is over 2D output",
             )
 
+            panel.show_3d_view()
+            process_deferred(app)
             controller.set_mode(WHEEL_MODE_SCROLL_CTRL_ZOOM, announce=False)
-            scrollbar.setValue(0)
-            ctrl_mode_scroll = FakeWheelEvent(-120)
+            scrollbar.setValue(min(100, max(0, scrollbar.maximum() - 100)))
+            scroll_before = scrollbar.value()
+            ctrl_mode_scroll = make_wheel_event(panel.object_viewport, -120)
+            deliver_wheel(app, panel.object_viewport, ctrl_mode_scroll)
             require(
-                controller.eventFilter(panel.object_viewport, ctrl_mode_scroll)
-                and scrollbar.value() > 0,
+                ctrl_mode_scroll.isAccepted() and scrollbar.value() > scroll_before,
                 "modifier mode scrolls the page when Ctrl is not held",
             )
 
+            scroll_before = scrollbar.value()
             zoom_before = panel.object_viewport.scene_data["view"]["zoom"]
-            ctrl_zoom_event = FakeWheelEvent(
+            ctrl_zoom_event = make_wheel_event(
+                panel.object_viewport,
                 120,
                 modifiers=Qt.KeyboardModifier.ControlModifier,
             )
+            deliver_wheel(app, panel.object_viewport, ctrl_zoom_event)
             require(
-                not controller.eventFilter(panel.object_viewport, ctrl_zoom_event),
-                "modifier mode releases Ctrl+wheel to the 3D viewport",
-            )
-            panel.object_viewport.wheelEvent(ctrl_zoom_event)
-            require(
-                panel.object_viewport.scene_data["view"]["zoom"] > zoom_before,
-                "Ctrl+wheel performs 3D zoom in modifier mode",
+                ctrl_zoom_event.isAccepted()
+                and panel.object_viewport.scene_data["view"]["zoom"] > zoom_before
+                and scrollbar.value() == scroll_before,
+                "Ctrl+wheel performs 3D zoom without leaking into page scrolling",
             )
 
             window.settings.sync()
@@ -264,7 +292,7 @@ def main() -> int:
                 "Editor-only interaction controls stay out of unrelated pages",
             )
             window.pages.setCurrentIndex(EDITOR_PAGE_INDEX)
-            app.processEvents()
+            process_deferred(app)
             require(
                 controller.bar.isVisible(),
                 "pinned interaction controls return whenever Editor is active",
