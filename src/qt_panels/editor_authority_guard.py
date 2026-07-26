@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from qt_panels.editor_authoring_panel import ProjectAwareEditorPanel
+from qt_panels.positioning_guides import install_positioning_guides
 
 
 class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
@@ -12,6 +13,12 @@ class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
     def __init__(self, project_session):
         self._project_mutation_sources: set[str] = set()
         super().__init__(project_session)
+        install_positioning_guides(self)
+        self.header_label.setText(
+            "EDITOR; project/document shape-CAD workspace. Move one selected object with "
+            "transient guides and measurements, optionally snap it, or drag empty space "
+            "to orbit the perspective."
+        )
         self.project_selector.currentIndexChanged.connect(
             lambda _index: self._update_project_controls()
         )
