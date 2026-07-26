@@ -51,7 +51,7 @@ def main() -> int:
             "Progress Ledger does not preserve PR #65 geometric position verification",
         ),
         (
-            "Editor Options was still an auto-closing popup",
+            "`Editor Options` was still an auto-closing popup",
             "Progress Ledger does not record the PR #65 live popup-dismissal defect",
         ),
         (
