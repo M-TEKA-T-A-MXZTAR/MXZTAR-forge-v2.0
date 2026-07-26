@@ -21,26 +21,6 @@ def clamp_snap_tolerance(value: float) -> float:
     return max(MIN_SNAP_TOLERANCE, min(MAX_SNAP_TOLERANCE, float(value)))
 
 
-def _rotate_point(
-    point: tuple[float, float, float], rotation: dict
-) -> tuple[float, float, float]:
-    """Apply the same X, Y, then Z rotation order as the CPU viewport."""
-    x, y, z = point
-    rx = math.radians(float(rotation["x"]))
-    ry = math.radians(float(rotation["y"]))
-    rz = math.radians(float(rotation["z"]))
-
-    cosine, sine = math.cos(rx), math.sin(rx)
-    y, z = y * cosine - z * sine, y * sine + z * cosine
-
-    cosine, sine = math.cos(ry), math.sin(ry)
-    x, z = x * cosine + z * sine, -x * sine + z * cosine
-
-    cosine, sine = math.cos(rz), math.sin(rz)
-    x, y = x * cosine - y * sine, x * sine + y * cosine
-    return x, y, z
-
-
 def _base_polygon(item: dict) -> list[tuple[float, float]]:
     """Return the same bounded primitive outline used by the CPU viewport."""
     width = float(item["size"]["x"])
@@ -80,12 +60,27 @@ def _base_polygon(item: dict) -> list[tuple[float, float]]:
 
 
 def _rotated_local_bounds(item: dict) -> dict[str, tuple[float, float]]:
-    """Derive exact viewport-matching local AABB offsets after object rotation."""
+    """Derive viewport-matching local AABB offsets after object rotation."""
+    rotation = item["rotation_deg"]
+    rx = math.radians(float(rotation["x"]))
+    ry = math.radians(float(rotation["y"]))
+    rz = math.radians(float(rotation["z"]))
+    cosine_x, sine_x = math.cos(rx), math.sin(rx)
+    cosine_y, sine_y = math.cos(ry), math.sin(ry)
+    cosine_z, sine_z = math.cos(rz), math.sin(rz)
+
+    def rotate(point: tuple[float, float, float]) -> tuple[float, float, float]:
+        x, y, z = point
+        y, z = y * cosine_x - z * sine_x, y * sine_x + z * cosine_x
+        x, z = x * cosine_y + z * sine_y, -x * sine_y + z * cosine_y
+        x, y = x * cosine_z - y * sine_z, x * sine_z + y * cosine_z
+        return x, y, z
+
     depth = float(item["size"]["z"])
     points = []
     for x, y in _base_polygon(item):
-        points.append(_rotate_point((x, y, -depth / 2.0), item["rotation_deg"]))
-        points.append(_rotate_point((x, y, depth / 2.0), item["rotation_deg"]))
+        points.append(rotate((x, y, -depth / 2.0)))
+        points.append(rotate((x, y, depth / 2.0)))
     return {
         axis: (
             min(point[index] for point in points),
@@ -95,14 +90,18 @@ def _rotated_local_bounds(item: dict) -> dict[str, tuple[float, float]]:
     }
 
 
-def _axis_features(item: dict, axis: str) -> dict[str, float]:
-    center = float(item["position"][axis])
-    local_min, local_max = _rotated_local_bounds(item)[axis]
-    return {
-        "min": center + local_min,
-        "center": center,
-        "max": center + local_max,
-    }
+def _object_features(item: dict) -> dict[str, dict[str, float]]:
+    local_bounds = _rotated_local_bounds(item)
+    result = {}
+    for axis in AXES:
+        center = float(item["position"][axis])
+        local_min, local_max = local_bounds[axis]
+        result[axis] = {
+            "min": center + local_min,
+            "center": center,
+            "max": center + local_max,
+        }
+    return result
 
 
 def _axis_surface_gap(first: dict[str, float], second: dict[str, float]) -> float:
@@ -113,21 +112,23 @@ def _axis_surface_gap(first: dict[str, float], second: dict[str, float]) -> floa
     )
 
 
-def _nearest_object(moving: dict, others: list[dict]) -> dict | None:
+def _nearest_object(
+    moving: dict,
+    moving_features: dict[str, dict[str, float]],
+    others: list[tuple[dict, dict[str, dict[str, float]]]],
+) -> dict | None:
     if not others:
         return None
     moving_position = moving["position"]
-    moving_bounds = {axis: _axis_features(moving, axis) for axis in AXES}
     best: dict | None = None
-    for item in others:
+    for item, item_features in others:
         deltas = {
             axis: float(item["position"][axis]) - float(moving_position[axis])
             for axis in AXES
         }
         center_distance = math.sqrt(sum(value * value for value in deltas.values()))
-        item_bounds = {axis: _axis_features(item, axis) for axis in AXES}
         surface_axis_gaps = {
-            axis: _axis_surface_gap(moving_bounds[axis], item_bounds[axis])
+            axis: _axis_surface_gap(moving_features[axis], item_features[axis])
             for axis in AXES
         }
         surface_distance = math.sqrt(
@@ -145,12 +146,11 @@ def _nearest_object(moving: dict, others: list[dict]) -> dict | None:
 
 
 def _alignment_candidate(
-    moving: dict,
-    others: list[dict],
+    moving_features: dict[str, dict[str, float]],
+    others: list[tuple[dict, dict[str, dict[str, float]]]],
     scene_center: dict[str, float],
     axis: str,
 ) -> dict:
-    moving_features = _axis_features(moving, axis)
     references = [
         {
             "reference_kind": "scene_center",
@@ -159,8 +159,8 @@ def _alignment_candidate(
             "reference_value": float(scene_center[axis]),
         }
     ]
-    for item in others:
-        for feature, value in _axis_features(item, axis).items():
+    for item, item_features in others:
+        for feature, value in item_features[axis].items():
             references.append(
                 {
                     "reference_kind": "object",
@@ -171,7 +171,7 @@ def _alignment_candidate(
             )
 
     candidates = []
-    for moving_feature, moving_value in moving_features.items():
+    for moving_feature, moving_value in moving_features[axis].items():
         for reference in references:
             delta = reference["reference_value"] - moving_value
             candidates.append(
@@ -210,17 +210,18 @@ def calculate_positioning_guides(
     bounded_tolerance = clamp_snap_tolerance(tolerance)
     updated = copy.deepcopy(moving_object)
     object_id = updated["object_id"]
-    others = [
+    other_items = [
         copy.deepcopy(item)
         for item in scene_objects
         if item.get("object_id") != object_id
     ]
+    others = [(item, _object_features(item)) for item in other_items]
     center = dict(zip(AXES, (float(value) for value in scene_center), strict=True))
 
     alignments = []
     snap_applied = False
     for axis in AXES:
-        candidate = _alignment_candidate(updated, others, center, axis)
+        candidate = _alignment_candidate(_object_features(updated), others, center, axis)
         if candidate["distance"] <= bounded_tolerance:
             if snap_enabled and axis in {"x", "y"} and candidate["delta"] != 0.0:
                 updated["position"][axis] = (
@@ -236,6 +237,7 @@ def calculate_positioning_guides(
         axis: float(updated["position"][axis]) - center[axis]
         for axis in AXES
     }
+    moving_features = _object_features(updated)
     guide_state = {
         "object_id": object_id,
         "tolerance": bounded_tolerance,
@@ -243,7 +245,7 @@ def calculate_positioning_guides(
         "snap_applied": snap_applied,
         "scene_center": center,
         "scene_delta": scene_delta,
-        "nearest": _nearest_object(updated, others),
+        "nearest": _nearest_object(updated, moving_features, others),
         "alignments": alignments,
     }
     return updated, guide_state
