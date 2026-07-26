@@ -77,6 +77,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/shape_library_panel.py \
   src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
+  tools/verify_codeql_configuration_contract.py \
   tools/verify_editor_project_authoring_contract.py \
   tools/verify_editor_single_object_workspace_contract.py \
   tools/verify_jobs_panel_contract.py \
@@ -89,6 +90,10 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_shape_document_editor_contract.py
 
 echo "PASS: listed Python files compile"
+
+echo
+echo "=== CODEQL CONFIGURATION CONTRACT ==="
+PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_codeql_configuration_contract.py
 
 echo
 echo "=== LAUNCHER IMPORT CONTRACT ==="
