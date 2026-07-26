@@ -42,11 +42,11 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Turn native shapes into 3D objects | DETERMINISTICALLY VERIFIED foundation | The five implemented primitives become real extruded project-owned 3D objects |
 | Edit one 3D object | DETERMINISTICALLY VERIFIED | Position, width, height, depth, three-axis rotation, colour and opacity persist; nonselected objects remain unchanged |
 | 3D viewport navigation | DETERMINISTICALLY VERIFIED on merged main | Empty-space drag orbits; real wheel zoom is consumed by the 3D viewport without also scrolling the page; final manual PR #63 acceptance remains pending |
-| Active output reveal | DETERMINISTICALLY VERIFIED on merged main | Switching or explicitly reselecting 2D/3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
+| Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch; now merged | Switching or explicitly reselecting 2D/3D repositions the existing outer scrollbar so the selected output begins inside visible page range |
 | Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main | PR #60 provides transient X/Y lines, X/Y/Z centre deltas, nearest-object measurements and rotation-aware bounds |
 | Optional snapping | DETERMINISTICALLY VERIFIED on merged main | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
 | Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
-| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on merged main | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
+| Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch; now merged | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
 | Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main | Document, Shape, Edit, Object and View remain accessible outside the scroll area at any page position |
 | Extract shapes from a 2D image by tracing | PLANNED — brought forward | Source intake and previews exist, but no manual tracing path creates editable geometry |
 | Extract shapes algorithmically | PLANNED — brought forward | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
