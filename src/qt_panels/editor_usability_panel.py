@@ -9,23 +9,27 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QSizePolicy, QSplitter
 
 from core.object_scene import save_object_scene, sync_scene_from_shape_document
+from core.object_scene_membership import reconcile_scene_membership
 from core.shape_document import (
     add_circle,
     add_ellipse,
     add_rectangle,
     add_square,
     add_star,
+    redo as redo_shape,
+    undo as undo_shape,
     write_shape_document_autosave,
 )
 from qt_panels.object_cad_panel import ObjectCadEditorPanel, ObjectViewport
 
 
 class StableObjectViewport(ObjectViewport):
-    """Keep a scene camera anchor stable while one selected object is transformed."""
+    """Keep the camera stable during one-object transforms, not membership changes."""
 
     def __init__(self):
         super().__init__()
         self._anchor_scene_id: str | None = None
+        self._anchor_membership: frozenset[str] = frozenset()
         self._scene_anchor: tuple[float, float, float] | None = None
 
     @staticmethod
@@ -44,11 +48,18 @@ class StableObjectViewport(ObjectViewport):
 
     def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
         scene_id = scene.get("scene_id") if isinstance(scene, dict) else None
+        membership = frozenset(
+            item.get("object_id")
+            for item in scene.get("objects", [])
+            if isinstance(item, dict) and isinstance(item.get("object_id"), str)
+        ) if isinstance(scene, dict) else frozenset()
         if not isinstance(scene_id, str):
             self._anchor_scene_id = None
+            self._anchor_membership = frozenset()
             self._scene_anchor = None
-        elif scene_id != self._anchor_scene_id:
+        elif scene_id != self._anchor_scene_id or membership != self._anchor_membership:
             self._anchor_scene_id = scene_id
+            self._anchor_membership = membership
             self._scene_anchor = self._anchor_for_scene(scene)
         super().set_scene(scene, selected_object_id)
 
@@ -63,6 +74,7 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
 
     GRID_COLUMNS = 3
     GRID_ROWS = 3
+    GRID_CAPACITY = GRID_COLUMNS * GRID_ROWS
     GRID_LEFT = 70.0
     GRID_TOP = 70.0
     GRID_STEP_X = 310.0
@@ -172,15 +184,15 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
 
     def _next_primitive_position(self) -> tuple[float, float]:
         count = len(self.document.get("objects", [])) if isinstance(self.document, dict) else 0
-        slots_per_page = self.GRID_COLUMNS * self.GRID_ROWS
-        slot = count % slots_per_page
-        page = count // slots_per_page
-        column = slot % self.GRID_COLUMNS
-        row = slot // self.GRID_COLUMNS
-        cascade = float(page * 14)
+        if count >= self.GRID_CAPACITY:
+            raise ValueError(
+                "The visible 3×3 placement grid is full. Undo a shape or create another document."
+            )
+        column = count % self.GRID_COLUMNS
+        row = count // self.GRID_COLUMNS
         return (
-            self.GRID_LEFT + column * self.GRID_STEP_X + cascade,
-            self.GRID_TOP + row * self.GRID_STEP_Y + cascade,
+            self.GRID_LEFT + column * self.GRID_STEP_X,
+            self.GRID_TOP + row * self.GRID_STEP_Y,
         )
 
     def _add_primitive(self, primitive_type: str) -> None:
@@ -229,10 +241,120 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
                     self._update_cad_controls()
                     detail += " The new shape was synchronized into 3D and selected."
 
+            if len(self.document["objects"]) >= self.GRID_CAPACITY:
+                detail += " The visible placement grid is now full."
             self.set_status(detail)
         except Exception as exc:
             self.set_status(f"Could not add the {primitive_type}: {exc}")
         self.update_controls()
+
+    @staticmethod
+    def _source_ids(document: dict | None) -> set[str]:
+        if not isinstance(document, dict):
+            return set()
+        return {
+            item["object_id"]
+            for item in document.get("objects", [])
+            if isinstance(item, dict) and isinstance(item.get("object_id"), str)
+        }
+
+    def _restore_workspace_state(
+        self,
+        document: dict,
+        scene: dict | None,
+        selected_object_id: str | None,
+    ) -> None:
+        self.document = copy.deepcopy(document)
+        self.object_scene = copy.deepcopy(scene) if scene is not None else None
+        self.selected_object_id = selected_object_id
+        self.render_document()
+        self.object_viewport.set_scene(self.object_scene, self.selected_object_id)
+        self._update_inspector()
+        self._update_cad_controls()
+        self.update_controls()
+
+    def _apply_shape_history_change(self, change, action_label: str) -> None:
+        if self.document is None:
+            return
+
+        original_document = copy.deepcopy(self.document)
+        original_scene = copy.deepcopy(self.object_scene)
+        original_selection = self.selected_object_id
+        original_sources = self._source_ids(original_document)
+        shape_written = False
+        scene_written = False
+
+        try:
+            updated_document = change(original_document)
+            reconciled_scene = original_scene
+            added = removed = 0
+            if original_scene is not None:
+                reconciled_scene, added, removed = reconcile_scene_membership(
+                    original_scene,
+                    updated_document,
+                )
+
+            write_shape_document_autosave(self.project_session, updated_document)
+            shape_written = True
+            if reconciled_scene is not None and reconciled_scene != original_scene:
+                save_object_scene(self.project_session, reconciled_scene)
+                scene_written = True
+
+            desired_sources = self._source_ids(updated_document)
+            available_ids = {
+                item["object_id"]
+                for item in reconciled_scene.get("objects", [])
+            } if reconciled_scene is not None else set()
+            selected = original_selection if original_selection in available_ids else None
+            newly_visible = desired_sources - original_sources
+            if newly_visible and reconciled_scene is not None:
+                selected = next(
+                    (
+                        item["object_id"]
+                        for item in reversed(reconciled_scene["objects"])
+                        if item["source_shape_id"] in newly_visible
+                    ),
+                    selected,
+                )
+            if selected is None and reconciled_scene is not None and reconciled_scene["objects"]:
+                selected = reconciled_scene["objects"][-1]["object_id"]
+
+            self._restore_workspace_state(updated_document, reconciled_scene, selected)
+            membership = []
+            if added:
+                membership.append(f"added {added} 3D object(s)")
+            if removed:
+                membership.append(f"removed {removed} orphaned 3D object(s)")
+            detail = ", ".join(membership) if membership else "3D membership unchanged"
+            self.set_status(
+                f"{action_label} applied and autosaved at revision "
+                f"{updated_document['revision']}; {detail}."
+            )
+        except Exception as exc:
+            rollback_errors = []
+            if scene_written and original_scene is not None:
+                try:
+                    save_object_scene(self.project_session, original_scene)
+                except Exception as rollback_exc:
+                    rollback_errors.append(f"3D rollback failed: {rollback_exc}")
+            if shape_written:
+                try:
+                    write_shape_document_autosave(self.project_session, original_document)
+                except Exception as rollback_exc:
+                    rollback_errors.append(f"2D rollback failed: {rollback_exc}")
+            self._restore_workspace_state(
+                original_document,
+                original_scene,
+                original_selection,
+            )
+            suffix = f" {'; '.join(rollback_errors)}" if rollback_errors else ""
+            self.set_status(f"Could not apply {action_label.lower()}: {exc}.{suffix}")
+
+    def undo_command(self, *_args) -> None:
+        self._apply_shape_history_change(undo_shape, "Undo")
+
+    def redo_command(self, *_args) -> None:
+        self._apply_shape_history_change(redo_shape, "Redo")
 
     def select_cad_object(self, object_id) -> None:
         super().select_cad_object(object_id)
