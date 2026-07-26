@@ -51,19 +51,24 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/object_scene.py \
   src/core/object_scene_membership.py \
   src/core/project_access.py \
+  src/core/project_authoring_workflow.py \
   src/core/project_manifest.py \
   src/core/project_session.py \
   src/core/project_source_intake.py \
   src/core/project_workflow_run.py \
   src/core/shape_document.py \
+  src/core/shape_document_deletion.py \
   src/core/source_library.py \
   src/mxztar_forge.py \
   src/qt_app.py \
   src/qt_editor_app.py \
+  src/qt_editor_authoring_app.py \
   src/qt_editor_usability_app.py \
   src/qt_panels/__init__.py \
   src/qt_panels/agent_panel.py \
   src/qt_panels/agent_worker.py \
+  src/qt_panels/editor_authoring_panel.py \
+  src/qt_panels/editor_authority_guard.py \
   src/qt_panels/editor_panel.py \
   src/qt_panels/editor_usability_panel.py \
   src/qt_panels/jobs_panel.py \
@@ -72,6 +77,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/shape_library_panel.py \
   src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
+  tools/verify_editor_project_authoring_contract.py \
   tools/verify_editor_single_object_workspace_contract.py \
   tools/verify_jobs_panel_contract.py \
   tools/verify_launcher_import_contract.py \
@@ -103,6 +109,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_objec
 echo
 echo "=== SINGLE-OBJECT EDITOR USABILITY CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_single_object_workspace_contract.py
+
+echo
+echo "=== EDITOR PROJECT AUTHORING CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_project_authoring_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
