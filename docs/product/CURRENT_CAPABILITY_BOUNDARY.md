@@ -1,8 +1,8 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 27 July 2026  
-**Merged runtime baseline:** `main` through PR #64 at `1cbcc50`  
-**Active branch evidence:** PR #65 makes Editor Options genuinely sticky at the visible viewport top; deterministic and live acceptance remain separate gates
+**Merged runtime baseline:** `main` through PR #65 at `7db74ed`  
+**Active branch evidence:** PR #66 keeps the complete Editor action tree continuously visible and adds guarded recoverable Project Trash; deterministic and live acceptance remain separate gates
 
 ## 1. Purpose
 
@@ -35,6 +35,7 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Open, close, reopen and recover projects | VERIFIED foundation | One-writer authority, recovery classification, canonical files and read-only recovery contracts exist |
 | Create a fresh project from Editor | DETERMINISTICALLY VERIFIED | Entering Editor while detached creates a unique writable project and one blank document |
 | Switch projects from Start Here or Editor | DETERMINISTICALLY VERIFIED | Project authority, document chooser and dependent panels remain synchronized; failed switching restores prior authority |
+| Recoverable Project Trash | DETERMINISTICALLY VERIFIED on PR #66 branch | Start Here and Editor place Delete Project beside switching; the exactly selected direct-child project is moved into hidden `.project-trash` with typed-name confirmation, lock checks, active-work blocking and a recovery receipt; no permanent-delete command exists |
 | Native editable shape document | VERIFIED foundation | Versioned project-owned shape document, command replay, autosave, canonical save, rollback and reopen are implemented |
 | Build 2D shapes from scratch | PARTIAL | Rectangle, Square, Circle, Ellipse and Star are implemented; freeform path, pen, node and handle tools are not |
 | Undo and redo | DETERMINISTICALLY VERIFIED | Shape creation and 3D object edits use durable reversible command state within implemented command families |
@@ -47,7 +48,8 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Optional snapping | DETERMINISTICALLY VERIFIED on merged main | Separate control, off by default, bounded 1–50 scene-unit tolerance, X/Y only; guides off also disables snapping |
 | Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
 | Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on merged main | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
-| Sticky Editor options | DETERMINISTICALLY VERIFIED on PR #65 branch | The Editor Options tree and wheel selector occupy a fixed viewport-top row directly above the scroll area; page scrolling cannot move them away |
+| Sticky Editor control bar | DETERMINISTICALLY VERIFIED on merged main | PR #65 fixes the Editor interaction row directly above the scroll viewport; page movement cannot move the row away |
+| Persistent Editor action tree | DETERMINISTICALLY VERIFIED on PR #66 branch | Document, Shape, Edit, Object and View are rendered as an always-open tree inside the fixed row; selecting a real action cannot dismiss, hide or move the tree, even when the command reveals another output and moves the page |
 | Extract shapes from a 2D image by tracing | PLANNED — brought forward | Source intake and previews exist, but no manual tracing path creates editable geometry |
 | Extract shapes algorithmically | PLANNED — brought forward | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
 | Extract shapes through Ollama | PARTIAL evidence only | Ollama may assess source art and describe likely shapes or extraction zones; it does not create authoritative editable geometry |
@@ -67,13 +69,13 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | SVG, PNG, GLB/glTF or OBJ export | PLANNED | No named validated downstream output profile is exposed |
 | CodeQL Advanced security analysis | VERIFIED repository control | GitHub Actions and Python analyses run through the merged advanced workflow |
 
-Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that the controls were outside the scroll content. PR #65 adds the stronger viewport-top geometry requirement.
+Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that controls were outside the scroll content. PR #65 added viewport-top geometry. PR #66 adds the stronger requirement that the complete action tree itself remains open after an action is selected.
 
 Historical PR #63 branch labels retained for evidence traceability: `Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch` and `Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch`.
 
 The earlier interaction wording remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
 
-Deterministic verification now uses real `QWheelEvent` delivery through Qt; PR #65 additionally verifies the control bar's window-relative geometry.
+Deterministic verification uses real `QWheelEvent` delivery, real tree-item mouse clicks, fixed window-relative geometry, isolated settings, canonical project discovery and real filesystem moves inside a temporary projects root.
 
 ## 4. Image-to-shape authority
 
@@ -161,7 +163,7 @@ Not included yet:
 - anchor, socket, pivot, or surface-normal snapping;
 - dimensional engineering tolerance claims.
 
-## 8. PR #61–PR #65 scrolling, zoom and visible-control authority
+## 8. PR #61–PR #66 scrolling, zoom and continuously visible controls
 
 ```text
 Scroll page                  → wheel over 2D or 3D output moves the outer page
@@ -182,15 +184,34 @@ Required interaction rules:
 9. Wheel over 2D output continues to scroll the page in every mode.
 10. Sidebar navigation is not intercepted.
 11. The selected mode persists through existing application settings.
-12. The sticky Editor controls occupy a dedicated row directly above `page_scroll`, outside the scrolling content.
+12. The Editor controls occupy a dedicated row directly above `page_scroll`, outside the scrolling content.
 13. The control bar retains the same window-relative top coordinate while the Editor page scrolls from top to maximum.
-14. The sticky row hides on unrelated pages and returns to the same viewport-top position in Editor.
-15. Document, Shape, Edit, Object and View actions remain available at every Editor scroll position.
-16. Project files, geometry and object-scene schema are unchanged.
+14. The row hides on unrelated pages and returns to the same viewport-top position in Editor.
+15. Document, Shape, Edit, Object and View are visible as a persistent action tree, not merely available behind a popup button.
+16. Selecting a tree action cannot close the tree; the selected action remains inside the tree viewport while output-reveal commands move the page.
+17. Project files, geometry and object-scene schema are unchanged.
 
-Deterministic verification uses real `QWheelEvent` delivery through Qt and geometric viewport-position assertions. PR #65 branch checks pass; final manual T1700 acceptance remains required.
+Deterministic verification uses real `QWheelEvent` delivery, geometric viewport assertions and a real `QTest.mouseClick` on the persistent 3D View item. PR #66 branch checks pass; final manual T1700 acceptance remains required.
 
-## 9. Brought-forward Construct authority
+## 9. Recoverable Project Trash authority
+
+`Delete Project…` is a recoverable removal workflow, not permanent erasure.
+
+Required rules:
+
+1. Start Here and Editor expose deletion beside project switching.
+2. The selected path must be one real, non-symlink, non-hidden direct child of the canonical projects root.
+3. User-facing deletion requires typing the exact selected directory name.
+4. Active local-AI or source-intake work blocks deletion.
+5. A project held by another writer lock cannot be moved.
+6. A non-active selected project may be moved without changing current project authority.
+7. Moving the active project closes its writer lease and leaves Forge detached.
+8. The project moves atomically into hidden `.project-trash`, so canonical project discovery excludes it.
+9. A durable receipt records original path, trash path, time and whether the project was active.
+10. Receipt failure attempts automatic rollback; failed moves restore the active project where possible.
+11. The interface exposes no permanent-delete command.
+
+## 10. Brought-forward Construct authority
 
 The active architecture defines future stable records for:
 
@@ -234,7 +255,7 @@ Planned reversible effect families are:
 
 These are visual-design systems, not engineering material or electronics claims.
 
-## 10. Group, assembly and connection boundary
+## 11. Group, assembly and connection boundary
 
 Forge must distinguish:
 
@@ -253,9 +274,9 @@ Merely placing objects together around the central construct point creates none 
 
 Each consequential operation requires named inputs, preview, persistence, Undo/Redo or declared derivative behaviour, validation, failure handling, parent mapping and recovery.
 
-## 11. Immediate engineering order
+## 12. Immediate engineering order
 
-PR #65 manual live acceptance remains the gate before new asset-generation runtime work.
+PR #66 manual live acceptance remains the gate before new asset-generation runtime work.
 
 The active order is:
 
@@ -277,10 +298,11 @@ The active order is:
 
 Every item remains subject to focused PR scope, deterministic verification, T1700 evidence and truthful documentation updates.
 
-## 12. Current non-claims
+## 13. Current non-claims
 
 Forge does not currently claim:
 
+- permanent project erasure from the interface;
 - freeform paths or tracing;
 - automatic editable extraction;
 - a shipped starter source-asset pack;
