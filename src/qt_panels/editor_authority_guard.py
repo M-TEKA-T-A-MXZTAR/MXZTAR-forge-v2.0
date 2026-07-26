@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Mutation guard for project switching and direct deletion inside Editor."""
+"""Mutation guard for project switching and deletion inside Editor."""
 
 from __future__ import annotations
 
@@ -36,6 +36,7 @@ class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
         self.switch_project_button.setEnabled(
             bool(unlocked and selected and selected != current)
         )
+        self.delete_project_button.setEnabled(bool(unlocked and selected))
         self.new_project_document_button.setEnabled(unlocked)
         self.refresh_projects_button.setEnabled(unlocked)
         self.project_selector.setEnabled(unlocked and self.project_selector.count() > 0)
@@ -69,6 +70,12 @@ class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
             self.set_status("Finish active project work before switching projects.")
             return None
         return super().switch_selected_project(*_args)
+
+    def delete_selected_project(self, *, confirm: bool = True) -> bool:
+        if not self._authority_unlocked():
+            self.set_status("Finish active project work before deleting a project.")
+            return False
+        return super().delete_selected_project(confirm=confirm)
 
     def create_fresh_project_and_document(self, *_args):
         if not self._authority_unlocked():
