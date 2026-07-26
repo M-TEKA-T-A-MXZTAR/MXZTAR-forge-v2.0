@@ -10,6 +10,7 @@ import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -19,9 +20,11 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from PySide6.QtCore import QPoint, QSettings, Qt  # noqa: E402
-from PySide6.QtTest import QTest  # noqa: E402
+from PySide6.QtTest import QSignalSpy, QTest  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
+import core.project_trash as project_trash  # noqa: E402
+from core.project_access import read_project_lock  # noqa: E402
 from core.project_session import ProjectSession, ProjectSessionError  # noqa: E402
 from core.project_trash import (  # noqa: E402
     PROJECT_TRASH_DIRNAME,
@@ -71,10 +74,34 @@ def close_window_safely(window, app: QApplication) -> None:
     app.processEvents()
 
 
+def create_detached_project(
+    session: ProjectSession,
+    name: str,
+    purpose: str,
+) -> Path:
+    state = session.create_and_open(name, purpose)
+    path = state.assessment.project_dir
+    session.close()
+    return path
+
+
 def receipt_payload(trashed_project: Path) -> dict:
     receipt = trashed_project / PROJECT_TRASH_RECEIPT
     require(receipt.is_file(), "Project Trash writes a recovery receipt inside the moved project")
     return json.loads(receipt.read_text(encoding="utf-8"))
+
+
+def find_trashed_project(trash_root: Path, original_path: Path) -> Path:
+    for candidate in trash_root.iterdir():
+        if not candidate.is_dir():
+            continue
+        receipt = candidate / PROJECT_TRASH_RECEIPT
+        if not receipt.is_file():
+            continue
+        payload = json.loads(receipt.read_text(encoding="utf-8"))
+        if payload.get("original_project_dir") == str(original_path):
+            return candidate
+    raise AssertionError(f"No Project Trash receipt records: {original_path}")
 
 
 def main() -> int:
@@ -98,21 +125,29 @@ def main() -> int:
 
         projects_root = temp_root / "projects"
         session = ProjectSession(projects_root)
-        current_state = session.create_and_open(
+        current_path = create_detached_project(
+            session,
             "Persistent Options Current",
             "Verify continuously visible actions",
         )
-        current_path = current_state.assessment.project_dir
-        session.close()
-        removable_state = session.create_and_open(
+        removable_path = create_detached_project(
+            session,
             "Recoverable Delete Target",
             "Verify Project Trash",
         )
-        removable_path = removable_state.assessment.project_dir
-        session.close()
+        rollback_path = create_detached_project(
+            session,
+            "Receipt Rollback Target",
+            "Verify durable rollback",
+        )
+        read_only_path = create_detached_project(
+            session,
+            "Read Only Active Target",
+            "Verify locked active rejection",
+        )
         session.open(current_path)
 
-        # A different writer must prevent Project Trash from moving the target.
+        # A different writer must prevent Project Trash from moving a non-active target.
         other_session = ProjectSession(projects_root)
         other_session.open(removable_path)
         try:
@@ -120,13 +155,42 @@ def main() -> int:
                 move_project_to_trash(session, removable_path)
             except ProjectSessionError as exc:
                 require(
-                    "locked" in str(exc).lower(),
+                    "exclusive" in str(exc).lower() or "locked" in str(exc).lower(),
                     "Project Trash rejects a project held by another writer",
                 )
             else:
                 raise AssertionError("Project Trash moved a project held by another writer")
         finally:
             other_session.close()
+
+        # A read-only active attachment must not bypass the writer lock check.
+        writer_session = ProjectSession(projects_root)
+        reader_session = ProjectSession(projects_root)
+        writer_state = writer_session.open(read_only_path)
+        reader_state = reader_session.open(read_only_path)
+        require(
+            writer_state.writable and not reader_state.writable,
+            "verification creates a writer plus read-only active attachment",
+        )
+        try:
+            try:
+                move_project_to_trash(reader_session, read_only_path)
+            except ProjectSessionError as exc:
+                require(
+                    "read-only" in str(exc).lower() or "locked" in str(exc).lower(),
+                    "Project Trash rejects an active read-only project before moving it",
+                )
+            else:
+                raise AssertionError("Project Trash moved an active read-only project")
+            require(
+                read_only_path.is_dir()
+                and writer_session.is_writable
+                and reader_session.state is not None,
+                "read-only rejection preserves the writer and reader attachments",
+            )
+        finally:
+            reader_session.close()
+            writer_session.close()
 
         window = None
         try:
@@ -223,9 +287,22 @@ def main() -> int:
                 "Delete Project restores only after active work finishes",
             )
 
+            rename_lock_observations: list[bool] = []
+            original_rename = Path.rename
+
+            def observing_rename(path: Path, destination: Path):
+                if path == removable_path:
+                    rename_lock_observations.append(read_project_lock(path) is not None)
+                return original_rename(path, destination)
+
+            with mock.patch.object(Path, "rename", new=observing_rename):
+                require(
+                    panel.delete_selected_project(confirm=False),
+                    "Editor Delete Project moves the exactly selected non-active project",
+                )
             require(
-                panel.delete_selected_project(confirm=False),
-                "Editor Delete Project moves the exactly selected non-active project",
+                rename_lock_observations == [True],
+                "Project Trash retains an exclusive writer lease across the directory rename",
             )
             require(
                 session.project_dir == current_path and session.state is not None,
@@ -238,19 +315,54 @@ def main() -> int:
             )
 
             trash_root = projects_root / PROJECT_TRASH_DIRNAME
-            trashed_candidates = tuple(
-                path for path in trash_root.iterdir() if path.is_dir()
-            )
-            require(
-                len(trashed_candidates) == 1,
-                "Project Trash contains exactly the selected moved project",
-            )
-            payload = receipt_payload(trashed_candidates[0])
+            trashed_removable = find_trashed_project(trash_root, removable_path)
+            payload = receipt_payload(trashed_removable)
             require(
                 payload.get("schema") == PROJECT_TRASH_SCHEMA
                 and payload.get("original_project_dir") == str(removable_path)
                 and payload.get("was_active") is False,
                 "Project Trash receipt preserves original identity and non-active authority",
+            )
+            require(
+                read_project_lock(trashed_removable) is None,
+                "successful Project Trash removes its temporary deletion lease",
+            )
+
+            # Simulate failure after os.replace installs the receipt but before its fsync returns.
+            original_fsync_directory = project_trash.fsync_directory
+            injected_failure = {"raised": False}
+
+            def fail_after_receipt_install(path: Path) -> None:
+                directory = Path(path)
+                if (
+                    not injected_failure["raised"]
+                    and (directory / PROJECT_TRASH_RECEIPT).is_file()
+                ):
+                    injected_failure["raised"] = True
+                    raise OSError("simulated receipt directory fsync failure")
+                original_fsync_directory(directory)
+
+            with mock.patch.object(
+                project_trash,
+                "fsync_directory",
+                side_effect=fail_after_receipt_install,
+            ):
+                try:
+                    move_project_to_trash(session, rollback_path)
+                except ProjectSessionError as exc:
+                    require(
+                        "restored" in str(exc).lower()
+                        or "canonical path" in str(exc).lower(),
+                        "receipt failure reports that the canonical project was restored",
+                    )
+                else:
+                    raise AssertionError("Receipt fsync failure did not abort Project Trash")
+            require(
+                injected_failure["raised"]
+                and rollback_path.is_dir()
+                and not (rollback_path / PROJECT_TRASH_RECEIPT).exists()
+                and read_project_lock(rollback_path) is None,
+                "rollback removes and durably flushes an installed receipt before restoration",
             )
 
             outside = temp_root / "outside-project"
@@ -264,30 +376,76 @@ def main() -> int:
                 )
             else:
                 raise AssertionError("Project Trash accepted an out-of-root path")
+
+            # Editor-side deletion must broadcast detachment through Start Here.
+            current_index = panel.project_selector.findData(str(current_path))
+            require(current_index >= 0, "Editor selector retains the active project")
+            panel.project_selector.setCurrentIndex(current_index)
+            window.start_here_panel.purpose_edit.setText(
+                "Verify continuously visible actions"
+            )
+            detachment_spy = QSignalSpy(window.start_here_panel.project_changed)
+            require(
+                panel.delete_selected_project(confirm=False),
+                "Editor can deliberately move the active project to Project Trash",
+            )
+            process_deferred(app)
+            require(
+                session.state is None
+                and session.project_dir is None
+                and not current_path.exists(),
+                "Editor-side active deletion closes authority and detaches safely",
+            )
+            require(
+                detachment_spy.count() >= 1
+                and detachment_spy.at(detachment_spy.count() - 1)[0] is None,
+                "Editor-side active deletion broadcasts None through project_changed",
+            )
+            require(
+                window.start_here_panel.purpose_edit.text() == ""
+                and not window.start_here_panel.create_project_button.isEnabled(),
+                "Editor-side deletion clears the former purpose before project creation is enabled",
+            )
+            active_payload = receipt_payload(find_trashed_project(trash_root, current_path))
+            require(
+                active_payload.get("was_active") is True
+                and active_payload.get("original_project_dir") == str(current_path),
+                "active-project receipt records the closed authority boundary",
+            )
+
+            # Start Here must apply the same purpose-clearing boundary.
+            start_here_state = session.create_and_open(
+                "Start Here Delete Target",
+                "Purpose must not recreate a trashed project",
+            )
+            start_here_path = start_here_state.assessment.project_dir
+            window.start_here_panel.refresh_projects()
+            window.start_here_panel._show_project_state(start_here_state, "Opened")
+            start_here_index = window.start_here_panel.project_selector.findData(
+                str(start_here_path)
+            )
+            require(start_here_index >= 0, "Start Here discovers its active delete target")
+            window.start_here_panel.project_selector.setCurrentIndex(start_here_index)
+            with mock.patch(
+                "qt_editor_authoring_app.QInputDialog.getText",
+                return_value=(start_here_path.name, True),
+            ):
+                require(
+                    window.start_here_project_controller.delete_selected_project(),
+                    "Start Here moves the confirmed active project to Project Trash",
+                )
+            process_deferred(app)
+            require(
+                session.state is None
+                and not start_here_path.exists()
+                and window.start_here_panel.purpose_edit.text() == ""
+                and not window.start_here_panel.create_project_button.isEnabled(),
+                "Start Here deletion clears the old purpose and prevents immediate slug reuse",
+            )
         finally:
             close_window_safely(window, app)
-
-        # Active-project deletion is deliberate and leaves the session detached.
-        if session.state is None:
-            session.open(current_path)
-        active_result = move_project_to_trash(
-            session,
-            current_path,
-            timestamp=datetime(2026, 7, 27, 8, 30, tzinfo=timezone.utc),
-        )
-        require(
-            active_result.was_active
-            and session.state is None
-            and session.project_dir is None
-            and not current_path.exists(),
-            "moving the active project to Project Trash closes authority and detaches safely",
-        )
-        active_payload = receipt_payload(active_result.trashed_project_dir)
-        require(
-            active_payload.get("was_active") is True
-            and active_payload.get("original_project_dir") == str(current_path),
-            "active-project receipt records the closed authority boundary",
-        )
+            if session.state is not None:
+                session.close()
 
     print("PASS: persistent Editor options and recoverable Project Trash contract verified")
     return 0
