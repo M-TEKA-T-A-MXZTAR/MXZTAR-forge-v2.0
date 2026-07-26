@@ -176,7 +176,16 @@ class EditorPanel(QWidget):
         project_name = state.assessment.manifest.get(
             "project_name", state.assessment.project_dir.name
         )
-        outcome = self.refresh_documents()
+        selected_document_id = (
+            self.document.get("document_id")
+            if isinstance(self.document, dict)
+            else self.document_selector.currentData()
+        )
+        outcome = self.refresh_documents(
+            selected_document_id
+            if isinstance(selected_document_id, str)
+            else None
+        )
         if outcome == "empty":
             self.document_label.setText(
                 f"Project: {project_name} | No native shape document exists yet."

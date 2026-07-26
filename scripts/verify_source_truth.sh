@@ -48,6 +48,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/agent_runner.py \
   src/core/editor_project_access.py \
   src/core/job_records.py \
+  src/core/object_scene.py \
   src/core/project_access.py \
   src/core/project_manifest.py \
   src/core/project_session.py \
@@ -64,11 +65,13 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/editor_panel.py \
   src/qt_panels/jobs_panel.py \
   src/qt_panels/my_library_panel.py \
+  src/qt_panels/object_cad_panel.py \
   src/qt_panels/shape_library_panel.py \
   src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_jobs_panel_contract.py \
   tools/verify_launcher_import_contract.py \
+  tools/verify_object_cad_contract.py \
   tools/verify_project_birth_contract.py \
   tools/verify_project_session_contract.py \
   tools/verify_project_source_intake_ui_contract.py \
@@ -88,6 +91,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_proje
 echo
 echo "=== EDITOR MENU AND PRIMITIVE CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_shape_document_editor_contract.py
+
+echo
+echo "=== 3D OBJECT CAD CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_object_cad_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="

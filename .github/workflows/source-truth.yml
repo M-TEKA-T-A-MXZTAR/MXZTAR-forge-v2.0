@@ -44,5 +44,16 @@ jobs:
           pip install -r requirements_qt.txt
 
       - name: Run source truth verifier
+        shell: bash
         run: |
-          ./scripts/verify_source_truth.sh
+          set -o pipefail
+          ./scripts/verify_source_truth.sh 2>&1 | tee source-truth-output.log
+
+      - name: Preserve source truth output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-truth-output
+          path: source-truth-output.log
+          if-no-files-found: error
+          retention-days: 7
