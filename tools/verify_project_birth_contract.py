@@ -27,7 +27,7 @@ from core.project_manifest import (  # noqa: E402
 )
 from core.project_session import ProjectSession  # noqa: E402
 from core.shape_document import create_blank_shape_document  # noqa: E402
-from qt_editor_app import EditorForgeWindow  # noqa: E402
+from qt_editor_authoring_app import AuthoringEditorForgeWindow  # noqa: E402
 from qt_panels import my_library_panel as library_module  # noqa: E402
 from qt_panels.start_here_panel import StartHerePanel  # noqa: E402
 
@@ -169,7 +169,7 @@ def main() -> int:
         guided_root = Path(temporary) / "guided-projects"
         guided_session = ProjectSession(guided_root)
         with patch.object(library_module, "scan_source_art", return_value=[]):
-            window = EditorForgeWindow(guided_session)
+            window = AuthoringEditorForgeWindow(guided_session)
             require(
                 window.sidebar.currentRow() == 1
                 and window.pages.currentWidget() is window.start_here_panel,
@@ -198,12 +198,16 @@ def main() -> int:
             window.perform_guided_next_step()
             require(window.editor_panel.has_open_document(), "guided blank document was not created")
             require(
+                window.editor_panel.document_selector.count() == 1,
+                "one guided blank-document action created more than one document",
+            )
+            require(
                 window.pages.currentWidget() is window.editor_panel,
                 "guided blank document did not navigate to Editor",
             )
             guided_session.close()
             window.deleteLater()
-        print("PASS: official guided flow moves from Purpose to project to blank Editor document")
+        print("PASS: official guided flow moves from Purpose to one blank Editor document")
 
         navigation_root = Path(temporary) / "navigation-projects"
         seed_session = ProjectSession(navigation_root)
@@ -216,7 +220,7 @@ def main() -> int:
 
         navigation_session = ProjectSession(navigation_root)
         with patch.object(library_module, "scan_source_art", return_value=[]):
-            navigation_window = EditorForgeWindow(navigation_session)
+            navigation_window = AuthoringEditorForgeWindow(navigation_session)
             project_index = navigation_window.start_here_panel.project_selector.findData(
                 str(seed_dir)
             )
