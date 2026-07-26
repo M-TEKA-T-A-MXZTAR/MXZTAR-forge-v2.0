@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import os
 import sys
 import tempfile
@@ -55,14 +56,24 @@ class FakeMouseEvent:
         return self._button
 
 
-def sample_object(object_id: str, x: float, y: float, z: float = 40.0) -> dict:
+def sample_object(
+    object_id: str,
+    x: float,
+    y: float,
+    z: float = 40.0,
+    *,
+    size: dict | None = None,
+    rotation: dict | None = None,
+) -> dict:
     return {
         "object_id": object_id,
         "source_shape_id": f"object_{object_id.removeprefix('cad_')}",
         "primitive_type": "rectangle",
         "position": {"x": x, "y": y, "z": z},
-        "size": {"x": 80.0, "y": 60.0, "z": 80.0},
-        "rotation_deg": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "size": copy.deepcopy(size or {"x": 80.0, "y": 60.0, "z": 80.0}),
+        "rotation_deg": copy.deepcopy(
+            rotation or {"x": 0.0, "y": 0.0, "z": 0.0}
+        ),
         "appearance": {"color": "#4477aa", "opacity": 1.0},
         "primitive_parameters": {},
     }
@@ -118,6 +129,105 @@ def main() -> int:
         "guide and snap calculations never mutate a neighbouring object",
     )
 
+    slender_size = {"x": 100.0, "y": 20.0, "z": 20.0}
+    small_size = {"x": 20.0, "y": 20.0, "z": 20.0}
+    quarter_turn = {"x": 0.0, "y": 0.0, "z": 90.0}
+    rotated = sample_object(
+        "cad_rotated",
+        0.0,
+        0.0,
+        0.0,
+        size=slender_size,
+        rotation=quarter_turn,
+    )
+    rotated_neighbour = sample_object(
+        "cad_rotated_neighbour",
+        35.0,
+        0.0,
+        0.0,
+        size=small_size,
+    )
+    rotated_unsnapped, rotated_guidance = calculate_positioning_guides(
+        rotated,
+        [rotated, rotated_neighbour],
+        (500.0, 500.0, 500.0),
+        tolerance=10.0,
+        snap_enabled=True,
+    )
+    require(
+        math.isclose(
+            rotated_guidance["nearest"]["surface_distance"],
+            15.0,
+            abs_tol=1.0e-6,
+        ),
+        "90-degree rotation changes surface distance to match rendered bounds",
+    )
+    require(
+        rotated_unsnapped["position"] == rotated["position"]
+        and not any(
+            alignment["axis"] == "x"
+            for alignment in rotated_guidance["alignments"]
+        ),
+        "rotated bounds prevent a false X-edge snap between visibly separated objects",
+    )
+
+    near_rotated_edge = sample_object(
+        "cad_rotated_edge",
+        14.0,
+        0.0,
+        0.0,
+        size=slender_size,
+        rotation=quarter_turn,
+    )
+    edge_snapped, edge_guidance = calculate_positioning_guides(
+        near_rotated_edge,
+        [near_rotated_edge, rotated_neighbour],
+        (500.0, 500.0, 500.0),
+        tolerance=2.0,
+        snap_enabled=True,
+    )
+    require(
+        math.isclose(edge_snapped["position"]["x"], 15.0, abs_tol=1.0e-6)
+        and edge_guidance["snap_applied"] is True,
+        "rotation-aware edge snapping uses the visible 90-degree object extent",
+    )
+
+    angled = sample_object(
+        "cad_angled",
+        0.0,
+        0.0,
+        0.0,
+        size=slender_size,
+        rotation={"x": 0.0, "y": 0.0, "z": 45.0},
+    )
+    angled_neighbour = sample_object(
+        "cad_angled_neighbour",
+        100.0,
+        0.0,
+        0.0,
+        size=small_size,
+    )
+    _angled_result, angled_guidance = calculate_positioning_guides(
+        angled,
+        [angled, angled_neighbour],
+        (500.0, 500.0, 500.0),
+        tolerance=1.0,
+        snap_enabled=False,
+    )
+    expected_angled_gap = 100.0 - (
+        50.0 * math.cos(math.radians(45.0))
+        + 10.0 * math.sin(math.radians(45.0))
+        + 10.0
+    )
+    require(
+        math.isclose(
+            angled_guidance["nearest"]["surface_distance"],
+            expected_angled_gap,
+            abs_tol=1.0e-6,
+        ),
+        "angled rotation derives surface gaps from rotated geometry rather than raw size",
+    )
+
     app = QApplication.instance() or QApplication([])
     with tempfile.TemporaryDirectory(prefix="mxztar-position-guides-") as temporary:
         session = ProjectSession(Path(temporary) / "projects")
@@ -165,7 +275,10 @@ def main() -> int:
         overlay = viewport.guide_overlay_lines()
         require(
             viewport._guide_state is not None
-            and any("Centre" in line and "X" in line and "Y" in line and "Z" in line for line in overlay)
+            and any(
+                "Centre" in line and "X" in line and "Y" in line and "Z" in line
+                for line in overlay
+            )
             and any("Nearest" in line for line in overlay),
             "active object movement exposes live X/Y/Z and nearest-object measurements",
         )
