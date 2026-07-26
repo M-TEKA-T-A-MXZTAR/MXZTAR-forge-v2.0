@@ -67,6 +67,8 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | SVG, PNG, GLB/glTF or OBJ export | PLANNED | No named validated downstream output profile is exposed |
 | CodeQL Advanced security analysis | VERIFIED repository control | GitHub Actions and Python analyses run through the merged advanced workflow |
 
+Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that the controls were outside the scroll content. PR #65 adds the stronger viewport-top geometry requirement.
+
 ## 4. Image-to-shape authority
 
 Forge must not confuse visual assessment with geometry extraction.
