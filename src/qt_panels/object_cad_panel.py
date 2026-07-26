@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import math
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -49,6 +49,7 @@ class ObjectViewport(QWidget):
     selection_changed = Signal(object)
     object_committed = Signal(str, object)
     view_committed = Signal(object)
+    view_previewed = Signal(object)
     status_changed = Signal(str)
 
     def __init__(self):
@@ -257,6 +258,11 @@ class ObjectViewport(QWidget):
             )
             painter.drawLine(first, second)
 
+    @staticmethod
+    def _opacity_alpha(opacity: float) -> int:
+        """Map canonical 0.0–1.0 opacity to Qt's complete 0–255 alpha range."""
+        return round(max(0.0, min(1.0, float(opacity))) * 255)
+
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -305,7 +311,7 @@ class ObjectViewport(QWidget):
                 else 98 + (face_index % 3) * 6
             )
             color = color.lighter(shade)
-            color.setAlpha(round(item["appearance"]["opacity"] * 220))
+            color.setAlpha(self._opacity_alpha(item["appearance"]["opacity"]))
             painter.setBrush(QBrush(color))
             if edges_visible:
                 edge = self.palette().color(QPalette.ColorRole.Text)
@@ -448,12 +454,14 @@ class ObjectViewport(QWidget):
         view = copy.deepcopy(self.scene_data["view"])
         view["zoom"] = max(0.05, min(20.0, view["zoom"] * factor))
         self.scene_data["view"] = view
-        self.view_committed.emit(copy.deepcopy(view))
+        self.view_previewed.emit(copy.deepcopy(view))
         self.update()
 
 
 class ObjectCadEditorPanel(EditorPanel):
     """Extend the native shape editor into a direct-manipulation object CAD workspace."""
+
+    VIEW_COMMIT_DEBOUNCE_MS = 250
 
     def __init__(self, project_session):
         super().__init__(project_session)
@@ -461,6 +469,11 @@ class ObjectCadEditorPanel(EditorPanel):
         self.selected_object_id: str | None = None
         self._updating_inspector = False
         self._loading_scene_controls = False
+        self._pending_view_state: dict | None = None
+        self._view_commit_timer = QTimer(self)
+        self._view_commit_timer.setSingleShot(True)
+        self._view_commit_timer.setInterval(self.VIEW_COMMIT_DEBOUNCE_MS)
+        self._view_commit_timer.timeout.connect(self.flush_pending_view_state)
 
         self.header_label.setText(
             "EDITOR; shape/object CAD workspace. Create reusable shapes, construct real 3D "
@@ -523,6 +536,7 @@ class ObjectCadEditorPanel(EditorPanel):
         self.object_viewport.selection_changed.connect(self.select_cad_object)
         self.object_viewport.object_committed.connect(self.commit_viewport_object)
         self.object_viewport.view_committed.connect(self.commit_view_state)
+        self.object_viewport.view_previewed.connect(self.schedule_view_state_commit)
         self.object_viewport.status_changed.connect(self.set_status)
 
         layout = self.layout()
@@ -621,7 +635,12 @@ class ObjectCadEditorPanel(EditorPanel):
         if self.document is None:
             self.clear_object_scene()
 
+    def _cancel_pending_view_state(self) -> None:
+        self._view_commit_timer.stop()
+        self._pending_view_state = None
+
     def clear_object_scene(self) -> None:
+        self._cancel_pending_view_state()
         self.object_scene = None
         self.selected_object_id = None
         if hasattr(self, "object_viewport"):
@@ -634,6 +653,7 @@ class ObjectCadEditorPanel(EditorPanel):
     def ensure_object_scene(self, *, switch_to_3d: bool | None = None) -> None:
         if self.document is None or not hasattr(self, "object_viewport"):
             return
+        self._cancel_pending_view_state()
         try:
             scene, created, added = load_or_create_object_scene(
                 self.project_session,
@@ -740,7 +760,22 @@ class ObjectCadEditorPanel(EditorPanel):
             }
         )
 
+    def schedule_view_state_commit(self, view: dict) -> None:
+        """Coalesce rapid wheel zoom updates while leaving viewport preview immediate."""
+        if self.object_scene is None:
+            return
+        self._pending_view_state = copy.deepcopy(view)
+        self._view_commit_timer.start()
+
+    def flush_pending_view_state(self) -> None:
+        view = self._pending_view_state
+        if view is None:
+            return
+        self._pending_view_state = None
+        self.commit_view_state(view)
+
     def commit_view_state(self, view: dict) -> None:
+        self._cancel_pending_view_state()
         if self.object_scene is None:
             return
         try:
