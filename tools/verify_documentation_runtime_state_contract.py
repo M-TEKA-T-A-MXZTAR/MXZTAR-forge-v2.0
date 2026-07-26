@@ -250,8 +250,18 @@ def main() -> int:
 
     require_text(
         capability,
-        "Status: **FOUNDER-AUTHORISED ACTIVE PLAN; NO NEW RUNTIME CAPABILITY CLAIMED**.",
-        "Capability boundary does not label the architecture as planning-only",
+        "The active architecture defines future stable records for:",
+        "Capability boundary does not label brought-forward Construct records as future authority",
+    )
+    require_text(
+        capability,
+        "Planned context-command families include:",
+        "Capability boundary does not label focus and perspective commands as planned",
+    )
+    require_text(
+        capability,
+        "Planned reversible effect families are:",
+        "Capability boundary does not label effect families as planned",
     )
     for capability_name in (
         "Shipped starter source-asset pack",
@@ -269,12 +279,12 @@ def main() -> int:
             f"Capability boundary does not preserve PLANNED state for: {capability_name}",
         )
     for non_claim in (
-        "- a shipped starter asset pack;",
-        "- stable selectable surface subsets;",
+        "- a shipped starter source-asset pack;",
+        "- persistent area or surface subsets;",
         "- primary focus surfaces;",
-        "- anchors, sockets, object groups, or recoverable assemblies;",
+        "- anchors, sockets, groups or recoverable assemblies;",
         "- surface-effect stacks;",
-        "- greebling, roughness, distortion, bend, logic wiring, or metallic profiles;",
+        "- greebling, roughness, distortion, bend, logic wiring or metallic profiles;",
         "- visual seams;",
     ):
         require_text(
