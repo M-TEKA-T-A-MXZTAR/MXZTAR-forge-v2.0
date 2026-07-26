@@ -4,18 +4,26 @@
 
 This document is the active product, architecture, acceptance, and engineering-sequence authority for MXZTAR Forge v2.0.
 
-It reconciles the strongest parts of the earlier editor-first plan with the finite Stage One–Two workflow architecture confirmed on 22 July 2026.
+It defines:
 
-Older documents may use **Level One** and **Level Two** for the same current product capabilities. This document standardises the active language as:
+- the finished Stage One–Two product boundary;
+- the current verified runtime foundation;
+- the 18 first-class workflow families;
+- durable project and artifact authority;
+- Editor and Construct responsibilities;
+- acceptance criteria;
+- the immediate permitted engineering sequence.
+
+The dated implementation state is recorded in `docs/PROGRESS_LEDGER.md`. The concise present-tense audit is recorded in `docs/product/CURRENT_CAPABILITY_BOUNDARY.md`.
+
+Older documents may use **Level One** and **Level Two** for the same active product capabilities. This document standardises the active language as:
 
 - **Stage One — Forge Editor and portable 2D assets**;
 - **Stage Two — Construct and portable 3D blockouts**.
 
-Implementation milestones use letters so they cannot be confused with product stages.
+**Stage One and Stage Two together define the planned finished MXZTAR Forge v2.0 product.**
 
-**Stage One and Stage Two together define the finished MXZTAR Forge product.**
-
-Future Product Levels Three and Four remain deferred vision. They require a separate founder decision and source-of-truth revision before any runtime work is permitted.
+Future Product Levels Three and Four remain deferred vision. They require a separate founder decision and source-of-truth revision before runtime work is permitted.
 
 ---
 
@@ -23,15 +31,15 @@ Future Product Levels Three and Four remain deferred vision. They require a sepa
 
 MXZTAR Forge v2.0 is a local-first, human-governed creative construction workbench.
 
-It helps creators move from visually useful but structurally flat source material to editable, reusable, recoverable, and portable creative assets.
+It helps creators move from visually useful but structurally flat source material—or from a blank document—to editable, reusable, recoverable, and portable creative assets.
 
-The active value path is:
+The product value path is:
 
 ```text
 project purpose
-→ source image or blank canvas
-→ trace, extract, or draw an editable shape
-→ correct paths, nodes, layers, transforms, and relationships
+→ source image or blank document
+→ trace, extract, or draw editable geometry
+→ correct paths, nodes, transforms, and relationships
 → approve a reusable Shape Library asset
 → combine shapes into new 2D designs
 → generate reversible 3D components
@@ -39,7 +47,7 @@ project purpose
 → export through a verified downstream profile
 ```
 
-The Forge Editor is the product centre. Source intake, Shape Library, Review, Jobs, optional local AI, Construct, validation, and export exist to support creator-led editing rather than replace it.
+The Editor is the product centre. Source intake, Shape Library, Review, Jobs, optional local AI, Construct, validation, and export exist to support creator-led editing rather than replace it.
 
 Forge is not merely:
 
@@ -47,41 +55,13 @@ Forge is not merely:
 - a prompt generator;
 - a black-box automatic vectoriser;
 - a one-click production-ready 3D converter;
-- a replacement for every feature in Krita, Inkscape, Blender, CAD, game engines, or slicers.
+- a replacement for Krita, Inkscape, Blender, CAD systems, game engines, or slicers.
 
-Forge provides the governed creative-production structure between those specialist tools.
-
----
-
-## 3. The workflow gaps Forge addresses
-
-### 3.1 Source art is visually rich but structurally incomplete
-
-Source images may contain valuable silhouettes, panels, motifs, paths, surfaces, repeated modules, and construction relationships. Downstream programs instead require editable paths, nodes, scale, hierarchy, units, geometry decisions, and disciplined formats.
-
-### 3.2 Creators repeatedly rebuild the same missing structure
-
-Useful material is often reconstructed across tracing software, painting tools, AI chats, Blender, CAD systems, engines, and folders. This creates duplicated effort, inconsistent versions, lost provenance, and filesystem archaeology.
-
-### 3.3 AI output is commonly persuasive but not editable project truth
-
-A model may produce useful observations or proposals, but prose, generated pixels, or inferred geometry are not the same as reviewed paths, reusable components, or approved assets.
-
-### 3.4 “One-click 2D-to-3D” hides assumptions
-
-Automatic-looking conversions may conceal scale, depth, axis, topology, parentage, and construction decisions. Forge instead records a declared reversible method and its parameters.
-
-### 3.5 Small teams often lack a technical-art pipeline
-
-Solo creators and small studios need continuity between idea, editable shape, component, assembly, and export without building a custom asset-management and provenance system first.
-
-### 3.6 Cloud dependence can weaken ownership and resilience
-
-Core manual creation, editing, saving, reopening, and export must remain useful without a network service or AI model. Source art and project truth remain locally accessible unless the user explicitly chooses an external operation.
+Forge provides governed creative-production structure between those specialist tools.
 
 ---
 
-## 4. Users and value
+## 3. Users and durable value
 
 ### Primary users
 
@@ -90,18 +70,20 @@ Core manual creation, editing, saving, reopening, and export must remain useful 
 3. indie game, environment, prop, and world-building artists;
 4. Blender generalists and 3D blockout artists;
 5. makers and 3D-print designers at concept and blockout stage;
-6. small film, animation, fabrication, and design teams without a dedicated technical-art department;
+6. small film, animation, fabrication, and design teams without a dedicated technical-art pipeline;
 7. creators who need reusable assets without making cloud services or expensive hardware the authority over their work.
 
 ### Primary asset
 
-A durable Forge project containing:
+A durable Forge project containing, as implemented over time:
 
-- authoritative source references;
+- project identity and exact Purpose;
+- authoritative source references and unchanged project-owned source copies;
 - editable shape documents;
 - extraction candidates;
 - reviewed Shape Library assets;
 - command and correction history;
+- project-owned 3D object scenes;
 - construction recipes;
 - components and assemblies;
 - job and diagnostic evidence;
@@ -112,65 +94,100 @@ A durable Forge project containing:
 
 A deterministic Forge Pack assembled from approved project records. A Forge Pack is an export view and continuation package, not a second project authority.
 
-### Creator value
-
-Forge provides one governed place to import, trace, extract, draw, edit, organise, combine, review, approve, construct, assemble, validate, and export reusable creative assets while preserving source identity and every material user decision.
-
 ---
 
-## 5. Product principles
+## 4. Product principles
 
-1. **Editor first.** The editor is a creator tool, not a read-only display of AI output.
+1. **Editor first.** Forge is a creator tool, not a read-only display of AI output.
 2. **Local first.** Source art and project truth remain local unless the user explicitly chooses otherwise.
 3. **Human governed.** Extraction, approval, replacement, joining, boolean operations, baking, deletion, and export remain visible decisions.
 4. **AI optional.** Manual creation, editing, saving, reopening, approval, and export cannot depend on a model or network.
 5. **Observed is not inferred.** Source evidence, calculation, model inference, user intent, user-created geometry, and approved truth remain distinct.
 6. **Non-destructive by default.** Originals and approved prior versions remain unchanged; edits create replayable or versioned derivatives.
-7. **No dead or frozen UI.** Heavy work stays outside the Qt main thread with progress, heartbeat, elapsed time, cancellation boundaries, and truthful final state.
+7. **No dead or frozen UI.** Heavy work stays outside the Qt main thread with progress, heartbeat, elapsed time, cancellation boundaries, and truthful terminal state.
 8. **Modest hardware remains valid.** One heavy job at a time by default, bounded previews, conservative threads, no silent downloads, and no hidden escalation.
 9. **Interoperability is verified, not advertised.** A format or target program is exposed only after an import, round-trip, or continuation fixture proves the adapter.
-10. **Readable durable output.** JSON, Markdown, SVG, PNG, and documented interchange files remain inspectable outside Forge.
-11. **Every name is a promise.** No button, format, status, AI claim, or workflow name exists without a handler, validation, persistence rule, error path, and verifier.
+10. **Readable durable output.** JSON, Markdown, SVG, PNG, and documented interchange files remain inspectable outside Forge where practical.
+11. **Every name is a promise.** No button, status, format, AI claim, or workflow name exists without a handler, persistence rule, error path, and verifier.
 12. **Corrections compound value.** User edits become durable project knowledge rather than hidden memory.
 13. **Specialist tools are partners.** Forge prepares useful handoffs rather than pretending to replace every downstream tool.
 14. **Free access is not reduced functionality.** Voluntary support cannot gate core editing or local file access.
-15. **Finite scope protects product quality.** Stage One and Stage Two must be completed before future-world features are activated.
+15. **Finite scope protects quality.** Stage One and Stage Two must be completed before future-world features are activated.
 
 ---
 
-## 6. Workflow, operation, and job
+## 5. Current verified runtime baseline — 26 July 2026
+
+The merged runtime foundation includes:
+
+- Purpose-driven Project Birth;
+- safe create, open, close, reopen, and read-only recovery authority;
+- fresh project and document creation from Editor;
+- project switching from Start Here and Editor;
+- restoration of prior project authority after failed switch or fresh-project creation;
+- project-contained source intake and bounded previews;
+- optional local-agent evidence and seven prompt contracts;
+- native versioned shape documents;
+- Rectangle, Square, Circle, Ellipse, and Star commands;
+- command replay, Undo, Redo, autosave, canonical save, rollback, and reopen;
+- project-owned `mxztar_forge_object_scene` state;
+- real extruded 3D objects linked to native shapes;
+- XYZ position, width, height, depth, three-axis rotation, colour, and opacity;
+- CPU-rendered 3D viewport;
+- click selection, drag movement, resize, empty-space orbit, and zoom;
+- numeric Object Inspector;
+- persistent camera, perspective, grid, line, and zoom state;
+- paired 2D/3D membership during Undo, Redo, and direct deletion;
+- explicit-selection deletion;
+- guarded active-work authority;
+- CodeQL Advanced analysis for GitHub Actions and Python;
+- complete deterministic Source Truth verification on the T1700.
+
+This baseline is a real integrated shape/object CAD foundation. It is not a complete Stage One or Stage Two release.
+
+---
+
+## 6. Current non-implemented boundaries
+
+Forge does not currently implement:
+
+- manual tracing into editable paths;
+- deterministic contour, threshold, mask, or silhouette candidates;
+- Ollama-generated authoritative geometry;
+- pen, Bezier, freehand, node, or handle editing;
+- full layers, groups, mirrors, arrays, snapping, alignment, or 2D booleans;
+- transient smart guides, distance labels, equal-gap guidance, or snap tolerance;
+- reviewed and approved Shape Library assets;
+- insertion of reusable library assets into the current document;
+- hierarchy, anchors, connectors, or recoverable assemblies;
+- stitch, weld, join mesh, 3D boolean, separate, or bake operations;
+- revolve, sweep, loft, shell, relief, bevel, vertex/face editing, or sculpting;
+- verified SVG, PNG, GLB/glTF, or OBJ continuation profiles;
+- engineering-grade or manufacturing-safe geometry claims.
+
+Planned capability must not appear in the interface as if it were implemented.
+
+---
+
+## 7. Workflow, operation, and job
 
 Forge must not call every button a workflow.
 
 ### Workflow
 
-A **workflow** is a user journey that creates a durable state change, reusable asset, validated handoff, or recoverable project result.
+A user journey that creates a durable state change, reusable asset, validated handoff, or recoverable project result.
 
-Examples:
-
-- create a project;
-- extract a shape;
-- approve a Shape Library asset;
-- build an assembly;
-- export a GLB.
+Examples: create a project, trace a shape, approve a library asset, build an assembly, export a GLB.
 
 ### Operation
 
-An **operation** is a reversible or explicitly derived command inside a workflow.
+A reversible or explicitly derived command inside a workflow.
 
-Examples:
-
-- move;
-- rotate;
-- add node;
-- mirror;
-- union;
-- extrude;
-- stitch.
+Examples: move, rotate, add node, mirror, union, extrude, stitch.
 
 ### Job
 
-A **job** is bounded work that may take time and must expose:
+Bounded work that may take time and must expose:
 
 - declared inputs;
 - current stage;
@@ -180,49 +197,31 @@ A **job** is bounded work that may take time and must expose:
 - saved evidence;
 - truthful success, failure, cancellation, or timeout state.
 
-Examples:
-
-- generate a source preview;
-- calculate contours;
-- request an AI proposal;
-- validate a mesh;
-- package an export.
+Examples: generate a preview, calculate contours, request an AI proposal, validate a mesh, package an export.
 
 ---
 
-## 7. Product workflow architecture
+## 8. Product workflow architecture
 
-The finished Stage One–Two product is organised into **18 first-class workflow families**:
+The finished Stage One–Two product contains **18 first-class workflow families**.
 
-- 4 shared platform workflows;
-- 8 Stage One workflows;
-- 6 Stage Two workflows.
-
-Tools and commands live beneath these workflow families; they do not each become separate top-level workflows.
-
-### 7.1 Shared platform workflows
+### 8.1 Shared platform workflows
 
 #### P1. Project lifecycle
 
 ```text
-Purpose
-→ Create
-→ Open
-→ Work
-→ Close
-→ Reopen
-→ Recover
+Purpose → Create → Open → Work → Close → Reopen → Recover
 ```
 
 #### P2. Source lifecycle
 
 ```text
 External source
-→ Import unchanged project-owned copy
-→ Hash and identify
-→ Generate bounded preview
-→ Use in Editor
-→ Explicitly process only the project-owned copy
+→ import unchanged project-owned copy
+→ hash and identify
+→ generate bounded preview
+→ use in Editor
+→ explicitly process only the project-owned copy
 ```
 
 #### P3. Job lifecycle
@@ -239,72 +238,74 @@ Queued
 
 ```text
 Validate project
-→ Detect stale, incompatible, or interrupted state
-→ Preserve last canonical truth
-→ Recover or attach read-only
-→ Rebuild indexes
-→ Migrate only through explicit schema rules
+→ detect stale, incompatible, or interrupted state
+→ preserve last canonical truth
+→ recover or attach read-only
+→ rebuild indexes
+→ migrate only through explicit schema rules
 ```
 
-### 7.2 Stage One workflows
+### 8.2 Stage One workflows
 
 #### S1. Blank Shape Creation
 
 ```text
 Open writable project
 → New blank document
-→ Select canvas and units
-→ Begin manual shape creation
+→ select canvas and units
+→ begin manual shape creation
 ```
 
 #### S2. Source Region and Manual Trace
 
 ```text
 Open source
-→ Select region
-→ Trace line, path, silhouette, or mask
-→ Correct nodes
-→ Save candidate
+→ select exact region
+→ trace line, path, silhouette, or mask
+→ correct nodes
+→ save candidate
 ```
 
 #### S3. Algorithmic Shape Extraction
 
 ```text
 Select source region
-→ Configure bounded edge or threshold settings
-→ Generate candidates
-→ Compare
-→ Choose one for editing
+→ configure bounded edge or threshold settings
+→ generate candidates
+→ compare
+→ choose one for editing
 ```
 
 #### S4. Optional AI Shape Proposal
 
 ```text
 Select source region
-→ Request local model proposal
-→ Record model, assumptions, and confidence
-→ Display candidate
-→ Edit, reject, or retain as raw evidence
+→ request local model assessment or proposal
+→ record model, assumptions, and confidence
+→ display evidence or candidate
+→ edit, reject, or retain as raw evidence
 ```
+
+Ollama assessment alone is not extraction. Editable coordinates and user correction are required before geometry becomes project truth.
 
 #### S5. Shape Editing
 
 ```text
 Select shape
-→ Edit paths, nodes, handles, and properties
-→ Transform
-→ Undo/redo
-→ Autosave
-→ Save version
+→ edit paths, nodes, handles, and properties
+→ transform
+→ Undo/Redo
+→ autosave
+→ save version
 ```
 
 #### S6. 2D Composition
 
 ```text
 Select multiple shapes
-→ Align, mirror, array, group, or connect
-→ Apply explicit path or boolean operation
-→ Produce a derived editable shape
+→ align, mirror, array, group, or connect
+→ apply explicit path or boolean operation
+→ produce a derived editable shape
 ```
 
 #### S7. Review and Shape Library
@@ -316,78 +317,71 @@ Candidate
 → Approve / Reject
 → Version / Supersede
 → Save reusable Shape Library asset
+→ Insert through a reversible document command
 ```
 
 #### S8. 2D Export and Forge Pack
 
 ```text
 Approved shape or composition
-→ Choose validated output profile
-→ Validate
-→ Export SVG and/or PNG
-→ Record provenance and limitations
-→ Build deterministic Forge Pack
+→ choose validated output profile
+→ validate
+→ export SVG and/or PNG
+→ record provenance and limitations
+→ build deterministic Forge Pack
 ```
 
-### 7.3 Stage Two workflows
+### 8.3 Stage Two workflows
 
 #### T1. Declared 3D Primitive Creation
 
 ```text
 Open Construct
-→ Choose primitive
-→ Set units and parameters
-→ Create editable component
+→ choose primitive
+→ set units and parameters
+→ create editable component
 ```
 
 #### T2. Shape-to-Component Generation
 
 ```text
 Approved 2D shape
-→ Choose declared construction recipe
-→ Set parameters
-→ Generate reversible component
-→ Retain parent relationship
+→ choose declared construction recipe
+→ set parameters
+→ generate reversible component
+→ retain parent relationship
 ```
 
-Declared recipes may include:
-
-- extrude;
-- revolve;
-- sweep;
-- loft;
-- relief;
-- shell;
-- bevel.
+Declared recipes may include extrude, revolve, sweep, loft, relief, shell, and bevel.
 
 #### T3. Component Editing
 
 ```text
 Select component
-→ Edit recipe parameters
-→ Edit transforms, origin, and pivot
-→ Regenerate
-→ Preserve parent shape and history
+→ edit recipe parameters
+→ edit transforms, origin, and pivot
+→ regenerate
+→ preserve parent shape and history
 ```
 
 #### T4. Assembly and Constraint
 
 ```text
 Place components
-→ Position, rotate, and scale
-→ Add anchors or connectors
-→ Define hierarchy or contact
-→ Save recoverable assembly
+→ position, rotate, and scale
+→ add anchors or connectors
+→ define hierarchy or contact
+→ save recoverable assembly
 ```
 
 #### T5. Geometry Relationship and Merge
 
 ```text
 Select components
-→ Choose relationship or derived geometry operation
-→ Preview result
-→ Validate tolerance and limitations
-→ Apply reversible or explicitly baked result
+→ choose explicit relationship or geometry operation
+→ preview result
+→ validate tolerance and limitations
+→ apply reversible or explicitly baked result
 ```
 
 The UI and artifact schemas must distinguish:
@@ -407,204 +401,44 @@ The UI and artifact schemas must distinguish:
 
 ```text
 Component or assembly
-→ Validate units, axes, hierarchy, names, and geometry
-→ Choose GLB/glTF or OBJ profile
-→ Export
-→ Import into named downstream program
-→ Record continuation result
+→ validate units, axes, hierarchy, names, and geometry
+→ choose GLB/glTF or OBJ profile
+→ export
+→ import into named downstream program
+→ record continuation result
 ```
 
 ---
 
-## 8. Operation and job scale
-
-The controlled Stage One–Two product is expected to contain approximately:
-
-- 18 first-class workflow families;
-- 60–80 reversible or explicitly derived operations;
-- 10–14 asynchronous job types;
-- 12–15 core durable artifact schemas;
-- 9 principal workspaces.
-
-These are architecture estimates, not quotas. Shared abstractions should reduce duplication. Artificial files or god modules must not be created merely to match a number.
-
-### Estimated Stage One operations
-
-Approximately 35–45 commands across:
-
-- selection, pan, and zoom;
-- primitives and path creation;
-- node and handle editing;
-- path repair and simplification;
-- transforms, numeric properties, snapping, and alignment;
-- layers, grouping, locking, and visibility;
-- duplication, mirror, and arrays;
-- fill and stroke;
-- explicit 2D booleans;
-- review, approval, versioning, and export actions.
-
-### Estimated Stage Two operations
-
-Approximately 25–35 commands across:
-
-- primitives and construction recipes;
-- recipe parameter changes;
-- 3D transforms, origins, and pivots;
-- camera and viewport controls;
-- anchors, connectors, hierarchy, instances, mirrors, and arrays;
-- assembly relationships;
-- stitch, join, booleans, separate, and bake;
-- validation and export.
-
----
-
-## 9. Project Birth and Start Here contract
-
-Start Here gathers only enough information to begin useful work.
-
-The project authority block should use this primary layout:
-
-```text
-Project Authority
-[Project selector........................] [Refresh Projects] [Open Selected]
-
-[PURPOSE: ........................................] [Create Project] [Close Project]
-```
-
-### No project open
-
-- project selector enabled;
-- Refresh Projects enabled;
-- Open Selected enabled only when a project is selected;
-- Purpose enabled;
-- Create Project enabled only when Purpose contains valid text;
-- Close Project disabled.
-
-### Project open
-
-- selector, Refresh, Open, Purpose editing, and Create disabled;
-- Purpose displays the attached project purpose;
-- Close Project enabled when no guarded mutation is active;
-- writable, locked, and recovery authority remain explicit.
-
-### Purpose is the first project event
-
-On Create Project, Forge must:
-
-1. preserve the exact user purpose;
-2. derive a safe display name and directory slug without changing the stored purpose;
-3. create and open the canonical project transactionally;
-4. store purpose in `project.json`;
-5. append a durable `project_created` history event;
-6. offer a blank shape document or source-intake path;
-7. guide the user to the next safe reversible action.
-
-A long onboarding profile must not block project creation or blank-document work.
-
----
-
-## 10. Workspaces and navigation
-
-Planned application menus:
-
-```text
-File | Edit | View | Project | Source | Shapes | Construct | Analyse | Export | Settings | Help
-```
-
-Principal workspaces:
-
-1. Start Here;
-2. **Editor** — primary daily workspace;
-3. My Library;
-4. Shape Library;
-5. Construct — Stage Two;
-6. Review;
-7. Agent Workflows;
-8. Jobs;
-9. Export.
-
-After a project is open, Forge should normally return the user to the last valid Editor or Construct state rather than treating onboarding or AI workflows as the application centre.
-
-The guided Next control may automate safe navigation and exact selection. It must not silently:
-
-- start a heavy model call;
-- approve a shape;
-- apply an irreversible merge;
-- delete an asset;
-- switch projects;
-- export.
-
-Unavailable actions remain documented but are not exposed as dead controls.
-
----
-
-## 11. Project authority and durable artifacts
+## 9. Project authority and durable artifacts
 
 The project directory is a self-contained recovery boundary.
 
 Durable project files are authoritative. SQLite may support search, sorting, recent-project state, queues, and rebuildable indexes, but it is never the sole authority for creative work.
 
-Target project layout:
-
-```text
-project/
-├── project.json
-├── README.md
-├── source/
-│   ├── originals/
-│   └── previews/
-├── findings/
-├── structures/
-│   ├── shape-documents/
-│   ├── extraction-candidates/
-│   ├── approved-shapes/
-│   ├── construction-recipes/
-│   ├── components/
-│   └── assemblies/
-├── briefs/
-├── prompts/
-├── diagnostics/
-├── logs/
-├── history/
-└── exports/
-```
-
-Runtime code may create a directory only after the associated schema, authority, migration, and recovery rules are implemented.
-
-### Core authoritative artifact types
+Implemented or planned artifact classes include:
 
 1. project manifest;
 2. project history event;
 3. source asset record;
 4. source preview record;
 5. native shape document;
-6. extraction candidate;
-7. approved Shape Library asset;
-8. approval or rejection record;
-9. supersession or version record;
-10. job or evidence record;
-11. construction recipe;
-12. editable 3D component;
-13. assembly document;
-14. export and Forge Pack record.
+6. project-owned object-scene document;
+7. extraction candidate;
+8. approved Shape Library asset;
+9. approval or rejection record;
+10. supersession or version record;
+11. job or evidence record;
+12. construction recipe;
+13. editable 3D component;
+14. assembly document;
+15. export and Forge Pack record.
 
-Every material artifact requires:
-
-- stable ID and schema version;
-- project, source, and parent relationships;
-- actor classification: user, algorithm, or model;
-- coordinate system, units, bounds, and transforms where applicable;
-- operation history;
-- validation and approval state;
-- timestamps and content hash;
-- correction and supersession history;
-- intended output profile and known limitations.
+A proposed directory or artifact does not become runtime authority merely because it appears in documentation. Runtime code creates it only after schema, transaction, migration, recovery, and verification rules exist.
 
 ---
 
-## 12. Unified shape lifecycle
-
-Source-derived and scratch-built shapes converge on one lifecycle. A manually created shape is not secondary to an algorithmic or AI-derived shape.
+## 10. Unified shape and object lifecycle
 
 ```text
 blank document or source region
@@ -615,65 +449,100 @@ blank document or source region
   ├→ correction requested → revised version → reviewed
   └→ rejected
 
-approved shape
-  ├→ superseded by later approved version
-  ├→ 2D export
-  └→ construction recipe
-      → editable 3D component
-      → positioned instance
-      → group or assembly
-      → explicit contact / stitch / join / boolean / bake result
-      → verified export
+approved shape or declared primitive
+→ construction recipe or primitive extrusion
+→ editable 3D component/object
+→ positioned instance
+→ group or assembly
+→ explicit contact / stitch / join / boolean / bake result
+→ verified export
 ```
 
 No raw model record is presented as an approved Shape Library asset.
 
 ---
 
-## 13. Forge Editor contract
+## 11. Forge Editor contract
 
-Stage One requires a real canvas and document model, not a collection of single-purpose buttons.
+The Editor is a real canvas and document model, not a collection of single-purpose buttons.
 
-Minimum tool families:
+Completed foundation:
 
-- select, box-select, pan, and zoom;
+- project and document choosers;
+- five native primitives;
+- durable shape commands;
+- 2D and 3D synchronized membership;
+- object selection and direct manipulation;
+- numeric object properties;
+- empty-space orbit and zoom;
+- save, autosave, rollback, reopen, and recovery;
+- explicit delete;
+- active-work authority guards.
+
+Required tool families still include:
+
+- select and box-select;
 - line, polyline, pen/Bezier, freehand, and trace tools;
-- rectangle, ellipse, polygon, star, and configurable primitives;
 - node and handle editing;
-- open/close path, reverse, simplify, smooth, split, join endpoints, and duplicate-point repair;
+- path repair and simplification;
 - fill and stroke properties;
-- transform, numeric position/size/rotation, alignment, distribution, and snapping;
+- transform gizmos and numeric transforms;
+- smart guides, alignment, distribution, snapping, and equal-gap assistance;
 - duplicate, mirror, radial/linear array, group, ungroup, layer, lock, and visibility;
 - union, difference, intersection, exclusion, divide, and combine as explicit 2D operations;
-- anchors, connection points, symmetry axes, guides, and optional grid;
-- undo/redo with bounded durable history;
-- save, autosave/recovery, version, compare, approve, and export.
+- anchors, connection points, symmetry axes, and guides;
+- compare, review, approve, version, and export.
 
-The editor must distinguish:
-
-- source pixels;
-- extracted candidates;
-- user-created geometry;
-- temporary selections and guides;
-- approved project truth;
-- exported derivatives.
-
-No editor operation silently overwrites an imported original or approved prior version.
+The Editor must distinguish source pixels, extraction candidates, user-created geometry, temporary selections and guides, approved project truth, and exported derivatives.
 
 ---
 
-## 14. Shape extraction contract
+## 12. Smart positioning guides contract
+
+The next direct-manipulation gate adds transient visual guidance while moving one selected object.
+
+Guide candidates include:
+
+- scene centre;
+- nearest object centre;
+- nearest object edges;
+- matching X, Y, and Z positions;
+- equal gaps between neighbours.
+
+Small live values may include:
+
+```text
+Centre X: +24
+Nearest object: 86
+Left gap: 42
+Z difference: 15
+```
+
+Required rules:
+
+1. Guides appear only while movement is active.
+2. Values update continuously.
+3. Guides disappear immediately when movement ends.
+4. Visual guides and snapping are separate controls.
+5. `Guides`, `Snap to guides`, and bounded tolerance are explicit.
+6. Nonselected objects remain unchanged.
+7. Empty-space drag continues to orbit the view.
+8. Calculations remain bounded and CPU-safe for the T1700.
+
+---
+
+## 13. Shape extraction contract
 
 Extraction is one way to begin editing, not the final product.
 
-The first extraction system provides:
+The required first extraction system provides:
 
-- source-region selection;
+- exact source-region selection;
 - manual trace baseline;
 - line, contour, region, mask, and silhouette candidates;
 - open/closed contours, holes, intersections, endpoints, symmetry, and nesting;
-- threshold and edge settings for algorithmic extraction;
-- visible confidence and limitations for AI proposals;
+- threshold and edge settings for deterministic extraction;
+- visible confidence and limitations for AI assessment;
 - editable candidate paths on the same canvas used for scratch-built shapes;
 - exact source coordinates and source hash;
 - no automatic approval.
@@ -682,22 +551,37 @@ Manual tracing and correction remain available when no extraction engine or mode
 
 ---
 
-## 15. Construct contract
+## 14. Shape Library contract
 
-Stage Two provides:
+A real reusable library requires:
 
-- three-axis scene and camera views;
-- orthographic and perspective modes;
-- transform gizmos and numeric transforms;
-- units, grid, origin, pivots, snapping, anchors, connectors, and hierarchy;
-- locking, visibility, duplication, mirroring, arrays, instances, and undo/redo;
-- non-destructive construction history;
-- component and assembly inspection;
-- export-profile validation.
+- editable approved-shape schema;
+- provenance and integrity validation;
+- approval, rejection, correction, version, and supersession records;
+- bounded discovery;
+- document compatibility checks;
+- reversible `Insert into Current Document` command;
+- duplicate-instance and source-identity rules;
+- restart and copied-project recovery tests.
+
+The current evidence browser does not satisfy this contract.
+
+---
+
+## 15. Construct and merge contract
+
+The current object-scene foundation provides primitive extrusion, direct manipulation, camera state, reversible edits, and persistence.
+
+The complete Stage Two Construct workflow still requires:
+
+- construction-recipe schema;
+- advanced recipes including revolve, sweep, loft, shell, relief, and bevel;
+- origins, pivots, transform gizmos, units, and axes;
+- anchors, connectors, hierarchy, instances, arrays, and assemblies;
+- distinct group, contact, stitch/weld, join mesh, boolean, separate, and bake operations;
+- geometry validation and named export profiles.
 
 “One-click Make 3D” means “create a reversible preview using a declared method.” It does not mean “produce a finished object.”
-
-Group, assembly, contact, stitch, join mesh, boolean, separate, and bake remain distinct operations and artifact states.
 
 ---
 
@@ -713,454 +597,186 @@ No single industry file is universal. Forge uses named output profiles with decl
 - known limitations;
 - validation evidence.
 
-### Core Stage One outputs
+Core planned Stage One outputs:
 
 - native versioned Forge shape document;
-- Forge Pack JSON and human-readable Markdown;
-- SVG for editable vectors, silhouettes, masks, and supported layered 2D construction;
-- PNG for transparent derivatives, masks, previews, and annotated evidence.
+- Forge Pack JSON and Markdown;
+- validated SVG;
+- validated PNG.
 
-### Later validated 2D profiles
+Core planned Stage Two outputs:
 
-- JPEG;
-- WebP;
-- TIFF;
-- PDF;
-- DXF.
+- GLB/glTF;
+- OBJ fallback with explicit limitations.
 
-These remain hidden or unavailable until format-specific validation passes.
-
-### Core Stage Two outputs
-
-- GLB/glTF as the first general 3D blockout and engine-friendly adapter;
-- OBJ as a simple fallback with explicit material and hierarchy limitations.
-
-### Later validated 3D adapters
-
-- STL;
-- 3MF;
-- STEP;
-- FBX;
-- OpenUSD.
-
-Each requires separate units, geometry, legal, packaging, or downstream continuation evidence.
-
-### Planned target profiles
-
-- Krita raster continuation;
-- Inkscape SVG continuation;
-- Blender blockout and modular assembly;
-- Godot game asset;
-- Unity game asset;
-- Unreal Engine prop or environment;
-- generic GLB/glTF;
-- generic OBJ;
-- generic 2D CAD profile;
-- 3D-print concept;
-- generic Forge Pack.
+Every profile requires a fresh named downstream import or continuation test.
 
 ---
 
-## 17. Optional production intelligence and agent workflows
-
-Structured intelligence supports the editor; it does not block manual work.
-
-Useful fields may include:
-
-- source identity and hash;
-- visible objects, motifs, surfaces, and regions;
-- line, contour, layer, depth, and occlusion evidence;
-- component IDs, hierarchy, anchors, connectors, and transforms;
-- masks, silhouettes, vector candidates, holes, and interior contours;
-- symmetry, repetition, module families, and variation rules;
-- scale, units, perspective, and camera assumptions;
-- colour and material observations;
-- construction recommendations;
-- observed, inferred, user-created, and approved classification;
-- confidence, uncertainty, contradiction, and missing evidence;
-- intended downstream profile;
-- review, correction, rejection, approval, and supersession records.
-
-Current prompt contracts remain optional support jobs:
-
-- source_art_intelligence;
-- modular_set_perspective;
-- prototype_imagination;
-- shape_structure_harvest;
-- concept_brief;
-- render_prompt_pack;
-- recommend_next_step.
-
-They are not the 18 first-class product workflows and cannot become project truth without the appropriate review and artifact path.
-
----
-
-## 18. Automation and user control
-
-| Mode | Behaviour |
-|---|---|
-| Manual | Tools execute only direct user commands |
-| Assisted | Forge proposes an action and waits for approval |
-| Guided Automatic | Forge runs a visible reversible sequence and pauses at gates |
-| Batch Automatic | Forge applies user-approved rules and reports exceptions |
-
-Manual and Assisted modes are first-class. Guided Automatic may support onboarding but must never force automation.
-
-Every automated run declares inputs, stages, model or algorithm, storage destination, assumptions, workload state, elapsed time, heartbeat, cancellation boundary, outputs, failures, and next action.
-
----
-
-## 19. Shared implementation architecture
-
-### 19.1 Command framework
-
-All material Editor and Construct changes use a common command contract:
-
-```text
-validate
-→ apply
-→ persist or autosave
-→ undo
-→ redo
-→ serialize
-→ replay
-```
-
-A command records:
-
-- command ID;
-- operation type;
-- parameters;
-- affected artifact IDs;
-- before/after references where required;
-- timestamp;
-- actor;
-- validation result.
-
-### 19.2 Product registry
-
-Forge requires a registry that distinguishes:
-
-- interactive workflow;
-- editor operation;
-- construct operation;
-- asynchronous job;
-- export adapter;
-- validation profile.
-
-The seven AI prompt contracts remain a separate optional agent registry.
-
-### 19.3 Selection model
-
-One shared selection contract must serve:
-
-- source regions;
-- 2D paths;
-- nodes and handles;
-- groups and layers;
-- 3D components;
-- assembly members.
-
-### 19.4 Provenance graph
-
-Every derivative remains traceable:
-
-```text
-export
-← assembly
-← components
-← construction recipes
-← approved shapes
-← shape documents
-← source regions
-← unchanged source assets
-```
-
-### 19.5 Validation framework
-
-Validation is profile-driven rather than scattered across controls.
-
-Initial profiles include:
-
-- project integrity;
-- shape document;
-- approved Shape Library asset;
-- SVG export;
-- PNG export;
-- construction recipe;
-- component;
-- assembly;
-- GLB/glTF export;
-- OBJ export.
-
----
-
-## 20. Expected codebase scale
-
-Each workflow may require:
-
-1. schema or domain contract;
-2. core service or engine;
-3. persistence and transaction handling;
-4. UI controller or workspace integration;
-5. command or job adapter;
-6. validator;
-7. deterministic verifier;
-8. fixture data;
-9. documentation and migration notes.
-
-A realistic finished Stage One–Two repository may contain approximately:
-
-| Code family | Estimated scale |
-|---|---:|
-| Core schemas and domain models | 12–18 modules |
-| Project, persistence, and authority services | 10–15 modules |
-| 2D geometry and editor engines | 15–25 modules |
-| 3D construction and assembly engines | 15–25 modules |
-| Qt workspaces, controllers, and reusable widgets | 15–22 modules |
-| Export adapters and validators | 8–14 modules |
-| Background workers and job infrastructure | 6–10 modules |
-| Migrations and compatibility handlers | 5–10 modules |
-| Deterministic tests, verifiers, and fixtures | 40–70 files |
-| Release, installation, and recovery tooling | 8–15 files |
-
-This is an order-of-magnitude architecture estimate, not a requirement to manufacture files.
-
----
-
-## 21. Stage One acceptance boundary
+## 17. Stage One acceptance boundary
 
 Stage One is complete only when a new user can:
 
 1. install and launch an official release;
-2. enter a Purpose and create, open, close, and safely recover a local project;
-3. import a supported source image without changing external bytes, or create a blank shape document;
-4. inspect a bounded source preview and preserve source identity and rights notes;
-5. create candidates through manual, algorithmic, or optional AI-assisted paths;
-6. create shapes from scratch using primitives and path tools;
-7. select, move, add, remove, and edit nodes and handles;
-8. edit open and closed contours, holes, fill, stroke, bounds, anchors, and symmetry;
-9. use transforms, snapping, alignment, duplication, mirroring, arrays, grouping, layers, visibility, locking, undo, and redo;
-10. perform explicit non-destructive 2D path and boolean operations with inspectable results;
-11. compare a source-derived candidate with the source and correct it manually;
-12. rename, reject, approve, supersede, and version a shape;
-13. save and reopen a reusable Shape Library entry;
-14. inspect jobs, diagnostics, model identity where applicable, elapsed time, and saved evidence;
-15. export validated SVG and PNG derivatives through named profiles;
-16. export a deterministic Forge Pack with provenance and limitations;
-17. process only the project-owned source copy through an explicit action;
-18. restart Forge and recover editable state without relying on terminal history;
-19. import the exported result into a fresh named downstream session and continue work.
+2. create, open, switch, close, and safely recover a local project;
+3. import a supported source image or create a blank shape document;
+4. preserve source identity and unchanged external bytes;
+5. create candidates manually, algorithmically, or through optional AI assistance;
+6. create non-trivial shapes from scratch with primitives and path tools;
+7. select, move, edit, add, and remove nodes and handles;
+8. use transforms, smart guides, snapping, alignment, duplication, mirroring, arrays, grouping, layers, visibility, locking, Undo, and Redo;
+9. perform explicit non-destructive 2D path and boolean operations;
+10. compare source-derived candidates with source evidence and correct them;
+11. rename, reject, approve, supersede, version, save, and reinsert Shape Library assets;
+12. inspect jobs, diagnostics, model identity, elapsed time, and evidence;
+13. export validated SVG, PNG, and Forge Pack derivatives;
+14. restart Forge and recover editable state without terminal history;
+15. continue work in a fresh named downstream session.
 
-Stage One does not promise:
-
-- production-ready topology or finished 3D meshes;
-- engineering-grade dimensions from an unscaled image;
-- watertight or manufacture-safe geometry;
-- hidden-surface reconstruction;
-- automatic CAD solids, rigging, UVs, LODs, collision, or final materials;
-- unattended publishing or sales;
-- unlimited parallel jobs;
-- perfect extraction or AI interpretation;
-- future Product Level Three or Four functionality.
+Stage One does not promise production-ready topology, engineering dimensions from an unscaled image, manufacturing safety, hidden-surface reconstruction, rigging, UVs, LODs, collision, final materials, or perfect extraction.
 
 ---
 
-## 22. Stage Two acceptance boundary
+## 18. Stage Two acceptance boundary
 
 Stage Two—and therefore the planned finished product—is complete only when a new user can:
 
 1. open an approved Stage One shape or create a declared 3D primitive;
-2. generate a reversible 3D component using an explicit recipe;
+2. generate a reversible component using an explicit recipe;
 3. inspect and edit operation parameters without destroying the source shape;
-4. work in orthographic and perspective views with units, axes, origin, pivots, and transform gizmos;
+4. work in orthographic and perspective views with units, axes, origins, pivots, and transform gizmos;
 5. position, rotate, scale, duplicate, mirror, array, hide, lock, and instance components;
-6. create and edit anchors, connectors, hierarchy, and assembly relationships;
+6. create anchors, connectors, hierarchy, and assembly relationships;
 7. distinguish group, assembly, contact, stitch/weld, join mesh, boolean, separate, and bake;
-8. preview intersections, open boundaries, normals, and declared export limitations;
-9. retain non-destructive construction history and parent-child provenance;
+8. preview intersections, open boundaries, normals, and export limitations;
+9. retain non-destructive construction history and parent provenance;
 10. save, close, reopen, recover, and continue a 3D construction;
-11. export through a verified GLB/glTF profile and a validated OBJ fallback;
-12. import the exported result into Blender or another named supported tool;
-13. continue editing without losing declared units, axes, names, hierarchy, or provenance.
+11. export through verified GLB/glTF and OBJ profiles;
+12. import the result into Blender or another named supported tool and continue editing.
 
 Stage Two does not claim engineering certification, manufacturing safety, automatic repair, finished topology, automatic rigging, or universal compatibility.
 
 ---
 
-## 23. Delivery programme
+## 19. Delivery programme
 
-### Stage One programme — Forge Editor
+### Milestone A — Local project and source foundation
 
-#### Milestone A — Verified local foundation
+Status: **VERIFIED foundation**.
 
-Status: substantially complete.
+Includes project manifest, locking, session authority, source intake, bounded previews, guarded workers, model evidence, launcher stability, and recovery contracts.
 
-- canonical identity and source truth;
-- relocatable launcher and desktop launchers;
-- modest-hardware policy;
-- project manifest, locking, session, and source authority;
-- asynchronous source intake and discovery;
-- bounded previews and image compatibility;
-- guarded Qt worker lifecycle;
-- guided navigation;
-- project-owned model-call evidence;
-- native shape-document and minimum Editor foundation;
-- corrected official launcher import order.
+### Milestone B — Project Birth and project/document authority
 
-Exit: merged deterministic contracts pass on the T1700, the working tree is clean, and the live application opens and closes without startup abort.
+Status: **VERIFIED / DETERMINISTICALLY VERIFIED**.
 
-#### Milestone B — Project Birth and Editor authority
+Includes Purpose-driven creation, blank document guidance, project and document switching, fresh Editor projects, failure restoration, and guarded mutations.
 
-- Purpose-driven Start Here layout;
-- project-created history event;
-- safe name/slug derivation;
-- create/open/close/recovery UI contract;
-- return to last valid editor state;
-- live minimum Editor acceptance.
+### Milestone C — Integrated primitive shape/object CAD foundation
 
-Exit: a user creates a project from Purpose, enters the Editor, creates and saves a blank document, closes, reopens, and recovers it.
+Status: **DETERMINISTICALLY VERIFIED**.
 
-#### Milestone C — Manual 2D creation and editing
+Includes five native primitives, 2D/3D membership, project-owned object scenes, direct manipulation, Object Inspector, orbit, zoom, persistence, Undo/Redo, and direct deletion.
 
-- selection and transform command foundation;
-- primitives, pen/path, and node editing;
-- snapping, guides, layers, groups, duplication, mirrors, and arrays;
-- fill/stroke and explicit 2D booleans;
-- deterministic editor-command fixtures.
+### Milestone D — Smart guides and manipulation clarity
 
-Exit: a user builds a non-trivial reusable shape from scratch without AI.
+Status: **NEXT PLANNED GATE**.
 
-#### Milestone D — Source-derived shape extraction
+Includes transient alignment guides, measurements, optional snapping, bounded tolerance, equal-gap guidance, and orbit regressions.
 
-- source overlay and region selection;
-- manual trace baseline;
-- bounded algorithmic contour and mask candidates;
-- optional AI proposal adapter;
-- source-coordinate provenance and correction tools.
+### Milestone E — Freeform paths and manual tracing
 
-Exit: a source-derived shape is corrected on the same canvas and remains traceable to unchanged source bytes.
+Status: **PLANNED**.
 
-#### Milestone E — Review and Shape Library lifecycle
+Includes path, pen, node, handle, source-region, and trace tools.
 
-- candidate/review/approve/reject/supersede/version workflow;
-- editable Shape Library entries;
-- comparison and provenance views;
-- no raw AI record presented as an approved shape.
+### Milestone F — Deterministic and optional AI-assisted extraction
 
-Exit: approved manual and source-derived shapes reopen as editable reusable assets.
+Status: **PLANNED**.
 
-#### Milestone F — Stage One interoperability and Forge Pack
+Includes contour, threshold, mask, silhouette, candidate comparison, source provenance, and Ollama-assisted assessment through editable candidate authority.
 
-- SVG and PNG adapters;
-- deterministic package builder;
-- adapter validation, export report, provenance, and limitations;
-- Inkscape, Krita, and generic continuation tests.
+### Milestone G — Review and reusable Shape Library
 
-Exit: a fresh downstream session imports and continues from exported Stage One assets without filesystem archaeology.
+Status: **PLANNED**.
 
-#### Milestone G — Stage One release engineering
+Includes review, correction, approval, rejection, versioning, supersession, bounded library discovery, and reversible insertion.
 
-- clean install, update, rollback, removal, migration, backup, and recovery;
-- versioned GitHub release and checksums;
-- recognised licence and contributor-policy decision;
-- release notes and website download path;
-- free-access and voluntary-support wording.
+### Milestone H — 2D composition and Stage One interoperability
 
-Exit: a new user completes the Stage One journey and retains local editable work.
+Status: **PLANNED**.
 
-### Stage Two programme — Construct
+Includes layers, groups, arrays, mirrors, alignment, 2D booleans, SVG, PNG, Forge Pack, and named downstream continuation.
 
-#### Milestone H — Reversible 2D-to-3D components
+### Milestone I — Advanced reversible 3D construction
 
-- construction-recipe schema;
-- extrude, revolve, sweep, loft, shell, relief, and bevel;
-- editable parameters and parent provenance;
-- component validation.
+Status: **PLANNED**.
 
-Exit: an approved 2D shape produces a reversible editable 3D component.
+Includes construction recipes, advanced generation methods, pivots, origins, and component validation.
 
-#### Milestone I — Construct workspace and assembly
+### Milestone J — Assembly and explicit merge operations
 
-- 3D viewport, cameras, transforms, snaps, anchors, connectors, hierarchy, instances, arrays, and undo/redo;
-- group, assembly, contact, stitch/weld, join, boolean, separate, and bake distinctions;
-- construction history.
+Status: **PLANNED**.
 
-Exit: users assemble components into a recoverable modular construction.
+Includes hierarchy, anchors, connectors, instances, recoverable assemblies, stitch/weld, join mesh, booleans, separate, and bake.
 
-#### Milestone J — Stage Two interoperability
+### Milestone K — Stage Two interoperability
 
-- GLB/glTF and OBJ adapters;
-- Blender and named engine continuation tests;
-- mesh, hierarchy, axis, units, naming, and limitation reports;
-- optional STL, 3MF, or DXF only after their gates pass.
+Status: **PLANNED**.
 
-Exit: a named downstream program imports and continues the verified blockout.
+Includes GLB/glTF, OBJ, Blender continuation, geometry reports, and named profile validation.
 
-#### Milestone K — Stage Two release engineering
+### Milestone L — Release engineering
 
-- installation and migration from Stage One;
-- Editor/Construct compatibility declarations;
-- recovery and round-trip regression suite;
-- official Stage Two release.
+Status: **PLANNED**.
 
-Exit: a new user completes the shape-to-component-to-assembly-to-export journey on supported hardware.
-
-#### Milestone L — Optional advanced adapters
-
-- STEP after dimensional and solid contracts;
-- OpenUSD after assembly semantics;
-- community adapter and profile framework;
-- optional text-to-image source adapter only after explicit privacy and provenance rules.
-
-Milestone L does not activate future Product Level Three or Four.
+Includes installation, update, rollback, migration, backup, recovery, checksums, licence, contributor policy, release notes, and official downloads.
 
 ---
 
-## 24. Verification system
+## 20. Immediate permitted engineering sequence
+
+The next engineering order is:
+
+1. merge this documentation reconciliation after review and Source Truth checks;
+2. implement smart guides, live measurements, optional snapping, and empty-space orbit regressions;
+3. implement freeform editable paths, nodes, and handles;
+4. implement source-region selection and manual tracing;
+5. add bounded deterministic contour and mask candidates;
+6. add Ollama-assisted candidate assessment only through the editable candidate path;
+7. implement review, approval, versioning, and real Shape Library insertion;
+8. implement 2D composition, alignment, groups, arrays, and explicit booleans;
+9. implement and verify SVG, PNG, and Forge Pack profiles;
+10. implement advanced reversible 3D construction recipes;
+11. implement assemblies, anchors, connectors, hierarchy, and distinct merge operations;
+12. implement and verify GLB/glTF and OBJ profiles;
+13. complete Stage One and Stage Two release acceptance.
+
+Every PR advances one coherent gate, preserves verified behaviour, updates the Progress Ledger and Current Capability Boundary, and avoids unrelated UI promises.
+
+---
+
+## 21. Verification system
 
 Every milestone requires proportionate evidence:
 
-1. Markdown and source-truth checks;
+1. Markdown and documentation-drift checks;
 2. Python compile and fresh-process import checks;
-3. pure-logic unit contracts;
+3. pure-logic contracts;
 4. fixture-based integration contracts;
 5. thread and cancellation lifecycle contracts;
 6. schema and migration validation;
 7. filesystem interruption and recovery tests;
-8. editor command, undo/redo, and autosave recovery tests;
+8. editor command, Undo/Redo, and autosave recovery tests;
 9. benchmark-source and scratch-built asset comparisons;
 10. manual Qt smoke checks on the T1700;
-11. downstream import, round-trip, or continuation checks for every export profile.
+11. downstream import, round-trip, or continuation checks for every output profile.
 
 No milestone becomes `VERIFIED` solely because code was committed or merged.
 
 ---
 
-## 25. Immediate permitted engineering sequence
-
-The next engineering order is:
-
-1. merge this documentation reconciliation after review and source-truth checks;
-2. implement Project Birth and the corrected Start Here authority layout;
-3. complete live launcher and minimum Editor acceptance on merged `main`;
-4. establish selection and transform commands;
-5. add manual primitives and path/node editing;
-6. add source-region selection and manual trace;
-7. add bounded algorithmic extraction candidates;
-8. add optional AI proposals only through the editable candidate path;
-9. implement Shape Library review, approval, rejection, versioning, and supersession;
-10. implement and verify SVG and PNG export profiles;
-11. complete Stage One release acceptance;
-12. begin reversible 2D-to-3D component recipes;
-13. build Construct assembly and Stage Two export profiles;
-14. complete Stage Two release acceptance.
-
-Every PR advances one coherent gate, preserves verified behaviour, updates the progress ledger, and avoids unrelated UI promises.
-
----
-
-## 26. PR implementation contract
+## 22. PR implementation contract
 
 Every implementation PR identifies:
 
@@ -1179,7 +795,7 @@ No control appears until its complete handler, persistence, error path, and veri
 
 ---
 
-## 27. Explicit exclusions from the finished Stage One–Two product
+## 23. Explicit exclusions
 
 Stage One and Stage Two do not quietly expand into:
 
@@ -1198,23 +814,19 @@ Stage One and Stage Two do not quietly expand into:
 - persistent worlds;
 - distributed operator infrastructure.
 
-These may exist in ZCVIOS lore or later specialist systems, but they are not required to complete MXZTAR Forge v2.0.
+These may exist in wider MXZTAR or ZCVIOS vision, but they are not required to complete MXZTAR Forge v2.0.
 
 ---
 
-## 28. Distribution, access, and support
+## 24. Distribution, access, and support
 
-MXZTAR Forge is an MXZTAR Projects build from `https://www.mxztar.co.nz`.
-
-Official software use is intended to be free of charge. There is no confirmed timed trial, subscription, or core-feature paywall. Voluntary support may be offered through `https://buymeacoffee.com/mxztar`, but it cannot gate core editing or local file access.
-
-Ordinary users will be directed to versioned official releases so application code, schemas, model compatibility, and migrations remain synchronised.
+Official MXZTAR Forge use is intended to be free of charge. There is no confirmed timed trial, subscription, or core-feature paywall. Voluntary support may be offered through `https://buymeacoffee.com/mxztar`, but it cannot gate core editing or local file access.
 
 Before the first public release, the repository must contain a recognised `LICENSE` selected by the founder and consistent contributor terms. Public source visibility and free-of-charge access do not themselves define modification or redistribution permission.
 
 ---
 
-## 29. Future horizon authority
+## 25. Future horizon authority
 
 The separately governed future documents preserve long-term ideas without changing the active build:
 
