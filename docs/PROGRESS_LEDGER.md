@@ -3,9 +3,9 @@
 **Ledger date:** 27 July 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
 **Active product horizon:** integrated shape/object CAD, Stage One and Stage Two  
-**Merged runtime baseline:** `61ab6c4` through PR #59  
-**Current delivery gate:** PR #60 transient smart positioning guides and measurements  
-**Current branch:** `agent/smart-positioning-guides`
+**Merged runtime baseline:** `fc0963f` through PR #60  
+**Current delivery gate:** PR #61 mouse-wheel page scrolling and pinned Editor options  
+**Current branch:** `agent/restore-mouse-wheel-scrolling`
 
 This ledger records current product truth and priority changes. Detailed commit history remains available in Git.
 
@@ -41,6 +41,8 @@ Purpose
 → portable outputs
 ```
 
+Interaction controls must remain reachable while the user is working. A user must not be forced to drag a scrollbar or return to the top of a long Editor page merely to change output settings.
+
 This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, or a vague one-button merge operation.
 
 ---
@@ -67,6 +69,7 @@ This direction does not authorise fake perspective effects, unsupported automati
 - PR #57 — restored Project Birth blank-document guidance and protected CodeQL Advanced.
 - PR #58 — GitHub-generated CodeQL Advanced workflow for Actions and Python.
 - PR #59 — reconciled README, Master Build Plan, Progress Ledger, capability boundary, and documentation-drift verification.
+- PR #60 — transient positioning guides, measurements, optional snapping, rotation-aware bounds, and preserved empty-space orbit.
 
 ---
 
@@ -85,12 +88,25 @@ Recorded evidence includes:
 - listed Python files compile;
 - CodeQL Advanced contract passes;
 - launcher import contract passes;
-- Project Birth and routing pass;
-- native shape document and primitive commands pass;
-- 3D object CAD contract passes;
-- single-object usability contract passes;
-- Editor project authoring and paired deletion pass;
+- native shape, 3D object, single-object usability, project authoring, and paired deletion contracts pass;
 - all seven optional prompt contracts build.
+
+### PR #60 merged-main automated verification
+
+Status: **DETERMINISTICALLY VERIFIED on merged `main`; full live acceptance interrupted by the scrolling defect now addressed in PR #61**.
+
+Recorded evidence:
+
+- T1700 synchronized to merge commit `fc0963f`;
+- focused positioning-guide contract exit code `0`;
+- complete Source Truth verification exit code `0`;
+- rotation-aware 90-degree and 45-degree guide bounds pass;
+- guidance-only movement does not force position;
+- snapping remains separate and off by default;
+- nonselected objects remain unchanged;
+- empty-space drag remains orbit.
+
+Live inspection then revealed that the 3D output consumed every wheel event as zoom, preventing normal mouse-wheel page scrolling while the pointer was over the output. This is a usability regression, not a project-authority or geometry failure.
 
 No downstream export, production mesh, manufacturing, tracing, approved library, or advanced assembly acceptance is implied.
 
@@ -101,7 +117,7 @@ No downstream export, production mesh, manufacturing, tracing, approved library,
 | Workspace | Current truth |
 |---|---|
 | Start Here | Purpose-driven Project Birth, discovery, open/switch, close, and guided blank-document path are implemented |
-| Editor | Primary integrated 2D shape and 3D object workspace; PR #60 adds transient movement guidance on its branch |
+| Editor | Primary integrated 2D shape and 3D object workspace; PR #60 is merged; PR #61 corrects wheel scrolling and keeps options visible while scrolled |
 | My Library | Verified bounded source intake, previews, exact handoff, and guarded lifecycle |
 | Shape Library | Evidence browser only; approved editable lifecycle and insertion are not implemented |
 | Agent Workflows | Optional local-AI assessment and planning foundation; not geometry authority |
@@ -151,14 +167,10 @@ Implemented on merged `main`:
 
 - five native shapes become real extruded 3D objects;
 - source shape and object membership remain linked;
-- XYZ position;
-- width, height, and depth;
-- X/Y/Z rotation;
+- XYZ position, width, height, depth, and three-axis rotation;
 - colour and opacity;
-- object selection;
-- drag movement and resize;
-- numeric Object Inspector;
-- empty-space orbit and wheel zoom;
+- object selection, drag movement, resize, and numeric inspector;
+- empty-space orbit;
 - perspective, grid, line, camera, and zoom persistence;
 - reversible object edits;
 - paired membership during Undo, Redo, and deletion;
@@ -167,23 +179,23 @@ Implemented on merged `main`:
 
 ### PR #60 smart positioning gate
 
-Status: **DETERMINISTICALLY VERIFIED on the PR branch; T1700 live acceptance pending merge**.
+Status: **DETERMINISTICALLY VERIFIED on merged `main`; final live acceptance resumes after PR #61**.
 
-Implemented on the branch:
+Implemented:
 
 - transient X/Y alignment lines while moving one selected object;
-- centre and axis-aligned edge comparison against scene centre and neighbouring objects;
-- live centre delta values for X, Y, and Z;
-- nearest-object centre distance, surface distance, and Z difference;
+- scene-centre and neighbouring-object centre/edge comparison;
+- live X/Y/Z centre deltas;
+- nearest-object centre distance, rotation-aware surface distance, and Z difference;
 - separate `Position Guides` and `Snap to Guides` controls;
 - snapping off by default;
-- bounded configurable tolerance from 1 to 50 scene units;
-- disabling guides also disables snapping so movement is never invisibly forced;
+- bounded tolerance from 1 to 50 scene units;
+- guides off forces snapping off;
 - guide state disappears immediately on release;
-- final freely moved or explicitly snapped position uses the existing reversible object command;
-- empty-space drag remains perspective orbit and shows no movement guides.
+- final movement uses the existing reversible object command;
+- empty-space drag remains perspective orbit.
 
-Not included in PR #60:
+Not included:
 
 - equal-gap distribution guidance;
 - transform gizmos;
@@ -194,7 +206,40 @@ Not included in PR #60:
 
 ---
 
-## 7. Source-image and Ollama boundary
+## 7. PR #61 mouse-wheel and pinned-options correction
+
+Status: **DETERMINISTICALLY VERIFIED on the PR #61 branch; T1700 live acceptance pending**.
+
+Defect:
+
+- the 3D output consumed every wheel event as zoom;
+- users hovering the output could not scroll the outer Editor page with the wheel;
+- the implemented Editor action menus remained at the top of the scrolling page.
+
+Implemented on the branch:
+
+- `Scroll page` is the default wheel mode;
+- wheel over either 2D or 3D output moves the existing outer page scrollbar;
+- scroll mode does not change 3D zoom;
+- `Zoom 3D view` explicitly restores wheel zoom over 3D output;
+- `Scroll page; Ctrl+wheel zoom` preserves normal scrolling and enables modifier zoom;
+- the mode persists through existing application settings;
+- sidebar navigation is not intercepted;
+- a fixed `Editor Options` tree remains outside the scroll area;
+- Document, Shape, Edit, Object and View actions remain reachable after scrolling to the bottom;
+- the fixed strip appears only while Editor is active;
+- project files, geometry and object-scene schema remain unchanged.
+
+Deterministic evidence:
+
+- Python Compile Check passes;
+- Security & Code Scan passes;
+- Source Truth passes, including a real Qt vertical scroll range and output-wheel event routing;
+- CodeQL Advanced remains a required final gate.
+
+---
+
+## 8. Source-image and Ollama boundary
 
 Status: **PARTIAL evidence foundation**.
 
@@ -218,37 +263,30 @@ Ollama findings remain evidence or guidance. They do not become editable or appr
 
 ---
 
-## 8. Shape Library boundary
+## 9. Shape Library boundary
 
 Status: **PARTIAL evidence browser**.
 
-The current Shape Library does not provide:
-
-- approved editable shape records;
-- approval, rejection, correction, versioning, or supersession;
-- `Insert into Current Document`;
-- reversible library insertion;
-- compatibility validation against the current document;
-- reusable component or assembly insertion.
+The current Shape Library does not provide approved editable shape records, approval/version authority, `Insert into Current Document`, reversible insertion, document compatibility validation, or reusable component and assembly insertion.
 
 ---
 
-## 9. Security and repository controls
+## 10. Security and repository controls
 
-Current PR #60 evidence:
+Current PR #61 evidence:
 
 - Python Compile Check: passing;
 - Security & Code Scan: passing;
-- Source Truth Check: passing, including the positioning-guide verifier;
+- Source Truth Check: passing, including the mouse-wheel and pinned-options verifier;
 - CodeQL Advanced: required before ready-for-review status.
 
-The repository source-truth gate now compiles the guide calculation and viewport modules and executes the full interaction contract.
+The root source-truth gate compiles the wheel controller and executes the full event-routing contract.
 
 ---
 
-## 10. Next permitted engineering sequence
+## 11. Next permitted engineering sequence
 
-After PR #60 review, merge, T1700 synchronization, and live acceptance:
+After PR #61 review, merge, T1700 synchronization, and live acceptance:
 
 1. freeform editable paths, nodes, and handles;
 2. source-region selection and manual tracing;
@@ -274,7 +312,7 @@ focused branch
 
 ---
 
-## 11. Current non-claims
+## 12. Current non-claims
 
 Forge does not currently claim:
 
@@ -294,18 +332,10 @@ Forge does not currently claim:
 
 ---
 
-## 12. Verification rule
+## 13. Verification rule
 
 No capability becomes VERIFIED solely because code was committed or merged.
 
-Evidence may include:
-
-- compile and fresh-process import checks;
-- schema and command-replay validation;
-- project authority and integrity tests;
-- interruption and rollback tests;
-- Qt lifecycle and offscreen rendering tests;
-- manual T1700 interaction tests;
-- downstream continuation tests.
+Evidence may include compile and import checks, schema and command replay, project integrity, interruption and rollback, Qt lifecycle and offscreen rendering, manual T1700 interaction, and downstream continuation tests.
 
 The environment that ran each verification must be identified truthfully.
