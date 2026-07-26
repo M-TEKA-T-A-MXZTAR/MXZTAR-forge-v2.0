@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Forge shell with fresh-document startup, project switching, and direct deletion."""
+"""Forge shell with project authoring, pinned options, and explicit wheel routing."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from qt_app import SETTINGS_APP, SETTINGS_ORG
 from qt_editor_app import EDITOR_PAGE_INDEX, START_HERE_PAGE_INDEX
 from qt_editor_usability_app import UsableEditorForgeWindow
 from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel
+from qt_panels.editor_wheel_controls import EditorMouseWheelController
 from core.project_authoring_workflow import switch_project
 
 
@@ -119,12 +120,16 @@ class StartHereProjectController:
 
 
 class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
-    """Expose complete project/document authoring and paired deletion workflows."""
+    """Expose complete project/document authoring and visible interaction controls."""
 
     def __init__(self, project_session=None):
         super().__init__(project_session)
         self._replace_authoring_editor_panel()
         self.start_here_project_controller = StartHereProjectController(self)
+        self.editor_mouse_wheel_controller = EditorMouseWheelController(
+            self,
+            self.editor_panel,
+        )
         self.pages.setCurrentIndex(START_HERE_PAGE_INDEX)
         self.sidebar.setCurrentRow(START_HERE_PAGE_INDEX)
         self.refresh_guided_next_step()
