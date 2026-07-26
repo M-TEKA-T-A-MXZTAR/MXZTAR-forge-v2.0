@@ -33,21 +33,22 @@ The detailed project authority hierarchy is defined in:
 
 The active documentation hierarchy is:
 
-1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished-product boundary, product principles, 18 workflow families, architecture, acceptance criteria, milestones, and engineering sequence.
-2. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, blocking, and next-action rules.
-3. **`docs/PROGRESS_LEDGER.md`** — dated verified, merged, partial, planned, blocked, and deferred implementation state.
-4. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense audit of what works now, what is partial, and what remains planned.
-5. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
-6. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, object-scene, component, assembly, and export artifact requirements.
-7. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
-8. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
-9. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
+1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished-product boundary, product principles, 18 workflow families, architecture, acceptance criteria, and milestone framework.
+2. **`docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`** — founder-authorised active sequencing addendum for editable extraction, shipped starter assets, component generation, selectable surfaces and areas, modular placement, groups, assemblies, effect stacks, and explicit connection operations. Where its nearer engineering sequence conflicts with an older immediate-sequence list, this addendum wins until the next full Master Build Plan reconciliation.
+3. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, blocking, and next-action rules.
+4. **`docs/PROGRESS_LEDGER.md`** — dated verified, merged, partial, planned, blocked, and deferred implementation state.
+5. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense audit of what works now, what is partial, and what remains planned.
+6. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
+7. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, object-scene, component, assembly, and export artifact requirements.
+8. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
+9. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
+10. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
 
-When two documents appear to conflict, the higher applicable authority wins. The conflict must then be corrected in a dedicated documentation change rather than allowed to persist.
+When two documents appear to conflict, the higher applicable authority wins. The conflict must then be corrected in a dedicated documentation change rather than allowed to persist indefinitely.
 
 ### Planning versus current-state rule
 
-The Master Build Plan may describe the finished product. The Current Capability Boundary and Progress Ledger must identify whether each relevant capability is implemented, partial, planned, blocked, or deferred.
+The Master Build Plan and its active sequencing addendum may describe the finished product and permitted engineering order. The Current Capability Boundary and Progress Ledger must identify whether each relevant capability is implemented, partial, planned, blocked, or deferred.
 
 Planned capability must never be described in the README or interface as current capability.
 
@@ -61,6 +62,15 @@ The current product horizon is:
 - **Stage Two — Construct and portable 3D blockouts**.
 
 Stage One and Stage Two together define the planned finished MXZTAR Forge v2.0 product.
+
+The active Stage One–Two architecture now brings forward:
+
+- freeform editable paths and extraction authority;
+- a versioned shipped starter source-asset pack;
+- reviewed reusable shapes and reversible component generation;
+- stable object, area, surface, pivot, anchor, group, and assembly records;
+- reversible targetable effect stacks;
+- explicit separation of placement, snapping, grouping, assembly contact, visual seams, mesh stitch or weld, join, boolean, separate, and bake.
 
 Future Product Levels Three and Four remain deferred. Their documents preserve lore and long-term direction but do not authorise runtime work, delivery dates, public claims, or dead UI controls.
 
@@ -80,6 +90,8 @@ Runtime capability claims must identify the applicable evidence class:
 - release installation test.
 
 A capability may be described as deterministically verified while still requiring visual, downstream, or release acceptance.
+
+Architecture and sequencing documents may authorise future work, but they do not prove that the described controls, schemas, effects, assets, or operations exist.
 
 ---
 
@@ -110,7 +122,7 @@ Before working:
 2. check Git status;
 3. pull or fetch the latest remote state;
 4. confirm the intended product stage and workflow family;
-5. inspect the Master Build Plan, Progress Ledger, and Current Capability Boundary;
+5. inspect the Master Build Plan, active sequencing addendum, Progress Ledger, and Current Capability Boundary;
 6. verify the application still compiles, imports, or launches at the relevant gate.
 
 After working:
@@ -133,11 +145,14 @@ Source Truth must fail when core documents revert to known stale claims.
 At minimum, automated documentation checks protect:
 
 - the presence of the Current Capability Boundary;
+- the presence and authority of the Asset Generation and Construct Architecture addendum;
 - merged PR coverage in the Progress Ledger;
-- the current smart-guide-first engineering sequence;
+- editable-path authority as the next runtime foundation after the current interaction gate;
+- the brought-forward shipped starter source-asset contract;
 - the distinction between Ollama assessment and editable extraction;
 - the implemented five-primitive 2D-to-3D foundation;
-- the absence of approved Shape Library insertion and merge/stitch claims;
+- the separation of object groups, recoverable assemblies, visual seams, mesh stitch or weld, join mesh, booleans, separate, and bake;
+- the absence of current claims for approved Shape Library insertion, selectable persistent surface subsets, effect stacks, and advanced merge operations;
 - README linkage to current capability authority.
 
 The check does not prove every sentence is correct. It prevents known high-impact contradictions from silently returning.
