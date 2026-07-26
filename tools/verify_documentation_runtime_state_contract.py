@@ -57,7 +57,7 @@ def main() -> int:
     )
 
     require_text(ledger, "**Ledger date:** 27 July 2026", "Progress Ledger date is stale")
-    for pr_number in range(54, 61):
+    for pr_number in range(54, 62):
         require_text(
             ledger,
             f"PR #{pr_number}",
@@ -65,18 +65,23 @@ def main() -> int:
         )
     require_text(
         ledger,
-        "PR #60 transient smart positioning guides and measurements",
-        "Progress Ledger does not identify the current delivery gate",
+        "PR #61 mouse-wheel page scrolling and pinned Editor options",
+        "Progress Ledger does not identify the current interaction correction",
     )
     require_text(
         ledger,
-        "DETERMINISTICALLY VERIFIED on the PR branch; T1700 live acceptance pending merge",
-        "Progress Ledger overstates or omits the PR #60 evidence boundary",
+        "DETERMINISTICALLY VERIFIED on the PR #61 branch; T1700 live acceptance pending",
+        "Progress Ledger overstates or omits the PR #61 evidence boundary",
+    )
+    require_text(
+        ledger,
+        "the 3D output consumed every wheel event as zoom",
+        "Progress Ledger does not record the live scrolling defect truthfully",
     )
     forbid_text(
         ledger,
-        "Current branch: `agent/reconcile-runtime-documentation`",
-        "Progress Ledger reverted to the retired documentation branch",
+        "Current branch: `agent/smart-positioning-guides`",
+        "Progress Ledger reverted to the merged PR #60 branch",
     )
 
     require_text(
@@ -87,7 +92,7 @@ def main() -> int:
     require_text(
         master,
         "### Milestone D — Smart guides and manipulation clarity",
-        "Master Plan does not preserve the current direct-manipulation milestone",
+        "Master Plan does not preserve the direct-manipulation milestone",
     )
     require_text(
         master,
@@ -112,13 +117,38 @@ def main() -> int:
     )
     require_text(
         capability,
-        "Smart positioning guides | DETERMINISTICALLY VERIFIED on PR #60 branch",
-        "Capability boundary does not record the PR #60 guide implementation",
+        "Smart positioning guides | DETERMINISTICALLY VERIFIED on merged main",
+        "Capability boundary does not record the merged PR #60 guide implementation",
     )
     require_text(
         capability,
-        "Optional snapping | DETERMINISTICALLY VERIFIED on PR #60 branch",
-        "Capability boundary does not record explicit optional snapping",
+        "Optional snapping | DETERMINISTICALLY VERIFIED on merged main",
+        "Capability boundary does not record merged optional snapping",
+    )
+    require_text(
+        capability,
+        "Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on PR #61 branch",
+        "Capability boundary does not record the PR #61 scrolling correction",
+    )
+    require_text(
+        capability,
+        "Pinned Editor options | DETERMINISTICALLY VERIFIED on PR #61 branch",
+        "Capability boundary does not preserve always-visible Editor options",
+    )
+    require_text(
+        capability,
+        "`Scroll page` is the default",
+        "Capability boundary does not preserve page scrolling as the default wheel mode",
+    )
+    require_text(
+        capability,
+        "Scroll page; Ctrl+wheel zoom",
+        "Capability boundary does not preserve the modifier zoom option",
+    )
+    require_text(
+        capability,
+        "Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom",
+        "Capability boundary does not preserve the pinned options tree requirement",
     )
     require_text(
         capability,
@@ -133,7 +163,7 @@ def main() -> int:
     require_text(
         capability,
         "bounded from 1 to 50 scene units",
-        "Capability boundary does not preserve bounded tolerance",
+        "Capability boundary does not preserve bounded guide tolerance",
     )
     require_text(
         capability,
@@ -163,9 +193,9 @@ def main() -> int:
     )
 
     print("PASS: README reflects the verified merged shape/object runtime boundary")
-    print("PASS: Progress Ledger records PRs #54-#60 and the current delivery gate")
-    print("PASS: capability authority records transient guides and optional snapping truthfully")
-    print("PASS: tracing, Ollama, Shape Library insertion, and merge boundaries remain truthful")
+    print("PASS: Progress Ledger records PRs #54-#61 and the current interaction gate")
+    print("PASS: capability authority records merged guides and PR61 wheel routing truthfully")
+    print("PASS: pinned options, tracing, Ollama, library insertion, and merge boundaries remain truthful")
     print("PASS: Source Truth protects the present-tense capability authority")
     return 0
 
