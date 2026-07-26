@@ -17,7 +17,7 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from PySide6.QtCore import QEvent, QPoint, QPointF, QSettings, Qt  # noqa: E402
+from PySide6.QtCore import QPoint, QPointF, QSettings, Qt  # noqa: E402
 from PySide6.QtGui import QWheelEvent  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
@@ -190,6 +190,21 @@ def main() -> int:
                 scrollbar.value() > 0
                 and 0 <= output_top < window.page_scroll.viewport().height(),
                 "switching to 3D brings the newly active output into visible page range",
+            )
+
+            # Codex regression: selecting an already-active View action must still
+            # reveal it, because QStackedWidget.currentChanged is silent in this case.
+            scrollbar.setValue(0)
+            panel.view_3d_action.trigger()
+            process_deferred(app)
+            reselected_output_top = panel.object_viewport.mapTo(
+                window.page_scroll.viewport(), QPoint(0, 0)
+            ).y()
+            require(
+                panel.view_stack.currentWidget() is panel.object_viewport
+                and scrollbar.value() > 0
+                and 0 <= reselected_output_top < window.page_scroll.viewport().height(),
+                "reselecting the already-active 3D View action reveals its output",
             )
 
             scrollbar.setValue(min(100, max(0, scrollbar.maximum() - 100)))
