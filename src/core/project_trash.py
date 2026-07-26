@@ -229,7 +229,6 @@ def move_project_to_trash(
                 was_active=active,
             )
             release_project_lock(_lease_at(deletion_lease, destination))
-            deletion_lease = None
         except Exception as exc:
             rollback_error: Exception | None = None
             release_error: Exception | None = None
@@ -238,18 +237,16 @@ def move_project_to_trash(
                 try:
                     _remove_installed_receipt(destination)
                     destination.rename(target)
-                    moved = False
                     lease_location = target
                     fsync_directory(session.projects_root)
                     fsync_directory(trash_root)
                 except Exception as rollback_exc:
                     rollback_error = rollback_exc
 
-            if deletion_lease is not None:
-                try:
-                    release_project_lock(_lease_at(deletion_lease, lease_location))
-                except Exception as cleanup_exc:
-                    release_error = cleanup_exc
+            try:
+                release_project_lock(_lease_at(deletion_lease, lease_location))
+            except Exception as cleanup_exc:
+                release_error = cleanup_exc
 
             if rollback_error is not None:
                 suffix = (
