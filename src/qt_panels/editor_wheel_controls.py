@@ -93,6 +93,11 @@ class EditorMouseWheelController(QObject):
         self.mode_combo.currentIndexChanged.connect(self._mode_changed)
         window.pages.currentChanged.connect(self._update_visibility)
         panel.view_stack.currentChanged.connect(self._active_output_changed)
+        # currentChanged is silent when an already-active stacked widget is selected.
+        # Listen to the explicit View actions as well so every user selection reveals
+        # the requested output, even when the output itself did not change.
+        panel.view_2d_action.triggered.connect(self._active_output_selected)
+        panel.view_3d_action.triggered.connect(self._active_output_selected)
 
         stored_mode = str(window.settings.value(WHEEL_MODE_SETTING, WHEEL_MODE_SCROLL))
         self.set_mode(
@@ -125,6 +130,10 @@ class EditorMouseWheelController(QObject):
 
     def _active_output_changed(self, *_args) -> None:
         """Bring a newly selected 2D or 3D output into the visible page range."""
+        QTimer.singleShot(0, self._reveal_active_output)
+
+    def _active_output_selected(self, *_args) -> None:
+        """Reveal an explicitly selected output even when it was already active."""
         QTimer.singleShot(0, self._reveal_active_output)
 
     def _reveal_active_output(self) -> None:
