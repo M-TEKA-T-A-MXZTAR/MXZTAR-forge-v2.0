@@ -49,6 +49,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/editor_project_access.py \
   src/core/job_records.py \
   src/core/object_scene.py \
+  src/core/object_scene_membership.py \
   src/core/project_access.py \
   src/core/project_manifest.py \
   src/core/project_session.py \
