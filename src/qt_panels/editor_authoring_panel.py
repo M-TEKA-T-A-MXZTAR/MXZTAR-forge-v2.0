@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Project-aware Editor controls and direct paired shape/object deletion."""
+"""Project-aware Editor controls and deliberate deletion workflows."""
 
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -19,21 +21,23 @@ from core.object_scene import save_object_scene
 from core.object_scene_membership import reconcile_scene_membership
 from core.project_authoring_workflow import create_fresh_project, switch_project
 from core.project_session import discover_project_directories
+from core.project_trash import move_project_to_trash
 from core.shape_document import write_shape_document_autosave
 from core.shape_document_deletion import delete_shape_from_document
 from qt_panels.editor_usability_panel import SingleObjectWorkspacePanel
 
 
 class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
-    """Keep project switching, document switching, and direct deletion inside Editor."""
+    """Keep project, document, shape/object, and Project Trash controls inside Editor."""
 
     project_authority_changed = Signal(object, str)
 
     def __init__(self, project_session):
         super().__init__(project_session)
         self.header_label.setText(
-            "EDITOR; project/document shape-CAD workspace. Switch projects, create a fresh "
-            "project document, select one shape/object, then edit or delete it deliberately."
+            "EDITOR; project/document shape-CAD workspace. Switch or deliberately trash "
+            "projects, create a fresh project document, select one shape/object, then edit "
+            "or delete it deliberately."
         )
         self._install_project_controls()
         self._install_delete_controls()
@@ -45,12 +49,21 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
         self.project_selector_label.setStyleSheet("font-weight: 600;")
         self.project_selector = QComboBox()
         self.project_selector.setToolTip(
-            "Switch the Editor and every connected panel to another canonical Forge project."
+            "Select the canonical Forge project to switch to or move into recoverable "
+            "Project Trash."
         )
         self.refresh_projects_button = QPushButton("Refresh")
         self.refresh_projects_button.clicked.connect(self.refresh_project_choices)
         self.switch_project_button = QPushButton("Switch Project")
         self.switch_project_button.clicked.connect(self.switch_selected_project)
+        self.delete_project_button = QPushButton("Delete Project…")
+        self.delete_project_button.setToolTip(
+            "Move the exactly selected project into recoverable Project Trash after typing "
+            "its directory name. Active work and locked projects are protected."
+        )
+        self.delete_project_button.clicked.connect(
+            lambda _checked=False: self.delete_selected_project(confirm=True)
+        )
         self.new_project_document_button = QPushButton("New Project + Document")
         self.new_project_document_button.setToolTip(
             "Close the current project safely, create a uniquely named fresh project, "
@@ -66,6 +79,7 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
         project_row.addWidget(self.project_selector, 1)
         project_row.addWidget(self.refresh_projects_button)
         project_row.addWidget(self.switch_project_button)
+        project_row.addWidget(self.delete_project_button)
         project_row.addWidget(self.new_project_document_button)
         self.layout().insertLayout(1, project_row)
         self.project_controls_layout = project_row
@@ -117,6 +131,7 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
         selected = self.project_selector.currentData()
         current = str(self.project_session.project_dir) if self.project_session.project_dir else None
         self.switch_project_button.setEnabled(bool(selected and selected != current))
+        self.delete_project_button.setEnabled(bool(selected))
         self.new_project_document_button.setEnabled(True)
         self.refresh_projects_button.setEnabled(True)
         self.project_selector.setEnabled(self.project_selector.count() > 0)
@@ -144,6 +159,47 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
             self.set_project_state(self.project_session.state)
             self.set_status(f"Could not switch Editor project: {exc}")
             return None
+
+    def delete_selected_project(self, *, confirm: bool = True) -> bool:
+        selected = self.project_selector.currentData()
+        if not selected:
+            self.set_status("Choose one canonical project before using Delete Project.")
+            return False
+        selected_path = Path(str(selected)).expanduser().resolve()
+        project_name = selected_path.name
+        if confirm:
+            typed, accepted = QInputDialog.getText(
+                self,
+                "Move project to Project Trash",
+                f"Type the exact project directory name to continue:\n\n{project_name}",
+            )
+            if not accepted:
+                self.set_status("Project deletion cancelled; no project was moved.")
+                return False
+            if typed.strip() != project_name:
+                self.set_status(
+                    "Project deletion cancelled; the typed project name did not match."
+                )
+                return False
+
+        try:
+            result = move_project_to_trash(self.project_session, selected_path)
+        except Exception as exc:
+            self.set_status(f"Could not move selected project to Project Trash: {exc}")
+            self.refresh_project_choices()
+            return False
+
+        if result.was_active:
+            self.set_project_state(None)
+            self.project_authority_changed.emit(None, "Deleted")
+        else:
+            self.refresh_project_choices()
+            self._update_project_controls()
+        self.set_status(
+            f"Moved project {project_name} to recoverable Project Trash: "
+            f"{result.trashed_project_dir.name}."
+        )
+        return True
 
     def create_fresh_project_and_document(self, *_args):
         try:

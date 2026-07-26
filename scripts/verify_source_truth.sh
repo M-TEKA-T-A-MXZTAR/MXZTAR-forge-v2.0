@@ -58,6 +58,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/project_manifest.py \
   src/core/project_session.py \
   src/core/project_source_intake.py \
+  src/core/project_trash.py \
   src/core/project_workflow_run.py \
   src/core/shape_document.py \
   src/core/shape_document_deletion.py \
@@ -91,6 +92,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_jobs_panel_contract.py \
   tools/verify_launcher_import_contract.py \
   tools/verify_object_cad_contract.py \
+  tools/verify_persistent_options_and_project_trash_contract.py \
   tools/verify_positioning_guides_contract.py \
   tools/verify_project_birth_contract.py \
   tools/verify_project_session_contract.py \
@@ -139,6 +141,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_posit
 echo
 echo "=== EDITOR MOUSE-WHEEL AND STICKY OPTIONS CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_mouse_wheel_contract.py
+
+echo
+echo "=== PERSISTENT OPTIONS AND PROJECT TRASH CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_persistent_options_and_project_trash_contract.py
 
 echo
 echo "=== EDITOR PROJECT AUTHORING CONTRACT ==="
