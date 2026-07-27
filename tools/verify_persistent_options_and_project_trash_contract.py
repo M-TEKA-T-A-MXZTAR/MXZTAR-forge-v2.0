@@ -96,7 +96,7 @@ def verify_compact_strip(window, panel, app: QApplication) -> None:
     require(view_menu is panel.view_menu, "View button uses the real Editor View menu")
     require(panel.view_3d_action in view_menu.actions(), "View menu exposes the real 3D action")
 
-    view_button.showMenu()
+    view_menu.popup(view_button.mapToGlobal(QPoint(0, view_button.height())))
     process(app)
     require(view_menu.isVisible(), "View dropdown opens temporarily")
     action_rect = view_menu.actionGeometry(panel.view_3d_action)
