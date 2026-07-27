@@ -35,14 +35,15 @@ The active documentation hierarchy is:
 
 1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished-product boundary, product principles, 18 workflow families, architecture, acceptance criteria, and milestone framework.
 2. **`docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`** — founder-authorised active sequencing addendum for editable extraction, shipped starter assets, component generation, selectable surfaces and areas, modular placement, groups, assemblies, effect stacks, and explicit connection operations. Where its nearer engineering sequence conflicts with an older immediate-sequence list, this addendum wins until the next full Master Build Plan reconciliation.
-3. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, blocking, and next-action rules.
-4. **`docs/PROGRESS_LEDGER.md`** — dated verified, merged, partial, planned, blocked, and deferred implementation state.
-5. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense audit of what works now, what is partial, and what remains planned.
-6. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
-7. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, object-scene, component, assembly, and export artifact requirements.
-8. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
-9. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
-10. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
+3. **`docs/product/EDITOR_COMMAND_STRIP_CORRECTION.md`** — founder-directed live-interaction correction superseding earlier current-state claims that required an always-open Editor action tree. It preserves Project Trash and wheel routing while requiring a compact temporary-dropdown command row.
+4. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, blocking, and next-action rules.
+5. **`docs/PROGRESS_LEDGER.md`** — dated verified, merged, partial, planned, blocked, and deferred implementation state.
+6. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense audit of what works now, what is partial, and what remains planned.
+7. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
+8. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, object-scene, component, assembly, and export artifact requirements.
+9. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
+10. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
+11. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
 
 When two documents appear to conflict, the higher applicable authority wins. The conflict must then be corrected in a dedicated documentation change rather than allowed to persist indefinitely.
 
@@ -146,6 +147,7 @@ At minimum, automated documentation checks protect:
 
 - the presence of the Current Capability Boundary;
 - the presence and authority of the Asset Generation and Construct Architecture addendum;
+- the authority of the Editor Command Strip live correction over the rejected always-open tree;
 - merged PR coverage in the Progress Ledger;
 - editable-path authority as the next runtime foundation after the current interaction gate;
 - the brought-forward shipped starter source-asset contract;

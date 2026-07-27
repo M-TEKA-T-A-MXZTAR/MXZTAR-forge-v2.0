@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify persistent Editor actions and guarded recoverable Project Trash."""
+"""Verify the compact Editor command strip and recoverable Project Trash."""
 
 from __future__ import annotations
 
@@ -12,14 +12,13 @@ from pathlib import Path
 from unittest import mock
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from PySide6.QtCore import QPoint, QSettings, Qt  # noqa: E402
-from PySide6.QtTest import QSignalSpy, QTest  # noqa: E402
+from PySide6.QtTest import QTest  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 import core.project_trash as project_trash  # noqa: E402
@@ -35,6 +34,8 @@ from qt_app import SETTINGS_APP, SETTINGS_ORG  # noqa: E402
 from qt_editor_app import EDITOR_PAGE_INDEX  # noqa: E402
 from qt_editor_authoring_app import AuthoringEditorForgeWindow  # noqa: E402
 
+MENU_TITLES = ("Document", "Shape", "Edit", "Object", "View")
+
 
 def require(condition: bool, message: str) -> None:
     if not condition:
@@ -42,18 +43,18 @@ def require(condition: bool, message: str) -> None:
     print(f"PASS: {message}")
 
 
-def process_deferred(app: QApplication) -> None:
+def process(app: QApplication) -> None:
     app.processEvents()
     app.processEvents()
 
 
-def close_window_safely(window, app: QApplication) -> None:
+def close_safely(window, app: QApplication) -> None:
     if window is None:
         return
     window.close()
     deadline = time.monotonic() + 10.0
     while window.isVisible() and time.monotonic() < deadline:
-        app.processEvents()
+        process(app)
         time.sleep(0.01)
     if window.isVisible():
         window.jobs_panel.request_scan_shutdown()
@@ -65,55 +66,228 @@ def close_window_safely(window, app: QApplication) -> None:
             or window.library_panel.has_active_thumbnail_loading()
             or window.shape_panel.has_active_scan()
         ) and time.monotonic() < deadline:
-            app.processEvents()
+            process(app)
             time.sleep(0.01)
         window.close()
-        app.processEvents()
+        process(app)
     window.deleteLater()
-    app.processEvents()
+    process(app)
 
 
-def create_detached_project(
-    session: ProjectSession,
-    name: str,
-    purpose: str,
-) -> Path:
-    state = session.create_and_open(name, purpose)
-    path = state.assessment.project_dir
+def create_detached(session: ProjectSession, name: str) -> Path:
+    path = session.create_and_open(name, f"Verify {name}").assessment.project_dir
     session.close()
     return path
 
 
-def receipt_payload(trashed_project: Path) -> dict:
-    receipt = trashed_project / PROJECT_TRASH_RECEIPT
-    require(receipt.is_file(), "Project Trash writes a recovery receipt inside the moved project")
-    return json.loads(receipt.read_text(encoding="utf-8"))
-
-
-def find_trashed_project(trash_root: Path, original_path: Path) -> Path:
+def find_trashed_project(trash_root: Path, original: Path) -> tuple[Path, dict]:
     for candidate in trash_root.iterdir():
-        if not candidate.is_dir():
-            continue
         receipt = candidate / PROJECT_TRASH_RECEIPT
-        if not receipt.is_file():
-            continue
-        payload = json.loads(receipt.read_text(encoding="utf-8"))
-        if payload.get("original_project_dir") == str(original_path):
-            return candidate
-    raise AssertionError(f"No Project Trash receipt records: {original_path}")
+        if candidate.is_dir() and receipt.is_file():
+            payload = json.loads(receipt.read_text(encoding="utf-8"))
+            if payload.get("original_project_dir") == str(original):
+                return candidate, payload
+    raise AssertionError(f"No Project Trash receipt for {original}")
+
+
+def verify_compact_strip(window, panel, app: QApplication) -> None:
+    controller = window.editor_mouse_wheel_controller
+    central = window.centralWidget()
+    bar_top = controller.bar.mapTo(central, QPoint(0, 0)).y()
+
+    require(not hasattr(controller, "options_tree"), "persistent Editor command tree is removed")
+    require(tuple(controller.menu_buttons) == MENU_TITLES, "five compact Editor menu categories exist")
+    require(controller.bar.isVisible() and controller.bar.height() <= 48, "command strip is at most 48 pixels high")
+    require(all(controller.menu_button(name).isVisible() for name in MENU_TITLES), "all categories are directly visible")
+    require(
+        all(
+            not button.isVisible()
+            for button in (
+                panel.document_button,
+                panel.shape_button,
+                panel.edit_button,
+                panel.object_button,
+                panel.view_button,
+            )
+        ),
+        "duplicate in-page category buttons are hidden while the document selector remains",
+    )
+    require(
+        panel.document_selector.isVisible() and panel.document_selector_label.isVisible(),
+        "document selector remains available in the scrolling Editor content",
+    )
+
+    window.resize(760, 760)
+    process(app)
+    bar_rect = controller.bar.contentsRect()
+    combo_rect = controller.mode_combo.geometry()
+    require(
+        controller.bar.height() <= 48
+        and combo_rect.right() <= bar_rect.right()
+        and combo_rect.left() >= bar_rect.left(),
+        "compact strip fits the supported 760-pixel minimum window width",
+    )
+
+    view_button = controller.menu_button("View")
+    view_menu = view_button.menu()
+    require(view_menu is panel.view_menu, "View button uses the real Editor View menu")
+    require(panel.view_3d_action in view_menu.actions(), "View menu exposes the real 3D action")
+
+    view_menu.popup(view_button.mapToGlobal(QPoint(0, view_button.height())))
+    process(app)
+    require(view_menu.isVisible(), "View dropdown opens temporarily")
+    action_rect = view_menu.actionGeometry(panel.view_3d_action)
+    require(action_rect.isValid(), "3D action has clickable menu geometry")
+    QTest.mouseClick(
+        view_menu,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+        action_rect.center(),
+    )
+    process(app)
+    require(panel.view_stack.currentWidget() is panel.object_viewport, "dropdown triggers the real 3D command")
+    require(not view_menu.isVisible(), "dropdown closes after command selection")
+
+    scrollbar = window.page_scroll.verticalScrollBar()
+    scrollbar.setValue(scrollbar.maximum())
+    process(app)
+    require(
+        controller.bar.isVisible()
+        and controller.bar.height() <= 48
+        and controller.bar.mapTo(central, QPoint(0, 0)).y() == bar_top,
+        "compact strip remains fixed while the Editor page scrolls",
+    )
+
+
+def verify_project_trash(
+    window,
+    panel,
+    session,
+    projects_root,
+    current,
+    removable,
+    rollback,
+    app,
+) -> None:
+    require(
+        panel.project_controls_layout.indexOf(panel.delete_project_button)
+        == panel.project_controls_layout.indexOf(panel.switch_project_button) + 1,
+        "Delete Project remains adjacent to Switch Project",
+    )
+
+    other = ProjectSession(projects_root)
+    other.open(removable)
+    try:
+        try:
+            move_project_to_trash(session, removable)
+        except ProjectSessionError:
+            require(removable.is_dir(), "another writer blocks Project Trash")
+        else:
+            raise AssertionError("Project Trash ignored another writer")
+    finally:
+        other.close()
+
+    index = panel.project_selector.findData(str(removable))
+    require(index >= 0, "delete target is discoverable")
+    panel.project_selector.setCurrentIndex(index)
+    panel.set_project_mutation_active(True, "verification")
+    require(
+        not panel.delete_project_button.isEnabled()
+        and not panel.delete_selected_project(confirm=False)
+        and removable.is_dir(),
+        "active work blocks deletion",
+    )
+    panel.set_project_mutation_active(False, "verification")
+    process(app)
+
+    lock_seen: list[bool] = []
+    original_rename = Path.rename
+
+    def observe_rename(path: Path, destination: Path):
+        if path == removable:
+            lock_seen.append(read_project_lock(path) is not None)
+        return original_rename(path, destination)
+
+    with mock.patch.object(Path, "rename", new=observe_rename):
+        require(panel.delete_selected_project(confirm=False), "selected non-active project moves to Project Trash")
+    require(lock_seen == [True], "exclusive writer lease is held across the move")
+    require(session.project_dir == current and session.state is not None, "current project authority is preserved")
+    require(not removable.exists(), "trashed project leaves canonical discovery")
+
+    trash_root = projects_root / PROJECT_TRASH_DIRNAME
+    trashed_removable, payload = find_trashed_project(trash_root, removable)
+    require(
+        payload.get("schema") == PROJECT_TRASH_SCHEMA
+        and payload.get("was_active") is False,
+        "recovery receipt preserves project identity and authority state",
+    )
+    require(
+        read_project_lock(trashed_removable) is None,
+        "successful Project Trash removes its temporary deletion lease",
+    )
+
+    original_fsync_directory = project_trash.fsync_directory
+    injected_failure = {"raised": False}
+
+    def fail_after_receipt_install(path: Path) -> None:
+        directory = Path(path)
+        if (
+            not injected_failure["raised"]
+            and (directory / PROJECT_TRASH_RECEIPT).is_file()
+        ):
+            injected_failure["raised"] = True
+            raise OSError("simulated receipt directory fsync failure")
+        original_fsync_directory(directory)
+
+    with mock.patch.object(
+        project_trash,
+        "fsync_directory",
+        side_effect=fail_after_receipt_install,
+    ):
+        try:
+            move_project_to_trash(session, rollback)
+        except ProjectSessionError as exc:
+            require(
+                "restored" in str(exc).lower()
+                or "canonical path" in str(exc).lower(),
+                "receipt failure reports that the canonical project was restored",
+            )
+        else:
+            raise AssertionError("Receipt fsync failure did not abort Project Trash")
+    require(
+        injected_failure["raised"]
+        and rollback.is_dir()
+        and not (rollback / PROJECT_TRASH_RECEIPT).exists()
+        and read_project_lock(rollback) is None,
+        "receipt failure rolls the project back into canonical discovery",
+    )
+
+    outside = projects_root.parent / "outside-project"
+    outside.mkdir()
+    try:
+        move_project_to_trash(session, outside)
+    except ProjectSessionError:
+        require(outside.is_dir(), "out-of-root deletion is rejected")
+    else:
+        raise AssertionError("Project Trash accepted an out-of-root path")
+
+    current_index = panel.project_selector.findData(str(current))
+    panel.project_selector.setCurrentIndex(current_index)
+    require(panel.delete_selected_project(confirm=False), "active project can be deliberately moved to Project Trash")
+    process(app)
+    require(
+        session.state is None and session.project_dir is None and not current.exists(),
+        "active deletion closes authority and leaves Forge detached",
+    )
 
 
 def main() -> int:
-    with tempfile.TemporaryDirectory(prefix="mxztar-persistent-options-trash-") as temporary:
-        temp_root = Path(temporary)
-        settings_root = temp_root / "settings"
-        settings_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="mxztar-compact-options-trash-") as temporary:
+        root = Path(temporary)
+        settings_root = root / "settings"
+        settings_root.mkdir()
         QSettings.setDefaultFormat(QSettings.Format.IniFormat)
-        QSettings.setPath(
-            QSettings.Format.IniFormat,
-            QSettings.Scope.UserScope,
-            str(settings_root),
-        )
+        QSettings.setPath(QSettings.Format.IniFormat, QSettings.Scope.UserScope, str(settings_root))
 
         app = QApplication.instance() or QApplication([])
         app.setOrganizationName(SETTINGS_ORG)
@@ -122,74 +296,12 @@ def main() -> int:
         settings.clear()
         settings.sync()
 
-        projects_root = temp_root / "projects"
+        projects_root = root / "projects"
         session = ProjectSession(projects_root)
-        current_path = create_detached_project(
-            session,
-            "Persistent Options Current",
-            "Verify continuously visible actions",
-        )
-        removable_path = create_detached_project(
-            session,
-            "Recoverable Delete Target",
-            "Verify Project Trash",
-        )
-        rollback_path = create_detached_project(
-            session,
-            "Receipt Rollback Target",
-            "Verify durable rollback",
-        )
-        read_only_path = create_detached_project(
-            session,
-            "Read Only Active Target",
-            "Verify locked active rejection",
-        )
-        session.open(current_path)
-
-        # A different writer must prevent Project Trash from moving a non-active target.
-        other_session = ProjectSession(projects_root)
-        other_session.open(removable_path)
-        try:
-            try:
-                move_project_to_trash(session, removable_path)
-            except ProjectSessionError as exc:
-                require(
-                    "exclusive" in str(exc).lower() or "locked" in str(exc).lower(),
-                    "Project Trash rejects a project held by another writer",
-                )
-            else:
-                raise AssertionError("Project Trash moved a project held by another writer")
-        finally:
-            other_session.close()
-
-        # A read-only active attachment must not bypass the writer lock check.
-        writer_session = ProjectSession(projects_root)
-        reader_session = ProjectSession(projects_root)
-        writer_state = writer_session.open(read_only_path)
-        reader_state = reader_session.open(read_only_path)
-        require(
-            writer_state.writable and not reader_state.writable,
-            "verification creates a writer plus read-only active attachment",
-        )
-        try:
-            try:
-                move_project_to_trash(reader_session, read_only_path)
-            except ProjectSessionError as exc:
-                require(
-                    "read-only" in str(exc).lower() or "locked" in str(exc).lower(),
-                    "Project Trash rejects an active read-only project before moving it",
-                )
-            else:
-                raise AssertionError("Project Trash moved an active read-only project")
-            require(
-                read_only_path.is_dir()
-                and writer_session.is_writable
-                and reader_session.state is not None,
-                "read-only rejection preserves the writer and reader attachments",
-            )
-        finally:
-            reader_session.close()
-            writer_session.close()
+        current = create_detached(session, "Compact Options Current")
+        removable = create_detached(session, "Recoverable Delete Target")
+        rollback = create_detached(session, "Receipt Rollback Target")
+        session.open(current)
 
         window = None
         try:
@@ -202,251 +314,25 @@ def main() -> int:
                 panel.create_blank_document()
             panel.add_rectangle_command()
             panel.add_square_command()
-            process_deferred(app)
+            process(app)
 
-            controller = window.editor_mouse_wheel_controller
-            tree = controller.options_tree
-            central = window.centralWidget()
-            initial_bar_top = controller.bar.mapTo(central, QPoint(0, 0)).y()
-            categories = {
-                tree.topLevelItem(index).text(0)
-                for index in range(tree.topLevelItemCount())
-            }
-            require(
-                tree.isVisible()
-                and categories == {"Document", "Shape", "Edit", "Object", "View"},
-                "Editor exposes one persistent complete action tree instead of a closing popup",
-            )
-
-            view_3d_item = controller.option_item_for_action(panel.view_3d_action)
-            require(view_3d_item is not None, "persistent tree mirrors the real 3D View action")
-            tree.scrollToItem(view_3d_item)
-            process_deferred(app)
-            item_rect = tree.visualItemRect(view_3d_item)
-            require(
-                item_rect.isValid() and tree.viewport().rect().intersects(item_rect),
-                "the selected action is inside the persistent tree's mouse viewport",
-            )
-
-            scrollbar = window.page_scroll.verticalScrollBar()
-            scrollbar.setValue(0)
-            QTest.mouseClick(
-                tree.viewport(),
-                Qt.MouseButton.LeftButton,
-                Qt.KeyboardModifier.NoModifier,
-                item_rect.center(),
-            )
-            process_deferred(app)
-            require(
-                panel.view_stack.currentWidget() is panel.object_viewport,
-                "clicking a persistent-tree action triggers the real Editor command",
-            )
-            require(
-                tree.isVisible()
-                and controller.bar.isVisible()
-                and tree.currentItem() is view_3d_item
-                and controller.bar.mapTo(central, QPoint(0, 0)).y() == initial_bar_top,
-                "choosing an option cannot close or move the Editor action tree",
-            )
-
-            scrollbar.setValue(scrollbar.maximum())
-            process_deferred(app)
-            require(
-                tree.isVisible()
-                and controller.bar.mapTo(central, QPoint(0, 0)).y() == initial_bar_top,
-                "page movement never removes the persistent action tree from mouse range",
-            )
-
-            require(
-                panel.project_controls_layout.indexOf(panel.delete_project_button)
-                == panel.project_controls_layout.indexOf(panel.switch_project_button) + 1,
-                "Switch Project includes an adjacent Delete Project control",
-            )
-            require(
-                hasattr(window.start_here_panel, "delete_project_button"),
-                "Start Here also exposes Delete Selected Project beside switching controls",
-            )
-
-            removable_index = panel.project_selector.findData(str(removable_path))
-            require(removable_index >= 0, "Editor project selector discovers the delete target")
-            panel.project_selector.setCurrentIndex(removable_index)
-            process_deferred(app)
-
-            panel.set_project_mutation_active(True, "verification work")
-            require(
-                not panel.delete_project_button.isEnabled()
-                and not panel.delete_selected_project(confirm=False)
-                and removable_path.is_dir(),
-                "active project work blocks Delete Project without mutating the target",
-            )
-            panel.set_project_mutation_active(False, "verification work")
-            process_deferred(app)
-            require(
-                panel.delete_project_button.isEnabled(),
-                "Delete Project restores only after active work finishes",
-            )
-
-            rename_lock_observations: list[bool] = []
-            original_rename = Path.rename
-
-            def observing_rename(path: Path, destination: Path):
-                if path == removable_path:
-                    rename_lock_observations.append(read_project_lock(path) is not None)
-                return original_rename(path, destination)
-
-            with mock.patch.object(Path, "rename", new=observing_rename):
-                require(
-                    panel.delete_selected_project(confirm=False),
-                    "Editor Delete Project moves the exactly selected non-active project",
-                )
-            require(
-                rename_lock_observations == [True],
-                "Project Trash retains an exclusive writer lease across the directory rename",
-            )
-            require(
-                session.project_dir == current_path and session.state is not None,
-                "deleting a different project preserves current project authority",
-            )
-            require(
-                not removable_path.exists()
-                and panel.project_selector.findData(str(removable_path)) < 0,
-                "trashed project disappears from canonical project discovery",
-            )
-
-            trash_root = projects_root / PROJECT_TRASH_DIRNAME
-            trashed_removable = find_trashed_project(trash_root, removable_path)
-            payload = receipt_payload(trashed_removable)
-            require(
-                payload.get("schema") == PROJECT_TRASH_SCHEMA
-                and payload.get("original_project_dir") == str(removable_path)
-                and payload.get("was_active") is False,
-                "Project Trash receipt preserves original identity and non-active authority",
-            )
-            require(
-                read_project_lock(trashed_removable) is None,
-                "successful Project Trash removes its temporary deletion lease",
-            )
-
-            # Simulate failure after os.replace installs the receipt but before its fsync returns.
-            original_fsync_directory = project_trash.fsync_directory
-            injected_failure = {"raised": False}
-
-            def fail_after_receipt_install(path: Path) -> None:
-                directory = Path(path)
-                if (
-                    not injected_failure["raised"]
-                    and (directory / PROJECT_TRASH_RECEIPT).is_file()
-                ):
-                    injected_failure["raised"] = True
-                    raise OSError("simulated receipt directory fsync failure")
-                original_fsync_directory(directory)
-
-            with mock.patch.object(
-                project_trash,
-                "fsync_directory",
-                side_effect=fail_after_receipt_install,
-            ):
-                try:
-                    move_project_to_trash(session, rollback_path)
-                except ProjectSessionError as exc:
-                    require(
-                        "restored" in str(exc).lower()
-                        or "canonical path" in str(exc).lower(),
-                        "receipt failure reports that the canonical project was restored",
-                    )
-                else:
-                    raise AssertionError("Receipt fsync failure did not abort Project Trash")
-            require(
-                injected_failure["raised"]
-                and rollback_path.is_dir()
-                and not (rollback_path / PROJECT_TRASH_RECEIPT).exists()
-                and read_project_lock(rollback_path) is None,
-                "rollback removes and durably flushes an installed receipt before restoration",
-            )
-
-            outside = temp_root / "outside-project"
-            outside.mkdir()
-            try:
-                move_project_to_trash(session, outside)
-            except ProjectSessionError as exc:
-                require(
-                    "direct children" in str(exc),
-                    "Project Trash rejects paths outside the canonical projects root",
-                )
-            else:
-                raise AssertionError("Project Trash accepted an out-of-root path")
-
-            # Editor-side deletion must broadcast detachment through Start Here.
-            current_index = panel.project_selector.findData(str(current_path))
-            require(current_index >= 0, "Editor selector retains the active project")
-            panel.project_selector.setCurrentIndex(current_index)
-            window.start_here_panel.purpose_edit.setText(
-                "Verify continuously visible actions"
-            )
-            detachment_spy = QSignalSpy(window.start_here_panel.project_changed)
-            require(
-                panel.delete_selected_project(confirm=False),
-                "Editor can deliberately move the active project to Project Trash",
-            )
-            process_deferred(app)
-            require(
-                session.state is None
-                and session.project_dir is None
-                and not current_path.exists(),
-                "Editor-side active deletion closes authority and detaches safely",
-            )
-            require(
-                detachment_spy.count() >= 1
-                and detachment_spy.at(detachment_spy.count() - 1)[0] is None,
-                "Editor-side active deletion broadcasts None through project_changed",
-            )
-            require(
-                window.start_here_panel.purpose_edit.text() == ""
-                and not window.start_here_panel.create_project_button.isEnabled(),
-                "Editor-side deletion clears the former purpose before project creation is enabled",
-            )
-            active_payload = receipt_payload(find_trashed_project(trash_root, current_path))
-            require(
-                active_payload.get("was_active") is True
-                and active_payload.get("original_project_dir") == str(current_path),
-                "active-project receipt records the closed authority boundary",
-            )
-
-            # Start Here must apply the same purpose-clearing boundary.
-            start_here_state = session.create_and_open(
-                "Start Here Delete Target",
-                "Purpose must not recreate a trashed project",
-            )
-            start_here_path = start_here_state.assessment.project_dir
-            window.start_here_panel.refresh_projects()
-            window.start_here_panel._show_project_state(start_here_state, "Opened")
-            start_here_index = window.start_here_panel.project_selector.findData(
-                str(start_here_path)
-            )
-            require(start_here_index >= 0, "Start Here discovers its active delete target")
-            window.start_here_panel.project_selector.setCurrentIndex(start_here_index)
-            with mock.patch(
-                "qt_editor_authoring_app.QInputDialog.getText",
-                return_value=(start_here_path.name, True),
-            ):
-                require(
-                    window.start_here_project_controller.delete_selected_project(),
-                    "Start Here moves the confirmed active project to Project Trash",
-                )
-            process_deferred(app)
-            require(
-                session.state is None
-                and not start_here_path.exists()
-                and window.start_here_panel.purpose_edit.text() == ""
-                and not window.start_here_panel.create_project_button.isEnabled(),
-                "Start Here deletion clears the old purpose and prevents immediate slug reuse",
+            verify_compact_strip(window, panel, app)
+            verify_project_trash(
+                window,
+                panel,
+                session,
+                projects_root,
+                current,
+                removable,
+                rollback,
+                app,
             )
         finally:
-            close_window_safely(window, app)
+            close_safely(window, app)
             if session.state is not None:
                 session.close()
 
-    print("PASS: persistent Editor options and recoverable Project Trash contract verified")
+    print("PASS: compact Editor command strip and recoverable Project Trash contract verified")
     return 0
 
 
