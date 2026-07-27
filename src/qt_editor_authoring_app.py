@@ -18,8 +18,14 @@ from core.project_trash import move_project_to_trash
 
 
 STATIC_NEXT_ACTION_STYLE = (
+    "QPushButton {"
     "background-color: #3a3420; border: 2px solid #9f8d49; "
-    "font-weight: 700; padding: 8px 14px;"
+    "color: #f2f2f2; font-weight: 700; padding: 8px 14px;"
+    "}"
+    "QPushButton:disabled {"
+    "background-color: #2a2a2a; border: 1px solid #555555; "
+    "color: #8f8f8f; font-weight: 600; padding: 8px 14px;"
+    "}"
 )
 
 
@@ -324,7 +330,6 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
                 self.editor_panel.create_blank_document()
         self._open_guided_page(EDITOR_PAGE_INDEX)
         self.refresh_guided_next_step()
-
 
 
 def main() -> int:
