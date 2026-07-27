@@ -21,6 +21,7 @@ from PySide6.QtCore import QPoint, QSettings, Qt  # noqa: E402
 from PySide6.QtTest import QTest  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
+import core.project_trash as project_trash  # noqa: E402
 from core.project_access import read_project_lock  # noqa: E402
 from core.project_session import ProjectSession, ProjectSessionError  # noqa: E402
 from core.project_trash import (  # noqa: E402
@@ -59,6 +60,14 @@ def close_safely(window, app: QApplication) -> None:
         window.jobs_panel.request_scan_shutdown()
         window.library_panel.request_thumbnail_shutdown()
         window.shape_panel.request_scan_shutdown()
+        deadline = time.monotonic() + 10.0
+        while (
+            window.jobs_panel.has_active_scan()
+            or window.library_panel.has_active_thumbnail_loading()
+            or window.shape_panel.has_active_scan()
+        ) and time.monotonic() < deadline:
+            process(app)
+            time.sleep(0.01)
         window.close()
         process(app)
     window.deleteLater()
@@ -71,13 +80,13 @@ def create_detached(session: ProjectSession, name: str) -> Path:
     return path
 
 
-def find_receipt(trash_root: Path, original: Path) -> dict:
+def find_trashed_project(trash_root: Path, original: Path) -> tuple[Path, dict]:
     for candidate in trash_root.iterdir():
         receipt = candidate / PROJECT_TRASH_RECEIPT
         if candidate.is_dir() and receipt.is_file():
             payload = json.loads(receipt.read_text(encoding="utf-8"))
             if payload.get("original_project_dir") == str(original):
-                return payload
+                return candidate, payload
     raise AssertionError(f"No Project Trash receipt for {original}")
 
 
@@ -90,6 +99,34 @@ def verify_compact_strip(window, panel, app: QApplication) -> None:
     require(tuple(controller.menu_buttons) == MENU_TITLES, "five compact Editor menu categories exist")
     require(controller.bar.isVisible() and controller.bar.height() <= 48, "command strip is at most 48 pixels high")
     require(all(controller.menu_button(name).isVisible() for name in MENU_TITLES), "all categories are directly visible")
+    require(
+        all(
+            not button.isVisible()
+            for button in (
+                panel.document_button,
+                panel.shape_button,
+                panel.edit_button,
+                panel.object_button,
+                panel.view_button,
+            )
+        ),
+        "duplicate in-page category buttons are hidden while the document selector remains",
+    )
+    require(
+        panel.document_selector.isVisible() and panel.document_selector_label.isVisible(),
+        "document selector remains available in the scrolling Editor content",
+    )
+
+    window.resize(760, 760)
+    process(app)
+    bar_rect = controller.bar.contentsRect()
+    combo_rect = controller.mode_combo.geometry()
+    require(
+        controller.bar.height() <= 48
+        and combo_rect.right() <= bar_rect.right()
+        and combo_rect.left() >= bar_rect.left(),
+        "compact strip fits the supported 760-pixel minimum window width",
+    )
 
     view_button = controller.menu_button("View")
     view_menu = view_button.menu()
@@ -122,7 +159,16 @@ def verify_compact_strip(window, panel, app: QApplication) -> None:
     )
 
 
-def verify_project_trash(window, panel, session, projects_root, current, removable, app) -> None:
+def verify_project_trash(
+    window,
+    panel,
+    session,
+    projects_root,
+    current,
+    removable,
+    rollback,
+    app,
+) -> None:
     require(
         panel.project_controls_layout.indexOf(panel.delete_project_button)
         == panel.project_controls_layout.indexOf(panel.switch_project_button) + 1,
@@ -168,11 +214,52 @@ def verify_project_trash(window, panel, session, projects_root, current, removab
     require(session.project_dir == current and session.state is not None, "current project authority is preserved")
     require(not removable.exists(), "trashed project leaves canonical discovery")
 
-    payload = find_receipt(projects_root / PROJECT_TRASH_DIRNAME, removable)
+    trash_root = projects_root / PROJECT_TRASH_DIRNAME
+    trashed_removable, payload = find_trashed_project(trash_root, removable)
     require(
         payload.get("schema") == PROJECT_TRASH_SCHEMA
         and payload.get("was_active") is False,
         "recovery receipt preserves project identity and authority state",
+    )
+    require(
+        read_project_lock(trashed_removable) is None,
+        "successful Project Trash removes its temporary deletion lease",
+    )
+
+    original_fsync_directory = project_trash.fsync_directory
+    injected_failure = {"raised": False}
+
+    def fail_after_receipt_install(path: Path) -> None:
+        directory = Path(path)
+        if (
+            not injected_failure["raised"]
+            and (directory / PROJECT_TRASH_RECEIPT).is_file()
+        ):
+            injected_failure["raised"] = True
+            raise OSError("simulated receipt directory fsync failure")
+        original_fsync_directory(directory)
+
+    with mock.patch.object(
+        project_trash,
+        "fsync_directory",
+        side_effect=fail_after_receipt_install,
+    ):
+        try:
+            move_project_to_trash(session, rollback)
+        except ProjectSessionError as exc:
+            require(
+                "restored" in str(exc).lower()
+                or "canonical path" in str(exc).lower(),
+                "receipt failure reports that the canonical project was restored",
+            )
+        else:
+            raise AssertionError("Receipt fsync failure did not abort Project Trash")
+    require(
+        injected_failure["raised"]
+        and rollback.is_dir()
+        and not (rollback / PROJECT_TRASH_RECEIPT).exists()
+        and read_project_lock(rollback) is None,
+        "receipt failure rolls the project back into canonical discovery",
     )
 
     outside = projects_root.parent / "outside-project"
@@ -213,6 +300,7 @@ def main() -> int:
         session = ProjectSession(projects_root)
         current = create_detached(session, "Compact Options Current")
         removable = create_detached(session, "Recoverable Delete Target")
+        rollback = create_detached(session, "Receipt Rollback Target")
         session.open(current)
 
         window = None
@@ -229,7 +317,16 @@ def main() -> int:
             process(app)
 
             verify_compact_strip(window, panel, app)
-            verify_project_trash(window, panel, session, projects_root, current, removable, app)
+            verify_project_trash(
+                window,
+                panel,
+                session,
+                projects_root,
+                current,
+                removable,
+                rollback,
+                app,
+            )
         finally:
             close_safely(window, app)
             if session.state is not None:
