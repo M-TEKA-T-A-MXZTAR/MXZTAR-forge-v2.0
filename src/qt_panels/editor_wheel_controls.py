@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
-"""Persistent Editor options and explicit mouse-wheel routing."""
+"""Compact Editor command strip and explicit mouse-wheel routing."""
 
 from __future__ import annotations
 
 from PySide6.QtCore import QEvent, QObject, QPoint, QTimer, Qt
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
     QMenu,
     QSizePolicy,
-    QTreeWidget,
-    QTreeWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -31,7 +29,7 @@ VALID_WHEEL_MODES = {
 
 
 class EditorMouseWheelController(QObject):
-    """Keep Editor options continuously visible and route wheel events explicitly."""
+    """Keep compact Editor menus visible and route wheel events explicitly."""
 
     def __init__(self, window, panel):
         super().__init__(window)
@@ -43,8 +41,6 @@ class EditorMouseWheelController(QObject):
             panel.canvas.viewport(),
             panel.object_viewport,
         )
-        self._tree_actions: dict[int, object] = {}
-        self._tree_items_by_action: dict[int, list[QTreeWidgetItem]] = {}
 
         self.viewport_column = QWidget(window.centralWidget())
         self.viewport_column.setObjectName("editorViewportColumn")
@@ -57,37 +53,13 @@ class EditorMouseWheelController(QObject):
         self.bar.setObjectName("editorInteractionBar")
         self.bar.setFrameShape(QFrame.Shape.StyledPanel)
         self.bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.bar.setMaximumHeight(48)
 
-        self.options_label = QLabel("Editor Options", self.bar)
-        self.options_label.setStyleSheet("font-weight: 700;")
-        self.options_label.setToolTip(
-            "The complete Editor action tree remains open and mouse-reachable while the "
-            "Editor page or active output moves."
-        )
-
-        self.options_tree = QTreeWidget(self.bar)
-        self.options_tree.setObjectName("persistentEditorOptionsTree")
-        self.options_tree.setHeaderHidden(True)
-        self.options_tree.setColumnCount(1)
-        self.options_tree.setRootIsDecorated(True)
-        self.options_tree.setExpandsOnDoubleClick(False)
-        self.options_tree.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-        self.options_tree.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.options_tree.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.options_tree.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.options_tree.setMinimumHeight(155)
-        self.options_tree.setMaximumHeight(210)
-        self.options_tree.setMinimumWidth(310)
-        self.options_tree.setToolTip(
-            "Persistent Editor commands. Selecting a command never closes this tree or "
-            "moves it out of mouse range."
-        )
-        self.options_tree.itemClicked.connect(self._activate_option_item)
-
-        # Keep a non-popup menu mirror for compatibility with existing verification and
-        # action discovery. The user-facing authority is the persistent tree above.
+        # Preserve a non-visual aggregate menu for action discovery and compatibility,
+        # while the user-facing authority is the compact row of category buttons.
         self.options_menu = QMenu(self.bar)
-        self._copy_editor_actions()
+        self.menu_buttons: dict[str, QToolButton] = {}
+        self._build_editor_menu_buttons()
 
         self.mode_label = QLabel("Mouse wheel:", self.bar)
         self.mode_label.setStyleSheet("font-weight: 700;")
@@ -99,29 +71,16 @@ class EditorMouseWheelController(QObject):
             "Scroll page; Ctrl+wheel zoom",
             WHEEL_MODE_SCROLL_CTRL_ZOOM,
         )
-        self.mode_combo.setToolTip(
-            "Choose what the mouse wheel does over the 2D or 3D output. "
-            "Page scrolling is the safe default."
-        )
+        self.mode_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
 
-        self.mode_help = QLabel(self.bar)
-        self.mode_help.setWordWrap(True)
-        self.mode_help.setStyleSheet("color: #cfcfcf;")
-
-        header_layout = QHBoxLayout()
-        header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(8)
-        header_layout.addWidget(self.options_label)
-        header_layout.addSpacing(8)
-        header_layout.addWidget(self.mode_label)
-        header_layout.addWidget(self.mode_combo)
-        header_layout.addWidget(self.mode_help, 1)
-
-        layout = QVBoxLayout()
-        layout.setContentsMargins(8, 5, 8, 5)
-        layout.setSpacing(5)
-        layout.addLayout(header_layout)
-        layout.addWidget(self.options_tree)
+        layout = QHBoxLayout()
+        layout.setContentsMargins(6, 3, 6, 3)
+        layout.setSpacing(4)
+        for title in ("Document", "Shape", "Edit", "Object", "View"):
+            layout.addWidget(self.menu_buttons[title])
+        layout.addStretch(1)
+        layout.addWidget(self.mode_label)
+        layout.addWidget(self.mode_combo)
         self.bar.setLayout(layout)
 
         self._install_sticky_viewport_column()
@@ -145,7 +104,7 @@ class EditorMouseWheelController(QObject):
         self._update_visibility()
 
     def _install_sticky_viewport_column(self) -> None:
-        """Keep the control bar fixed above the scroll viewport, not inside the page."""
+        """Keep the compact strip fixed above the scroll viewport, not inside the page."""
         central = self.window.centralWidget()
         central_layout = central.layout()
         main_row_item = central_layout.itemAt(0) if central_layout is not None else None
@@ -168,7 +127,7 @@ class EditorMouseWheelController(QObject):
 
         main_row.insertWidget(page_index, self.viewport_column, 1)
 
-    def _copy_editor_actions(self) -> None:
+    def _build_editor_menu_buttons(self) -> None:
         menu_sources = (
             ("Document", self.panel.document_menu),
             ("Shape", self.panel.shape_menu),
@@ -177,64 +136,26 @@ class EditorMouseWheelController(QObject):
             ("View", self.panel.view_menu),
         )
         for title, source in menu_sources:
+            button = QToolButton(self.bar)
+            button.setObjectName(f"editor{title}MenuButton")
+            button.setText(title)
+            button.setAutoRaise(True)
+            button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+            button.setMenu(source)
+            button.setToolTip(f"Open {title} commands. The menu closes after selection.")
+            self.menu_buttons[title] = button
+
             mirrored_menu = self.options_menu.addMenu(title)
-            group = QTreeWidgetItem([title])
-            group.setFlags(Qt.ItemFlag.ItemIsEnabled)
-            self.options_tree.addTopLevelItem(group)
             for action in source.actions():
                 if action.isSeparator():
                     mirrored_menu.addSeparator()
-                    continue
-                mirrored_menu.addAction(action)
-                item = QTreeWidgetItem(group)
-                item.setFlags(
-                    Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
-                )
-                self._tree_actions[id(item)] = action
-                self._tree_items_by_action.setdefault(id(action), []).append(item)
-                self._sync_option_item(item, action)
-                action.changed.connect(
-                    lambda item=item, action=action: self._sync_option_item(item, action)
-                )
-        self.options_tree.expandAll()
+                else:
+                    mirrored_menu.addAction(action)
 
-    @staticmethod
-    def _clean_action_text(text: str) -> str:
-        return text.replace("&", "").strip()
-
-    def _sync_option_item(self, item: QTreeWidgetItem, action) -> None:
-        """Mirror enabled, visible, checked, text, and tooltip state without closing."""
-        flags = item.flags() | Qt.ItemFlag.ItemIsSelectable
-        flags &= ~Qt.ItemFlag.ItemIsUserCheckable
-        if action.isEnabled():
-            flags |= Qt.ItemFlag.ItemIsEnabled
-        else:
-            flags &= ~Qt.ItemFlag.ItemIsEnabled
-        item.setFlags(flags)
-        base_text = self._clean_action_text(action.text())
-        if action.isCheckable():
-            prefix = "✓ " if action.isChecked() else "○ "
-        else:
-            prefix = ""
-        item.setText(0, f"{prefix}{base_text}")
-        item.setToolTip(0, action.toolTip() or action.statusTip() or base_text)
-        item.setHidden(not action.isVisible())
-
-    def _activate_option_item(self, item: QTreeWidgetItem, _column: int = 0) -> None:
-        """Trigger one real QAction while preserving the persistent tree and selection."""
-        action = self._tree_actions.get(id(item))
-        if action is None or not action.isEnabled() or not action.isVisible():
-            return
-        self.options_tree.setCurrentItem(item)
-        action.trigger()
-        # Output-reveal commands may move the page, but the tree remains fixed and the
-        # selected command remains mouse-reachable inside its own viewport.
-        QTimer.singleShot(0, lambda: self.options_tree.scrollToItem(item))
-
-    def option_item_for_action(self, action) -> QTreeWidgetItem | None:
-        """Return the first persistent-tree item mirroring an Editor QAction."""
-        items = self._tree_items_by_action.get(id(action), ())
-        return items[0] if items else None
+    def menu_button(self, title: str) -> QToolButton | None:
+        """Return one compact top-level Editor menu button for verification and access."""
+        return self.menu_buttons.get(title)
 
     def _update_visibility(self, *_args) -> None:
         editor_active = self.window.pages.currentWidget() is self.panel
@@ -315,12 +236,14 @@ class EditorMouseWheelController(QObject):
             help_text = "Wheel scrolls the page from the 2D or 3D output."
             viewport_tip = (
                 "3D object view: wheel scrolls the Editor page. Choose Zoom 3D view "
-                "or Ctrl+wheel zoom in the persistent selector when needed."
+                "or Ctrl+wheel zoom in the compact selector when needed."
             )
-        self.mode_help.setText(help_text)
+        self.mode_combo.setToolTip(
+            f"{help_text} Page scrolling is the safe default."
+        )
         self.panel.object_viewport.setToolTip(viewport_tip)
         self.panel.canvas.setToolTip(
-            "Project-owned shape canvas. Drag pans the canvas; wheel follows the persistent "
+            "Project-owned shape canvas. Drag pans the canvas; wheel follows the compact "
             "Editor mouse-wheel setting."
         )
 
