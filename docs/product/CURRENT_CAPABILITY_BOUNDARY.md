@@ -1,8 +1,8 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 27 July 2026  
-**Merged runtime baseline:** `main` through PR #65 at `7db74ed`  
-**Active branch evidence:** PR #66 keeps the complete Editor action tree continuously visible and adds guarded recoverable Project Trash; deterministic and live acceptance remain separate gates
+**Merged runtime baseline:** `main` through PR #66 at `5c2c91d`  
+**Active branch evidence:** PR #67 replaces the rejected always-open Editor action tree with one compact fixed command strip; automated verification passes and T1700 live acceptance remains pending
 
 ## 1. Purpose
 
@@ -35,7 +35,7 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Open, close, reopen and recover projects | VERIFIED foundation | One-writer authority, recovery classification, canonical files and read-only recovery contracts exist |
 | Create a fresh project from Editor | DETERMINISTICALLY VERIFIED | Entering Editor while detached creates a unique writable project and one blank document |
 | Switch projects from Start Here or Editor | DETERMINISTICALLY VERIFIED | Project authority, document chooser and dependent panels remain synchronized; failed switching restores prior authority |
-| Recoverable Project Trash | DETERMINISTICALLY VERIFIED on PR #66 branch | Start Here and Editor place Delete Project beside switching; the exactly selected direct-child project is moved into hidden `.project-trash` with typed-name confirmation, lock checks, active-work blocking and a recovery receipt; no permanent-delete command exists |
+| Recoverable Project Trash | DETERMINISTICALLY VERIFIED on merged main | Start Here and Editor place Delete Project beside switching; the exactly selected direct-child project is moved into hidden `.project-trash` with typed-name confirmation, lock checks, active-work blocking, receipt-failure rollback and a recovery receipt; no permanent-delete command exists |
 | Native editable shape document | VERIFIED foundation | Versioned project-owned shape document, command replay, autosave, canonical save, rollback and reopen are implemented |
 | Build 2D shapes from scratch | PARTIAL | Rectangle, Square, Circle, Ellipse and Star are implemented; freeform path, pen, node and handle tools are not |
 | Undo and redo | DETERMINISTICALLY VERIFIED | Shape creation and 3D object edits use durable reversible command state within implemented command families |
@@ -49,7 +49,7 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | Mouse-wheel page scrolling | DETERMINISTICALLY VERIFIED on merged main | Wheel over 2D or 3D output scrolls the existing outer page by default without changing 3D zoom |
 | Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on merged main | Real Qt wheel delivery changes zoom and leaves the page scrollbar unchanged when direct zoom or Ctrl+wheel zoom is authorised |
 | Sticky Editor control bar | DETERMINISTICALLY VERIFIED on merged main | PR #65 fixes the Editor interaction row directly above the scroll viewport; page movement cannot move the row away |
-| Persistent Editor action tree | DETERMINISTICALLY VERIFIED on PR #66 branch | Document, Shape, Edit, Object and View are rendered as an always-open tree inside the fixed row; selecting a real action cannot dismiss, hide or move the tree, even when the command reveals another output and moves the page |
+| Compact Editor command strip | DETERMINISTICALLY VERIFIED on PR #67 branch | Document, Shape, Edit, Object and View share one fixed row with a shortened wheel selector; each real menu opens temporarily and closes after selection, the duplicate in-page category buttons are hidden while the document selector remains, the row is capped at 48 pixels and fits the supported 760-pixel minimum window width |
 | Extract shapes from a 2D image by tracing | PLANNED — brought forward | Source intake and previews exist, but no manual tracing path creates editable geometry |
 | Extract shapes algorithmically | PLANNED — brought forward | No contour, threshold, edge, mask or silhouette engine creates editable candidates |
 | Extract shapes through Ollama | PARTIAL evidence only | Ollama may assess source art and describe likely shapes or extraction zones; it does not create authoritative editable geometry |
@@ -69,15 +69,15 @@ The Master Build Plan remains the finished-product boundary. `ASSET_GENERATION_A
 | SVG, PNG, GLB/glTF or OBJ export | PLANNED | No named validated downstream output profile is exposed |
 | CodeQL Advanced security analysis | VERIFIED repository control | GitHub Actions and Python analyses run through the merged advanced workflow |
 
-Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that controls were outside the scroll content. PR #65 added viewport-top geometry. PR #66 adds the stronger requirement that the complete action tree itself remains open after an action is selected.
+Historical merged-main label: `Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main` proved only that controls were outside the scroll content. PR #65 added viewport-top geometry. PR #66 then introduced an always-open action tree that passed deterministic checks but failed T1700 live acceptance because it consumed too much workspace. PR #67 supersedes that rejected current-state interaction with one compact command strip.
 
 Historical PR #63 branch labels retained for evidence traceability: `Explicit 3D wheel zoom | DETERMINISTICALLY VERIFIED on PR #63 branch` and `Active output reveal | DETERMINISTICALLY VERIFIED on PR #63 branch`.
 
-The earlier interaction wording remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom.
+The earlier interaction requirement remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom, but only one fixed category row is displayed.
 
-Deterministic verification now uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
+Deterministic verification uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
 
-Deterministic verification also uses real tree-item mouse clicks, fixed window-relative geometry, isolated settings, canonical project discovery and real filesystem moves inside a temporary projects root.
+Deterministic verification also uses real dropdown-menu mouse clicks, fixed window-relative geometry, a 760-pixel minimum-width layout check, isolated settings, canonical project discovery, real filesystem moves, receipt-failure rollback and background-thread drainage inside a temporary projects root.
 
 ## 4. Image-to-shape authority
 
@@ -165,13 +165,15 @@ Not included yet:
 - anchor, socket, pivot, or surface-normal snapping;
 - dimensional engineering tolerance claims.
 
-## 8. PR #61–PR #66 scrolling, zoom and continuously visible controls
+## 8. PR #61–PR #67 scrolling, zoom and continuously visible controls
 
 ```text
 Scroll page                  → wheel over 2D or 3D output moves the outer page
 Zoom 3D view                 → wheel over 3D output zooms; wheel over 2D scrolls
 Scroll page; Ctrl+wheel zoom → normal wheel scrolls; Ctrl+wheel over 3D zooms
 ```
+
+The compact selector displays shortened labels—`Scroll`, `3D zoom`, and `Ctrl+wheel zoom`—while tooltips and status messages retain the full behaviour descriptions.
 
 Required interaction rules:
 
@@ -189,11 +191,13 @@ Required interaction rules:
 12. The Editor controls occupy a dedicated row directly above `page_scroll`, outside the scrolling content.
 13. The control bar retains the same window-relative top coordinate while the Editor page scrolls from top to maximum.
 14. The row hides on unrelated pages and returns to the same viewport-top position in Editor.
-15. Document, Shape, Edit, Object and View are visible as a persistent action tree, not merely available behind a popup button.
-16. Selecting a tree action cannot close the tree; the selected action remains inside the tree viewport while output-reveal commands move the page.
-17. Project files, geometry and object-scene schema are unchanged.
+15. Document, Shape, Edit, Object and View remain visible as one compact fixed category row.
+16. Each category opens its existing real menu temporarily and the dropdown closes after an action is selected.
+17. The original in-page category buttons are hidden so only the current-document selector remains in that scrolling row.
+18. The fixed row is no more than 48 pixels high and fits the supported 760-pixel minimum window width without clipping the wheel selector.
+19. Project files, geometry and object-scene schema are unchanged.
 
-Deterministic verification uses real `QWheelEvent` delivery, geometric viewport assertions and a real `QTest.mouseClick` on the persistent 3D View item. PR #66 branch checks pass; final manual T1700 acceptance remains required.
+Deterministic verification uses real `QWheelEvent` delivery, geometric viewport assertions and a real `QTest.mouseClick` on the temporary 3D View menu action. PR #67 branch checks pass; final manual T1700 acceptance remains required.
 
 ## 9. Recoverable Project Trash authority
 
@@ -278,7 +282,7 @@ Each consequential operation requires named inputs, preview, persistence, Undo/R
 
 ## 12. Immediate engineering order
 
-PR #66 manual live acceptance remains the gate before new asset-generation runtime work.
+PR #67 manual live acceptance remains the gate before new asset-generation runtime work.
 
 The active order is:
 
