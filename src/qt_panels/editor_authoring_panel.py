@@ -23,7 +23,10 @@ from core.project_authoring_workflow import create_fresh_project, switch_project
 from core.project_session import discover_project_directories
 from core.project_trash import move_project_to_trash
 from core.shape_document import write_shape_document_autosave
-from core.shape_document_deletion import delete_shape_from_document
+from core.shape_document_deletion import (
+    delete_shape_document,
+    delete_shape_from_document,
+)
 from qt_panels.editor_usability_panel import SingleObjectWorkspacePanel
 
 
@@ -40,8 +43,10 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
             "or delete it deliberately."
         )
         self._install_project_controls()
+        self._install_document_lifecycle_controls()
         self._install_delete_controls()
         self.refresh_project_choices()
+        self._update_document_lifecycle_controls()
         self._update_delete_controls()
 
     def _install_project_controls(self) -> None:
@@ -83,6 +88,26 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
         project_row.addWidget(self.new_project_document_button)
         self.layout().insertLayout(1, project_row)
         self.project_controls_layout = project_row
+
+    def _install_document_lifecycle_controls(self) -> None:
+        self.close_document_action = QAction("Close Document", self.document_menu)
+        self.close_document_action.setToolTip(
+            "Close the current document view without deleting or changing project files."
+        )
+        self.close_document_action.triggered.connect(self.close_document)
+
+        self.delete_document_action = QAction("Delete Document…", self.document_menu)
+        self.delete_document_action.setToolTip(
+            "Permanently remove the current shape document, its autosave, and its paired "
+            "3D object scene after confirmation."
+        )
+        self.delete_document_action.triggered.connect(
+            lambda _checked=False: self.delete_open_document(confirm=True)
+        )
+
+        self.document_menu.addSeparator()
+        self.document_menu.addAction(self.close_document_action)
+        self.document_menu.addAction(self.delete_document_action)
 
     def _install_delete_controls(self) -> None:
         self.delete_selected_action = QAction("Delete Selected Shape/Object…", self)
@@ -136,10 +161,21 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
         self.refresh_projects_button.setEnabled(True)
         self.project_selector.setEnabled(self.project_selector.count() > 0)
 
+    def _update_document_lifecycle_controls(self) -> None:
+        if not hasattr(self, "close_document_action"):
+            return
+        has_document = self.document is not None
+        unlocked = not bool(getattr(self, "_project_mutation_sources", set()))
+        self.close_document_action.setEnabled(has_document)
+        self.delete_document_action.setEnabled(
+            bool(has_document and self.project_session.is_writable and unlocked)
+        )
+
     def set_project_state(self, state) -> None:
         super().set_project_state(state)
         if hasattr(self, "project_selector"):
             self.refresh_project_choices()
+            self._update_document_lifecycle_controls()
             self._update_delete_controls()
 
     def switch_selected_project(self, *_args):
@@ -159,6 +195,75 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
             self.set_project_state(self.project_session.state)
             self.set_status(f"Could not switch Editor project: {exc}")
             return None
+
+    def close_document(self, *_args) -> bool:
+        if self.document is None:
+            self.set_status("No shape document is open.")
+            return False
+        document_title = self.document.get("title", "Untitled Shape")
+        signals_were_blocked = self.document_selector.blockSignals(True)
+        try:
+            self.document_selector.setCurrentIndex(-1)
+        finally:
+            self.document_selector.blockSignals(signals_were_blocked)
+        self._restore_workspace_state(None, None, None)
+        project_name = self.project_session.state.assessment.manifest.get(
+            "project_name",
+            self.project_session.state.assessment.project_dir.name,
+        )
+        self.document_label.setText(f"Project: {project_name} | No document is open.")
+        self.set_status(
+            f"Closed {document_title}. Project files were not changed; choose it again to reopen."
+        )
+        self._update_document_lifecycle_controls()
+        return True
+
+    def delete_open_document(self, *, confirm: bool = True) -> bool:
+        if self.document is None:
+            self.set_status("Open one shape document before using Delete Document.")
+            return False
+        if not self.project_session.is_writable:
+            self.set_status("Writable project authority is required to delete a document.")
+            return False
+        if getattr(self, "_project_mutation_sources", set()):
+            self.set_status("Finish active project work before deleting a document.")
+            return False
+
+        document_id = self.document["document_id"]
+        document_title = self.document.get("title", document_id)
+        if confirm:
+            answer = QMessageBox.question(
+                self,
+                "Delete document",
+                f"Permanently delete {document_title}?\n\n"
+                "Its canonical shape file, autosave, and paired 3D object scene will be removed. "
+                "This cannot be undone from the Editor.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                self.set_status("Document deletion cancelled; no project files were changed.")
+                return False
+
+        try:
+            result = delete_shape_document(self.project_session, document_id)
+        except Exception as exc:
+            self.set_status(f"Could not delete the current document: {exc}")
+            self._update_document_lifecycle_controls()
+            return False
+
+        self._restore_workspace_state(None, None, None)
+        outcome = self.refresh_documents()
+        scene_note = " and its paired 3D scene" if result.object_scene_path is not None else ""
+        if outcome == "loaded" and self.document is not None:
+            continuation = f" Opened {self.document['title']}."
+        else:
+            continuation = " No shape document is currently open."
+        self.set_status(
+            f"Deleted document {document_title}{scene_note} from project authority.{continuation}"
+        )
+        self._update_document_lifecycle_controls()
+        return True
 
     def delete_selected_project(self, *, confirm: bool = True) -> bool:
         selected = self.project_selector.currentData()
@@ -250,6 +355,7 @@ class ProjectAwareEditorPanel(SingleObjectWorkspacePanel):
 
     def update_controls(self) -> None:
         super().update_controls()
+        self._update_document_lifecycle_controls()
         self._update_delete_controls()
         if hasattr(self, "project_selector"):
             self._update_project_controls()
