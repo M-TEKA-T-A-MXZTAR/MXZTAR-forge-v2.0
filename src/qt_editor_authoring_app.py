@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Forge shell with project authoring, persistent options, and Project Trash."""
+"""Forge shell with project authoring, compact options, and Project Trash."""
 
 from __future__ import annotations
 
@@ -15,6 +15,12 @@ from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel
 from qt_panels.editor_wheel_controls import EditorMouseWheelController
 from core.project_authoring_workflow import switch_project
 from core.project_trash import move_project_to_trash
+
+
+STATIC_NEXT_ACTION_STYLE = (
+    "background-color: #3a3420; border: 2px solid #9f8d49; "
+    "font-weight: 700; padding: 8px 14px;"
+)
 
 
 class StartHereProjectController:
@@ -185,6 +191,13 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
 
     def __init__(self, project_session=None):
         super().__init__(project_session)
+        self.guided_pulse_timer.stop()
+        self._guided_pulse_on = False
+        self._apply_static_next_action_style()
+        self.next_step_button.setToolTip(
+            "Guided next action. The control stays visually static and heavy AI work still "
+            "requires an explicit click."
+        )
         self._replace_authoring_editor_panel()
         self.start_here_project_controller = StartHereProjectController(self)
         self.editor_mouse_wheel_controller = EditorMouseWheelController(
@@ -194,6 +207,19 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
         self.pages.setCurrentIndex(START_HERE_PAGE_INDEX)
         self.sidebar.setCurrentRow(START_HERE_PAGE_INDEX)
         self.refresh_guided_next_step()
+
+    def _apply_static_next_action_style(self) -> None:
+        if hasattr(self, "next_step_button"):
+            self.next_step_button.setStyleSheet(STATIC_NEXT_ACTION_STYLE)
+
+    def toggle_guided_pulse(self) -> None:
+        """Keep the guidance control readable without attention-grabbing animation."""
+        self._guided_pulse_on = False
+        self._apply_static_next_action_style()
+
+    def set_guidance(self, text: str, action=None, target=None) -> None:
+        super().set_guidance(text, action, target)
+        self._apply_static_next_action_style()
 
     def _replace_authoring_editor_panel(self) -> None:
         old_editor = self.editor_panel
@@ -298,6 +324,7 @@ class AuthoringEditorForgeWindow(UsableEditorForgeWindow):
                 self.editor_panel.create_blank_document()
         self._open_guided_page(EDITOR_PAGE_INDEX)
         self.refresh_guided_next_step()
+
 
 
 def main() -> int:
