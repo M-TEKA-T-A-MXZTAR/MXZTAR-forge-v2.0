@@ -18,6 +18,7 @@ for f in \
   docs/product/MASTER_BUILD_PLAN.md \
   docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md \
   docs/product/CURRENT_CAPABILITY_BOUNDARY.md \
+  docs/product/EDITOR_DOCUMENT_LIFECYCLE_CORRECTION.md \
   docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
   docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md \
   docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
@@ -84,6 +85,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_codeql_configuration_contract.py \
+  tools/verify_document_lifecycle_and_static_guidance_contract.py \
   tools/verify_documentation_runtime_state_contract.py \
   tools/verify_sticky_editor_options_documentation_contract.py \
   tools/verify_editor_mouse_wheel_contract.py \
@@ -149,6 +151,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_persi
 echo
 echo "=== EDITOR PROJECT AUTHORING CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_project_authoring_contract.py
+
+echo
+echo "=== DOCUMENT LIFECYCLE AND STATIC GUIDANCE CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_document_lifecycle_and_static_guidance_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
