@@ -75,7 +75,7 @@ Historical PR #63 branch labels retained for evidence traceability: `Explicit 3D
 
 The earlier interaction requirement remains true: Document, Shape, Edit, Object and View actions remain available after scrolling to the bottom, but only one fixed category row is displayed.
 
-Deterministic verification uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
+Deterministic verification now uses real `QWheelEvent` delivery through Qt rather than direct fake-handler calls.
 
 Deterministic verification also uses real dropdown-menu mouse clicks, fixed window-relative geometry, a 760-pixel minimum-width layout check, isolated settings, canonical project discovery, real filesystem moves, receipt-failure rollback and background-thread drainage inside a temporary projects root.
 
