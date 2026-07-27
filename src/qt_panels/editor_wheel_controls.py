@@ -60,22 +60,27 @@ class EditorMouseWheelController(QObject):
         self.options_menu = QMenu(self.bar)
         self.menu_buttons: dict[str, QToolButton] = {}
         self._build_editor_menu_buttons()
+        self._hide_in_page_menu_buttons()
 
-        self.mode_label = QLabel("Mouse wheel:", self.bar)
+        self.mode_label = QLabel("Wheel:", self.bar)
         self.mode_label.setStyleSheet("font-weight: 700;")
         self.mode_combo = QComboBox(self.bar)
         self.mode_combo.setObjectName("editorMouseWheelMode")
-        self.mode_combo.addItem("Scroll page", WHEEL_MODE_SCROLL)
-        self.mode_combo.addItem("Zoom 3D view", WHEEL_MODE_ZOOM)
-        self.mode_combo.addItem(
-            "Scroll page; Ctrl+wheel zoom",
-            WHEEL_MODE_SCROLL_CTRL_ZOOM,
+        self.mode_combo.addItem("Scroll", WHEEL_MODE_SCROLL)
+        self.mode_combo.addItem("3D zoom", WHEEL_MODE_ZOOM)
+        self.mode_combo.addItem("Ctrl+wheel zoom", WHEEL_MODE_SCROLL_CTRL_ZOOM)
+        self.mode_combo.setSizeAdjustPolicy(
+            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
         )
-        self.mode_combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.mode_combo.setMinimumContentsLength(9)
+        self.mode_combo.setSizePolicy(
+            QSizePolicy.Policy.Minimum,
+            QSizePolicy.Policy.Fixed,
+        )
 
         layout = QHBoxLayout()
-        layout.setContentsMargins(6, 3, 6, 3)
-        layout.setSpacing(4)
+        layout.setContentsMargins(4, 3, 4, 3)
+        layout.setSpacing(2)
         for title in ("Document", "Shape", "Edit", "Object", "View"):
             layout.addWidget(self.menu_buttons[title])
         layout.addStretch(1)
@@ -142,6 +147,10 @@ class EditorMouseWheelController(QObject):
             button.setAutoRaise(True)
             button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+            button.setSizePolicy(
+                QSizePolicy.Policy.Minimum,
+                QSizePolicy.Policy.Fixed,
+            )
             button.setMenu(source)
             button.setToolTip(f"Open {title} commands. The menu closes after selection.")
             self.menu_buttons[title] = button
@@ -152,6 +161,17 @@ class EditorMouseWheelController(QObject):
                     mirrored_menu.addSeparator()
                 else:
                     mirrored_menu.addAction(action)
+
+    def _hide_in_page_menu_buttons(self) -> None:
+        """Remove the duplicate scrolling command row while retaining the document selector."""
+        for button in (
+            self.panel.document_button,
+            self.panel.shape_button,
+            self.panel.edit_button,
+            self.panel.object_button,
+            self.panel.view_button,
+        ):
+            button.hide()
 
     def menu_button(self, title: str) -> QToolButton | None:
         """Return one compact top-level Editor menu button for verification and access."""
@@ -235,7 +255,7 @@ class EditorMouseWheelController(QObject):
         else:
             help_text = "Wheel scrolls the page from the 2D or 3D output."
             viewport_tip = (
-                "3D object view: wheel scrolls the Editor page. Choose Zoom 3D view "
+                "3D object view: wheel scrolls the Editor page. Choose 3D zoom "
                 "or Ctrl+wheel zoom in the compact selector when needed."
             )
         self.mode_combo.setToolTip(
