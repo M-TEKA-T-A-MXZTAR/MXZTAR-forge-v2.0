@@ -77,6 +77,8 @@ class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
             return False
         return super().delete_selected_project(confirm=confirm)
 
+    delete_selected_project._mxztar_selection_confirmation = True
+
     def create_fresh_project_and_document(self, *_args):
         if not self._authority_unlocked():
             self.set_status("Finish active project work before creating a fresh project.")
