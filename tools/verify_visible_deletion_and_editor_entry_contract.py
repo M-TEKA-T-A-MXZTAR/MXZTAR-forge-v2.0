@@ -24,7 +24,6 @@ from core.project_session import ProjectSession  # noqa: E402
 from qt_app import SETTINGS_APP, SETTINGS_ORG  # noqa: E402
 from qt_editor_app import EDITOR_PAGE_INDEX  # noqa: E402
 from qt_live_acceptance_guards import install_live_acceptance_guards  # noqa: E402
-from qt_editor_authoring_app import AuthoringEditorForgeWindow  # noqa: E402
 
 
 SHAPE_DIR = Path("structures/shape-documents")
@@ -98,7 +97,7 @@ def main() -> int:
 
         window = None
         try:
-            window = AuthoringEditorForgeWindow(session)
+            window = authoring_app.AuthoringEditorForgeWindow(session)
             window.resize(980, 760)
             window.show()
             process(app)
