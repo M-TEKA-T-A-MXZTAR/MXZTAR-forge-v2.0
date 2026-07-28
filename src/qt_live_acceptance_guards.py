@@ -116,6 +116,7 @@ def install_live_acceptance_guards() -> None:
     install_live_acceptance_guards._installed = True
 
     original_refresh_documents = EditorPanel.refresh_documents
+    original_load_project_build = EditorPanel.load_project_build
     original_open_selected_document = EditorPanel.open_selected_document
 
     def visible_refresh_documents(self, selected_document_id=None):
@@ -126,6 +127,16 @@ def install_live_acceptance_guards() -> None:
             self._mxztar_last_document_refresh_error = None
         return outcome
 
+    def visible_load_project_build(self, *_args) -> None:
+        if (
+            getattr(self, "_mxztar_deliberate_no_document", False)
+            and self.project_session.state is not None
+        ):
+            outcome = _refresh_document_choices_without_open(self)
+            self._mxztar_last_document_refresh_outcome = outcome
+            return
+        original_load_project_build(self, *_args)
+
     def visible_open_selected_document(self, *_args) -> None:
         if (
             not self._refreshing_documents
@@ -135,8 +146,10 @@ def install_live_acceptance_guards() -> None:
         original_open_selected_document(self, *_args)
 
     visible_refresh_documents._mxztar_visible_document_labels = True
+    visible_load_project_build._mxztar_preserves_deliberate_empty_state = True
     visible_open_selected_document._mxztar_deliberate_reopening = True
     EditorPanel.refresh_documents = visible_refresh_documents
+    EditorPanel.load_project_build = visible_load_project_build
     EditorPanel.open_selected_document = visible_open_selected_document
 
     original_close_document = ProjectAwareEditorPanel.close_document
