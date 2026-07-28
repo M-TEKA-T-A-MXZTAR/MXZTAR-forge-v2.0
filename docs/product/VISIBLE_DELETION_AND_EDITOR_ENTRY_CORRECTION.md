@@ -17,6 +17,7 @@ T1700 acceptance after PR #68 showed three presentation failures:
 - Guided navigation is refreshed immediately and offers `Next: New blank document` when writable authority remains but no document is open.
 - The deletion result is stated beside the Editor workspace and includes the deleted document identity and a remaining count only after successful discovery.
 - If remaining-document discovery fails, the failure is preserved and no zero-document count is inferred from an emptied selector.
+- Project and document deletion follow a direct selection-driven flow: select the target, choose Delete, confirm with Yes or Cancel, and continue. Exact project or document names are never typed as confirmation.
 - Start Here exposes Delete Selected Project and New Project + Document in a dedicated Project management row.
 - Project Trash success, cancellation, and failure feedback appears in its own near-field label beside Project Authority.
 - Deleting an inactive project does not replace or obscure the currently attached project and writer-lease authority display.

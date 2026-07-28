@@ -132,6 +132,21 @@ def main() -> int:
             )
 
             panel = window.editor_panel
+            require(
+                getattr(
+                    type(panel).delete_selected_project,
+                    "_mxztar_selection_confirmation",
+                    False,
+                )
+                and "yes/cancel" in panel.delete_project_button.toolTip().lower()
+                and "typing" not in panel.delete_project_button.toolTip().lower()
+                and "yes/cancel"
+                in controller.delete_project_button.toolTip().lower()
+                and "typing"
+                not in controller.delete_project_button.toolTip().lower(),
+                "project deletion uses selection plus a simple Yes/Cancel confirmation",
+            )
+
             first_document_id = panel.document["document_id"]
             panel.create_blank_document()
             process(app)
@@ -307,16 +322,34 @@ def main() -> int:
             process(app)
             authority_before = start_panel.project_status_label.text()
 
+            original_question = live_guards.QMessageBox.question
             original_get_text = authoring_app.QInputDialog.getText
-            authoring_app.QInputDialog.getText = staticmethod(
-                lambda *_args, **_kwargs: (disposable_project.name, True)
-            )
+
+            def reject_exact_name_input(*_args, **_kwargs):
+                raise AssertionError(
+                    "Exact project-name typing must not be used for deletion confirmation."
+                )
+
+            authoring_app.QInputDialog.getText = staticmethod(reject_exact_name_input)
             try:
+                live_guards.QMessageBox.question = staticmethod(
+                    lambda *_args, **_kwargs: live_guards.QMessageBox.StandardButton.Cancel
+                )
+                require(
+                    not controller.delete_selected_project()
+                    and disposable_project.exists(),
+                    "Cancel leaves the selected project untouched without requesting typed input",
+                )
+
+                live_guards.QMessageBox.question = staticmethod(
+                    lambda *_args, **_kwargs: live_guards.QMessageBox.StandardButton.Yes
+                )
                 require(
                     controller.delete_selected_project(),
-                    "Start Here Delete Selected Project completes deliberately",
+                    "Start Here deletes the selected project after one Yes confirmation",
                 )
             finally:
+                live_guards.QMessageBox.question = original_question
                 authoring_app.QInputDialog.getText = original_get_text
             process(app)
             require(
