@@ -19,6 +19,7 @@ for f in \
   docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md \
   docs/product/CURRENT_CAPABILITY_BOUNDARY.md \
   docs/product/EDITOR_DOCUMENT_LIFECYCLE_CORRECTION.md \
+  docs/product/VISIBLE_DELETION_AND_EDITOR_ENTRY_CORRECTION.md \
   docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
   docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md \
   docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
@@ -69,6 +70,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_editor_app.py \
   src/qt_editor_authoring_app.py \
   src/qt_editor_usability_app.py \
+  src/qt_live_acceptance_guards.py \
   src/qt_panels/__init__.py \
   src/qt_panels/agent_panel.py \
   src/qt_panels/agent_worker.py \
@@ -100,7 +102,8 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_project_session_contract.py \
   tools/verify_project_source_intake_ui_contract.py \
   tools/verify_project_workflow_run_contract.py \
-  tools/verify_shape_document_editor_contract.py
+  tools/verify_shape_document_editor_contract.py \
+  tools/verify_visible_deletion_and_editor_entry_contract.py
 
 echo "PASS: listed Python files compile"
 
@@ -155,6 +158,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_edito
 echo
 echo "=== DOCUMENT LIFECYCLE AND STATIC GUIDANCE CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_document_lifecycle_and_static_guidance_contract.py
+
+echo
+echo "=== VISIBLE DELETION AND EDITOR ENTRY CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_visible_deletion_and_editor_entry_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
