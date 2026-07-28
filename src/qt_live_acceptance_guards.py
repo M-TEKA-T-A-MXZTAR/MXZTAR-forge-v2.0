@@ -12,7 +12,7 @@ from pathlib import Path
 from types import MethodType
 
 from PySide6.QtCore import QPoint, QTimer
-from PySide6.QtWidgets import QHBoxLayout, QLabel
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox
 
 import qt_editor_authoring_app as authoring_app
 from core.shape_document import list_shape_documents
@@ -109,6 +109,18 @@ def _refresh_guided_navigation(panel: EditorPanel) -> None:
         refresh()
 
 
+def _confirm_project_trash(parent, project_name: str) -> bool:
+    answer = QMessageBox.question(
+        parent,
+        "Move project to Project Trash",
+        f"Move the selected project into recoverable Project Trash?\n\n{project_name}\n\n"
+        "It will disappear from the active project list but remain recoverable.",
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+        QMessageBox.StandardButton.Cancel,
+    )
+    return answer == QMessageBox.StandardButton.Yes
+
+
 def install_live_acceptance_guards() -> None:
     """Install the acceptance-driven UI corrections once before window creation."""
     if getattr(install_live_acceptance_guards, "_installed", False):
@@ -152,9 +164,18 @@ def install_live_acceptance_guards() -> None:
     EditorPanel.load_project_build = visible_load_project_build
     EditorPanel.open_selected_document = visible_open_selected_document
 
+    original_project_panel_init = ProjectAwareEditorPanel.__init__
     original_close_document = ProjectAwareEditorPanel.close_document
     original_delete_open_document = ProjectAwareEditorPanel.delete_open_document
+    original_delete_editor_project = ProjectAwareEditorPanel.delete_selected_project
     original_ensure_ready_document = ProjectAwareEditorPanel.ensure_ready_document
+
+    def visible_project_panel_init(self, *args, **kwargs) -> None:
+        original_project_panel_init(self, *args, **kwargs)
+        self.delete_project_button.setToolTip(
+            "Move the selected project into recoverable Project Trash after a simple "
+            "Yes/Cancel confirmation. Active work and locked projects are protected."
+        )
 
     def visible_close_document(self, *_args) -> bool:
         closed = original_close_document(self, *_args)
@@ -162,6 +183,16 @@ def install_live_acceptance_guards() -> None:
             self._mxztar_deliberate_no_document = True
             _refresh_guided_navigation(self)
         return closed
+
+    def visible_delete_editor_project(self, *, confirm: bool = True) -> bool:
+        selected = self.project_selector.currentData()
+        if not selected:
+            return original_delete_editor_project(self, confirm=False)
+        project_name = Path(str(selected)).expanduser().resolve().name
+        if confirm and not _confirm_project_trash(self, project_name):
+            self.set_status("Project deletion cancelled; no project was moved.")
+            return False
+        return original_delete_editor_project(self, confirm=False)
 
     def visible_ensure_ready_document(self) -> bool:
         if (
@@ -239,10 +270,14 @@ def install_live_acceptance_guards() -> None:
             _refresh_guided_navigation(self)
         return True
 
+    visible_project_panel_init._mxztar_selection_driven_project_delete = True
     visible_close_document._mxztar_persistent_closed_document = True
+    visible_delete_editor_project._mxztar_selection_confirmation = True
     visible_ensure_ready_document._mxztar_preserves_deliberate_empty_state = True
     visibly_delete_open_document._mxztar_visible_deletion = True
+    ProjectAwareEditorPanel.__init__ = visible_project_panel_init
     ProjectAwareEditorPanel.close_document = visible_close_document
+    ProjectAwareEditorPanel.delete_selected_project = visible_delete_editor_project
     ProjectAwareEditorPanel.ensure_ready_document = visible_ensure_ready_document
     ProjectAwareEditorPanel.delete_open_document = visibly_delete_open_document
 
@@ -269,31 +304,76 @@ def install_live_acceptance_guards() -> None:
 
     controller_class = authoring_app.StartHereProjectController
     original_controller_init = controller_class.__init__
-    original_delete_selected_project = controller_class.delete_selected_project
 
     def visible_delete_selected_project(self, *_args) -> bool:
-        selected = self.panel.project_selector.currentData()
-        project_name = Path(str(selected)).name if selected else "selected project"
-        deleted = original_delete_selected_project(self, *_args)
-        detail = self.panel.status_label.text().strip()
-        feedback = self.panel.project_trash_feedback_label
-        if deleted:
+        panel = self.panel
+        feedback = panel.project_trash_feedback_label
+        if panel._project_mutation_sources:
+            detail = "Finish active project work before deleting a project."
+            panel.set_status(detail)
+            feedback.setText(f"Project Trash: deletion not completed. {detail}")
+            return False
+
+        selected = panel.project_selector.currentData()
+        if not selected:
+            detail = "Choose one canonical project before using Delete Project."
+            panel.set_status(detail)
+            feedback.setText(f"Project Trash: deletion not completed. {detail}")
+            return False
+
+        selected_path = Path(str(selected)).expanduser().resolve()
+        project_name = selected_path.name
+        if not _confirm_project_trash(panel, project_name):
+            detail = "Project deletion cancelled; no project was moved."
+            panel.set_status(detail)
             feedback.setText(
-                f"Project Trash: removed {project_name} from active projects and moved "
-                "it into recoverable Project Trash."
+                f"Project Trash: deletion cancelled for {project_name}; no project was moved."
             )
-        else:
+            return False
+
+        try:
+            result = authoring_app.move_project_to_trash(
+                panel.project_session,
+                selected_path,
+            )
+        except Exception as exc:
+            detail = f"Could not move selected project to Project Trash: {exc}"
+            panel.set_status(detail)
+            panel.refresh_projects()
+            self.update_controls()
             feedback.setText(
                 f"Project Trash: deletion not completed for {project_name}. {detail}"
             )
-        return deleted
+            return False
+
+        panel.refresh_projects()
+        self.window.editor_panel.refresh_project_choices()
+        if result.was_active:
+            panel.refresh_attached_project_state(None)
+            panel.project_changed.emit(None)
+        self.update_controls()
+        panel.set_status(
+            f"Moved project {project_name} to recoverable Project Trash: "
+            f"{result.trashed_project_dir.name}."
+        )
+        self.window.refresh_guided_next_step()
+        feedback.setText(
+            f"Project Trash: removed {project_name} from active projects and moved "
+            "it into recoverable Project Trash."
+        )
+        return True
 
     visible_delete_selected_project._mxztar_near_field_project_feedback = True
+    visible_delete_selected_project._mxztar_selection_confirmation = True
     controller_class.delete_selected_project = visible_delete_selected_project
 
     def visible_controller_init(self, window) -> None:
         original_controller_init(self, window)
         panel = self.panel
+        self.delete_project_button.setToolTip(
+            "Move the selected project into recoverable Project Trash after a simple "
+            "Yes/Cancel confirmation. Active work and locked projects are protected."
+        )
         panel.project_actions_layout.removeWidget(self.delete_project_button)
         panel.project_actions_layout.removeWidget(self.new_project_document_button)
 
