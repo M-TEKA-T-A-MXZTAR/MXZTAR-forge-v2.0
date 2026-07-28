@@ -48,6 +48,7 @@ import sys
 import qt_panels
 assert sys.flags.optimize == 0
 assert 'qt_startup_guards' not in sys.modules
+assert 'qt_live_acceptance_guards' not in sys.modules
 assert 'source_image_compatibility' not in sys.modules
 assert callable(qt_panels.install_panel_runtime_contracts)
 """,
@@ -59,6 +60,19 @@ import qt_startup_guards
 from qt_panels.my_library_panel import MyLibraryPanel
 assert callable(qt_startup_guards.install_my_library_refresh_guard)
 assert MyLibraryPanel is not None
+""",
+    )
+    run_case(
+        "live acceptance guard imports before window creation without a cycle",
+        """
+import qt_live_acceptance_guards
+from qt_editor_authoring_app import StartHereProjectController
+from qt_panels.editor_authoring_panel import ProjectAwareEditorPanel
+from qt_panels.editor_wheel_controls import EditorMouseWheelController
+assert callable(qt_live_acceptance_guards.install_live_acceptance_guards)
+assert StartHereProjectController is not None
+assert ProjectAwareEditorPanel is not None
+assert EditorMouseWheelController is not None
 """,
     )
     run_case(
@@ -75,9 +89,19 @@ assert getattr(MyLibraryPanel.decode_bounded_image, '_mxztar_source_compatibilit
         "official launcher import installs contracts without a cycle",
         """
 import mxztar_forge
+from qt_editor_authoring_app import StartHereProjectController
+from qt_panels.editor_authoring_panel import ProjectAwareEditorPanel
+from qt_panels.editor_panel import EditorPanel
+from qt_panels.editor_wheel_controls import EditorMouseWheelController
 from qt_panels.my_library_panel import MyLibraryPanel
 assert getattr(MyLibraryPanel.refresh_library, '_mxztar_worker_ownership_guard', False)
 assert getattr(MyLibraryPanel.decode_bounded_image, '_mxztar_source_compatibility', False)
+assert getattr(EditorPanel.refresh_documents, '_mxztar_visible_document_labels', False)
+assert getattr(ProjectAwareEditorPanel.delete_open_document, '_mxztar_visible_deletion', False)
+assert getattr(StartHereProjectController.__init__, '_mxztar_dedicated_project_management_row', False)
+assert getattr(StartHereProjectController.delete_selected_project, '_mxztar_near_field_project_feedback', False)
+assert getattr(EditorMouseWheelController._update_visibility, '_mxztar_unclipped_editor_entry', False)
+assert getattr(EditorMouseWheelController._reveal_active_output, '_mxztar_unclipped_output_reveal', False)
 assert callable(mxztar_forge.main)
 """,
     )
