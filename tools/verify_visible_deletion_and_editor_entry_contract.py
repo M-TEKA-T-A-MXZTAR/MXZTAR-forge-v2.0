@@ -20,10 +20,11 @@ from PySide6.QtCore import QPoint, QSettings  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 import qt_editor_authoring_app as authoring_app  # noqa: E402
+import qt_live_acceptance_guards as live_guards  # noqa: E402
 from core.project_session import ProjectSession  # noqa: E402
+from core.shape_document import create_blank_shape_document  # noqa: E402
 from qt_app import SETTINGS_APP, SETTINGS_ORG  # noqa: E402
-from qt_editor_app import EDITOR_PAGE_INDEX  # noqa: E402
-from qt_live_acceptance_guards import install_live_acceptance_guards  # noqa: E402
+from qt_editor_app import EDITOR_PAGE_INDEX, START_HERE_PAGE_INDEX  # noqa: E402
 
 
 SHAPE_DIR = Path("structures/shape-documents")
@@ -68,7 +69,7 @@ def close_safely(window, app: QApplication) -> None:
 
 
 def main() -> int:
-    install_live_acceptance_guards()
+    live_guards.install_live_acceptance_guards()
 
     with tempfile.TemporaryDirectory(prefix="mxztar-visible-deletion-") as temporary:
         root = Path(temporary)
@@ -116,6 +117,10 @@ def main() -> int:
                 < 0,
                 "Start Here exposes project deletion in a dedicated management row",
             )
+            require(
+                hasattr(start_panel, "project_trash_feedback_label"),
+                "Start Here exposes separate near-field Project Trash feedback",
+            )
 
             scrollbar = window.page_scroll.verticalScrollBar()
             scrollbar.setValue(scrollbar.maximum())
@@ -134,13 +139,29 @@ def main() -> int:
             panel.add_circle_command()
             process(app)
 
+            unopened_result = create_blank_shape_document(session)
+            unopened_document_id = unopened_result.document["document_id"]
+            unopened_scene_path = (
+                session.project_dir
+                / SCENE_DIR
+                / f"{unopened_document_id}.object-scene.json"
+            )
+            panel.refresh_documents(second_document_id)
+            process(app)
+            require(
+                panel.document["document_id"] == second_document_id
+                and not unopened_scene_path.exists(),
+                "a remaining canonical document can exist without a paired scene before deletion",
+            )
+
             labels = [
                 panel.document_selector.itemText(index)
                 for index in range(panel.document_selector.count())
             ]
             require(
                 any(second_document_id[-8:] in label for label in labels)
-                and any(first_document_id[-8:] in label for label in labels),
+                and any(first_document_id[-8:] in label for label in labels)
+                and any(unopened_document_id[-8:] in label for label in labels),
                 "same-title documents display distinct short IDs in the selector",
             )
 
@@ -178,17 +199,80 @@ def main() -> int:
                 "document and paired scene disappear with explicit near-field confirmation",
             )
             require(
-                panel.document_selector.findData(first_document_id) >= 0,
+                not unopened_scene_path.exists(),
+                "post-delete selector refresh does not create or synchronize an unrelated scene",
+            )
+            require(
+                panel.document_selector.findData(first_document_id) >= 0
+                and panel.document_selector.findData(unopened_document_id) >= 0,
                 "remaining documents stay available for deliberate reopening",
             )
+            require(
+                window.next_step_button.text() == "Next: New blank document",
+                "guided navigation refreshes after deletion empties the workspace",
+            )
 
-            remaining_index = panel.document_selector.findData(first_document_id)
-            panel.document_selector.setCurrentIndex(remaining_index)
+            window.open_page(START_HERE_PAGE_INDEX)
+            process(app)
+            window.open_page(EDITOR_PAGE_INDEX)
+            process(app)
+            require(
+                panel.document is None
+                and panel.object_scene is None
+                and panel.document_selector.currentIndex() == -1
+                and not unopened_scene_path.exists(),
+                "the deliberate empty state survives leaving and re-entering Editor",
+            )
+
+            unopened_index = panel.document_selector.findData(unopened_document_id)
+            panel.document_selector.setCurrentIndex(unopened_index)
             process(app)
             require(
                 panel.document is not None
-                and panel.document["document_id"] == first_document_id,
-                "a remaining document reopens only after deliberate selection",
+                and panel.document["document_id"] == unopened_document_id
+                and unopened_scene_path.is_file(),
+                "a remaining document and its scene open only after deliberate selection",
+            )
+
+            panel.create_blank_document()
+            process(app)
+            failing_document_id = panel.document["document_id"]
+            original_list_documents = live_guards.list_shape_documents
+
+            def fail_document_discovery(_session):
+                raise RuntimeError("malformed remaining canonical document")
+
+            live_guards.list_shape_documents = fail_document_discovery
+            try:
+                require(
+                    panel.delete_open_document(confirm=False),
+                    "document deletion remains authoritative when later discovery fails",
+                )
+            finally:
+                live_guards.list_shape_documents = original_list_documents
+            process(app)
+            require(
+                "remaining document discovery failed" in panel.status_label.text()
+                and "No remaining-document count is claimed" in panel.status_label.text()
+                and "0 documents remain" not in panel.status_label.text(),
+                "failed discovery is preserved instead of being reported as a zero count",
+            )
+            require(
+                panel.document is None
+                and panel.document_selector.currentIndex() == -1,
+                "a failed post-delete discovery leaves no replacement document open",
+            )
+            panel.refresh_documents(unopened_document_id)
+            process(app)
+            require(
+                panel.document is not None
+                and panel.document["document_id"] == unopened_document_id
+                and failing_document_id
+                not in {
+                    panel.document_selector.itemData(index)
+                    for index in range(panel.document_selector.count())
+                },
+                "normal discovery recovers after the injected failure without restoring the deleted document",
             )
 
             wheel_controller = window.editor_mouse_wheel_controller
@@ -221,6 +305,7 @@ def main() -> int:
             )
             start_panel.project_selector.setCurrentIndex(disposable_index)
             process(app)
+            authority_before = start_panel.project_status_label.text()
 
             original_get_text = authoring_app.QInputDialog.getText
             authoring_app.QInputDialog.getText = staticmethod(
@@ -240,9 +325,14 @@ def main() -> int:
                 "Start Here deletion removes the project from the active project list",
             )
             require(
-                "Removed from active projects" in start_panel.project_status_label.text()
-                and "Project Trash" in start_panel.project_status_label.text(),
-                "Start Here reports deletion beside the project controls",
+                start_panel.project_status_label.text() == authority_before,
+                "deleting an inactive project retains the attached-project authority display",
+            )
+            require(
+                "removed" in start_panel.project_trash_feedback_label.text().lower()
+                and "Project Trash"
+                in start_panel.project_trash_feedback_label.text(),
+                "Start Here reports deletion in separate near-field Project Trash feedback",
             )
         finally:
             close_safely(window, app)
