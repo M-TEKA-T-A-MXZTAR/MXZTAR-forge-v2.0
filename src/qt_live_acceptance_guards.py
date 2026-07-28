@@ -19,9 +19,6 @@ from qt_panels.editor_panel import EditorPanel
 from qt_panels.editor_wheel_controls import EditorMouseWheelController
 
 
-_INSTALLED = False
-
-
 def _short_document_id(document_id: object) -> str:
     value = document_id if isinstance(document_id, str) else "unknown"
     return value[-8:]
@@ -39,10 +36,9 @@ def _label_document_choices(panel: EditorPanel) -> None:
 
 def install_live_acceptance_guards() -> None:
     """Install the acceptance-driven UI corrections once before window creation."""
-    global _INSTALLED
-    if _INSTALLED:
+    if getattr(install_live_acceptance_guards, "_installed", False):
         return
-    _INSTALLED = True
+    install_live_acceptance_guards._installed = True
 
     original_refresh_documents = EditorPanel.refresh_documents
 
