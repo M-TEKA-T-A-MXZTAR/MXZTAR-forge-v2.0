@@ -24,10 +24,12 @@ if str(SRC_ROOT) not in sys.path:
 from source_image_compatibility import install_source_image_compatibility
 from qt_startup_guards import install_my_library_refresh_guard
 from qt_live_acceptance_guards import install_live_acceptance_guards
+from qt_project_menu_and_rename import install_project_menu_and_rename
 
 install_source_image_compatibility()
 install_my_library_refresh_guard()
 install_live_acceptance_guards()
+install_project_menu_and_rename()
 
 from qt_editor_authoring_app import main
 
