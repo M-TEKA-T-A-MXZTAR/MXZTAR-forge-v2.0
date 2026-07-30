@@ -18,6 +18,10 @@ from core.project_session import ProjectSession
 
 
 _BASE_ASSESS_PROJECT_OPEN = project_access.assess_project_open
+_BASE_INSTALL_START_HERE_MENU = project_ui._install_start_here_menu
+_BASE_INSTALL_EDITOR_MENU = project_ui._install_editor_menu
+_BASE_SYNC_START_HERE_ACTIONS = project_ui._sync_start_here_actions
+_BASE_SYNC_EDITOR_ACTIONS = project_ui._sync_editor_actions
 
 
 def _assess_project_open_with_rename_recovery(project_dir: Path):
@@ -80,6 +84,64 @@ def _collision_safe_selector_metadata(selector: QComboBox) -> None:
         selector.setItemData(index, project_id, project_ui.PROJECT_ID_ROLE)
 
     project_ui._show_current_raw_name(selector)
+
+
+def _show_project_selector(panel) -> None:
+    """Open the existing canonical project selector without changing authority."""
+    selector = panel.project_selector
+    if selector.count() <= 0:
+        panel.set_status("No canonical projects are available. Refresh or create a project first.")
+        return
+    selector.setEnabled(True)
+    selector.setFocus()
+    selector.showPopup()
+    panel.set_status("Select a project from the list, then choose Switch Project.")
+
+
+def _insert_select_action(menu, panel):
+    select_action = project_ui.QAction("Select Project…", menu)
+    select_action.setToolTip("Open the canonical project list without switching or changing files.")
+    select_action.triggered.connect(lambda _checked=False: _show_project_selector(panel))
+    actions = menu.actions()
+    if actions:
+        menu.insertAction(actions[0], select_action)
+    else:
+        menu.addAction(select_action)
+    return select_action
+
+
+def _install_start_here_menu_with_selection(controller) -> None:
+    _BASE_INSTALL_START_HERE_MENU(controller)
+    panel = controller.panel
+    panel.project_select_action = _insert_select_action(panel.project_menu, panel)
+    panel.open_project_button.setToolTip(
+        "Select, switch, create, rename, or move the selected project to Project Trash."
+    )
+
+
+def _install_editor_menu_with_selection(panel) -> None:
+    _BASE_INSTALL_EDITOR_MENU(panel)
+    panel.project_select_action = _insert_select_action(panel.project_menu, panel)
+    panel.switch_project_button.setToolTip(
+        "Select, switch, create, rename, or move the selected project to Project Trash."
+    )
+
+
+def _sync_start_here_actions_with_selection(controller) -> None:
+    _BASE_SYNC_START_HERE_ACTIONS(controller)
+    panel = controller.panel
+    unlocked = not panel._project_mutation_sources
+    selection_available = panel.project_selector.count() > 0
+    panel.project_select_action.setEnabled(bool(unlocked and selection_available))
+    panel.project_selector.setEnabled(bool(unlocked and selection_available))
+
+
+def _sync_editor_actions_with_selection(panel) -> None:
+    _BASE_SYNC_EDITOR_ACTIONS(panel)
+    unlocked = not bool(getattr(panel, "_project_mutation_sources", set()))
+    selection_available = panel.project_selector.count() > 0
+    panel.project_select_action.setEnabled(bool(unlocked and selection_available))
+    panel.project_selector.setEnabled(bool(unlocked and selection_available))
 
 
 def _project_work_active(panel) -> bool:
@@ -207,6 +269,10 @@ def install_project_menu_review_fixes() -> None:
     project_ui._selector_metadata = _collision_safe_selector_metadata
     project_ui.rename_selected_project = _fixed_rename_selected_project
     project_ui._commit_name_edit = _fixed_commit_name_edit
+    project_ui._install_start_here_menu = _install_start_here_menu_with_selection
+    project_ui._install_editor_menu = _install_editor_menu_with_selection
+    project_ui._sync_start_here_actions = _sync_start_here_actions_with_selection
+    project_ui._sync_editor_actions = _sync_editor_actions_with_selection
 
 
 install_project_menu_review_fixes._mxztar_codex_review_corrections = True
