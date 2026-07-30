@@ -20,6 +20,7 @@ for f in \
   docs/product/CURRENT_CAPABILITY_BOUNDARY.md \
   docs/product/EDITOR_DOCUMENT_LIFECYCLE_CORRECTION.md \
   docs/product/VISIBLE_DELETION_AND_EDITOR_ENTRY_CORRECTION.md \
+  docs/product/UNIFIED_PROJECT_MENU_AND_RENAME.md \
   docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
   docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md \
   docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
@@ -58,6 +59,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/project_access.py \
   src/core/project_authoring_workflow.py \
   src/core/project_manifest.py \
+  src/core/project_rename.py \
   src/core/project_session.py \
   src/core/project_source_intake.py \
   src/core/project_trash.py \
@@ -71,6 +73,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_editor_authoring_app.py \
   src/qt_editor_usability_app.py \
   src/qt_live_acceptance_guards.py \
+  src/qt_project_menu_and_rename.py \
   src/qt_panels/__init__.py \
   src/qt_panels/agent_panel.py \
   src/qt_panels/agent_worker.py \
@@ -103,6 +106,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_project_source_intake_ui_contract.py \
   tools/verify_project_workflow_run_contract.py \
   tools/verify_shape_document_editor_contract.py \
+  tools/verify_unified_project_menu_and_rename_contract.py \
   tools/verify_visible_deletion_and_editor_entry_contract.py
 
 echo "PASS: listed Python files compile"
@@ -162,6 +166,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_docum
 echo
 echo "=== VISIBLE DELETION AND EDITOR ENTRY CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_visible_deletion_and_editor_entry_contract.py
+
+echo
+echo "=== UNIFIED PROJECT MENU AND RENAME CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_unified_project_menu_and_rename_contract.py
 
 echo
 echo "=== PROMPT CONTRACT CHECK ==="
