@@ -171,6 +171,8 @@ def rename_selected_project(panel, window, new_name: str) -> bool:
             try:
                 temporary_session.close()
             except Exception:
+                # Preserve the completed rename result; ProjectSession.close already
+                # retains recovery diagnostics when lease cleanup cannot be confirmed.
                 pass
 
     _refresh_project_surfaces(window, selected_path)
