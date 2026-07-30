@@ -18,6 +18,8 @@ from core.project_session import ProjectSession
 
 
 _BASE_ASSESS_PROJECT_OPEN = project_access.assess_project_open
+_BASE_SYNC_START_HERE_ACTIONS = project_ui._sync_start_here_actions
+_BASE_SYNC_EDITOR_ACTIONS = project_ui._sync_editor_actions
 
 
 def _assess_project_open_with_rename_recovery(project_dir: Path):
@@ -193,6 +195,21 @@ def _fixed_commit_name_edit(panel, window) -> bool:
         panel._mxztar_committing_project_name = False
 
 
+def _sync_start_here_actions_with_selector(controller) -> None:
+    """Keep the established project selector usable while authority is attached."""
+    _BASE_SYNC_START_HERE_ACTIONS(controller)
+    panel = controller.panel
+    unlocked = not panel._project_mutation_sources
+    panel.project_selector.setEnabled(bool(unlocked and panel.project_selector.count() > 0))
+
+
+def _sync_editor_actions_with_selector(panel) -> None:
+    """Keep the Editor project selector usable whenever project mutation is unlocked."""
+    _BASE_SYNC_EDITOR_ACTIONS(panel)
+    unlocked = not bool(getattr(panel, "_project_mutation_sources", set()))
+    panel.project_selector.setEnabled(bool(unlocked and panel.project_selector.count() > 0))
+
+
 def install_project_menu_review_fixes() -> None:
     """Install the review corrections once after the base project-menu contract."""
     if getattr(install_project_menu_review_fixes, "_installed", False):
@@ -207,6 +224,8 @@ def install_project_menu_review_fixes() -> None:
     project_ui._selector_metadata = _collision_safe_selector_metadata
     project_ui.rename_selected_project = _fixed_rename_selected_project
     project_ui._commit_name_edit = _fixed_commit_name_edit
+    project_ui._sync_start_here_actions = _sync_start_here_actions_with_selector
+    project_ui._sync_editor_actions = _sync_editor_actions_with_selector
 
 
 install_project_menu_review_fixes._mxztar_codex_review_corrections = True
