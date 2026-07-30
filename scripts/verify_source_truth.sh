@@ -109,6 +109,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_select_project_restoration_contract.py \
   tools/verify_shape_document_editor_contract.py \
   tools/verify_unified_project_menu_and_rename_contract.py \
+  tools/verify_unified_project_menu_and_rename_current_contract.py \
   tools/verify_visible_deletion_and_editor_entry_contract.py
 
 echo "PASS: listed Python files compile"
@@ -171,7 +172,7 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_visib
 
 echo
 echo "=== UNIFIED PROJECT MENU AND RENAME CONTRACT ==="
-QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_unified_project_menu_and_rename_contract.py
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_unified_project_menu_and_rename_current_contract.py
 
 echo
 echo "=== SELECT PROJECT RESTORATION CONTRACT ==="
