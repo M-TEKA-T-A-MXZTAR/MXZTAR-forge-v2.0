@@ -3,13 +3,53 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from PySide6.QtWidgets import QComboBox
 
 import qt_project_menu_and_rename as project_ui
+import core.editor_project_access as editor_project_access
+import core.project_access as project_access
+import core.project_rename as project_rename
+import core.project_session as project_session_module
 from core.project_rename import ProjectRenameError, normalize_project_display_name, rename_project
 from core.project_session import ProjectSession
+
+
+_BASE_ASSESS_PROJECT_OPEN = project_access.assess_project_open
+
+
+def _assess_project_open_with_rename_recovery(project_dir: Path):
+    """Make an interrupted rename marker a first-class recovery blocker."""
+    assessment = _BASE_ASSESS_PROJECT_OPEN(project_dir)
+    marker = assessment.project_dir / project_rename.TRANSACTION_MARKER
+    if not marker.exists() and not marker.is_symlink():
+        return assessment
+    diagnostic = "An interrupted project rename transaction requires explicit read-only recovery."
+    status = (
+        project_access.ProjectAccessStatus.READ_ONLY_RECOVERY
+        if assessment.status is project_access.ProjectAccessStatus.WRITABLE
+        else assessment.status
+    )
+    return replace(
+        assessment,
+        status=status,
+        diagnostics=assessment.diagnostics + (diagnostic,),
+    )
+
+
+def _renamed_readme_first_heading(readme_before: str, project_name: str) -> str:
+    """Replace the first Markdown H1 wherever it appears, preserving any preamble."""
+    lines = readme_before.splitlines(keepends=True)
+    for index, line in enumerate(lines):
+        if not line.startswith("# "):
+            continue
+        ending = "\r\n" if line.endswith("\r\n") else "\n" if line.endswith("\n") else ""
+        lines[index] = f"# {project_name}{ending or chr(10)}"
+        return "".join(lines)
+    heading = f"# {project_name}\n"
+    return heading if not readme_before else heading + "\n" + readme_before
 
 
 def _collision_safe_selector_metadata(selector: QComboBox) -> None:
@@ -158,6 +198,12 @@ def install_project_menu_review_fixes() -> None:
     if getattr(install_project_menu_review_fixes, "_installed", False):
         return
     install_project_menu_review_fixes._installed = True
+
+    project_access.assess_project_open = _assess_project_open_with_rename_recovery
+    editor_project_access.assess_base_project_open = _assess_project_open_with_rename_recovery
+    project_session_module.assess_project_open = editor_project_access.assess_project_open
+    project_rename._renamed_readme = _renamed_readme_first_heading
+
     project_ui._selector_metadata = _collision_safe_selector_metadata
     project_ui.rename_selected_project = _fixed_rename_selected_project
     project_ui._commit_name_edit = _fixed_commit_name_edit
