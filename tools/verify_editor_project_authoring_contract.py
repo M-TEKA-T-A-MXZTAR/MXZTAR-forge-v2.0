@@ -147,6 +147,20 @@ def main() -> int:
             and session.project_dir == first_project,
             "Start Here selection is shared with Editor without switching authority",
         )
+        window.editor_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(second_project)
+            and window.editor_panel.project_selector.currentData() == str(second_project)
+            and session.project_dir == first_project,
+            "Editor Refresh preserves the shared target without switching authority",
+        )
+        window.start_here_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(second_project)
+            and window.editor_panel.project_selector.currentData() == str(second_project)
+            and session.project_dir == first_project,
+            "Start Here Refresh preserves the shared target without switching authority",
+        )
         require(
             window.start_here_panel.project_switch_action.isEnabled(),
             "Start Here enables Switch Project for the shared target",
@@ -173,6 +187,20 @@ def main() -> int:
             window.start_here_panel.project_selector.currentData() == str(first_project)
             and session.project_dir == second_project,
             "Editor selection is shared with Start Here without switching authority",
+        )
+        window.start_here_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(first_project)
+            and window.editor_panel.project_selector.currentData() == str(first_project)
+            and session.project_dir == second_project,
+            "Start Here Refresh preserves an Editor-selected shared target",
+        )
+        window.editor_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(first_project)
+            and window.editor_panel.project_selector.currentData() == str(first_project)
+            and session.project_dir == second_project,
+            "Editor Refresh preserves its shared target before switching",
         )
         require(
             window.editor_panel.project_switch_action.isEnabled(),
