@@ -16,6 +16,7 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from PySide6.QtCore import QPointF, Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 import core.object_scene as object_scene_module  # noqa: E402
@@ -51,6 +52,30 @@ def require(condition: bool, message: str) -> None:
     if not condition:
         raise AssertionError(message)
     print(f"PASS: {message}")
+
+
+class FakeMouseEvent:
+    def __init__(
+        self,
+        position: QPointF,
+        button: Qt.MouseButton = Qt.MouseButton.NoButton,
+    ):
+        self._position = position
+        self._button = button
+
+    def position(self) -> QPointF:
+        return self._position
+
+    def button(self) -> Qt.MouseButton:
+        return self._button
+
+
+def object_map(scene: dict, excluded: str | None = None) -> dict[str, dict]:
+    return {
+        item["object_id"]: copy.deepcopy(item)
+        for item in scene["objects"]
+        if item["object_id"] != excluded
+    }
 
 
 def main() -> int:
@@ -166,15 +191,25 @@ def main() -> int:
             "Editor presents shape/object CAD as the primary workspace",
         )
         require(
-            [action.text() for action in panel.object_menu.actions()]
+            [action.text() for action in panel.object_menu.actions() if not action.isSeparator()]
             == [
                 "Sync Shapes to 3D",
                 "Undo Object Change",
                 "Redo Object Change",
                 "Reset Selected Object",
                 "Change Selected Color…",
+                "Select",
+                "Move",
+                "Rotate",
+                "Resize",
+                "Orbit View",
             ],
-            "Object menu exposes only implemented CAD operations",
+            "Object menu exposes implemented CAD operations and five explicit interaction modes",
+        )
+        require(
+            panel.interaction_mode == "select"
+            and panel.interaction_actions["select"].isChecked(),
+            "3D interaction starts in non-mutating Select mode",
         )
         require(
             [action.text() for action in panel.view_menu.actions() if not action.isSeparator()]
@@ -206,6 +241,10 @@ def main() -> int:
             and ObjectViewport._opacity_alpha(1.0) == 255,
             "viewport opacity maps canonical 0.0–1.0 values across the full alpha range",
         )
+        require(
+            panel.object_viewport._scene_target() == ObjectViewport.WORLD_ORIGIN,
+            "viewport grid and camera use one stationary world-origin reference",
+        )
 
         original_panel_save = object_cad_panel_module.save_object_scene
         panel_save_count = 0
@@ -234,6 +273,112 @@ def main() -> int:
             )
         finally:
             object_cad_panel_module.save_object_scene = original_panel_save
+
+        viewport = panel.object_viewport
+        selected = panel._selected_scene_object()
+        selected_id = selected["object_id"]
+        view_before_transform = copy.deepcopy(panel.object_scene["view"])
+        others_before = object_map(panel.object_scene, selected_id)
+        history_before = panel.object_scene["history_cursor"]
+
+        panel.set_interaction_mode("move")
+        viewport._drag_start = QPointF(0.0, 0.0)
+        viewport._begin_object_drag("move", "axis_x", selected)
+        viewport.mouseMoveEvent(FakeMouseEvent(QPointF(36.0, 18.0)))
+        moved_preview = viewport.selected_object()
+        require(
+            moved_preview["position"]["x"] != selected["position"]["x"]
+            and moved_preview["position"]["y"] == selected["position"]["y"]
+            and moved_preview["position"]["z"] == selected["position"]["z"],
+            "Move X handle changes only the selected object's X coordinate",
+        )
+        require(
+            panel.position_spins["x"].value() == moved_preview["position"]["x"],
+            "Object Inspector updates live during a viewport transform preview",
+        )
+        require(
+            viewport.scene_data["view"] == view_before_transform
+            and viewport._scene_target() == ObjectViewport.WORLD_ORIGIN,
+            "object movement leaves camera, grid, and world origin unchanged",
+        )
+        require(
+            object_map({"objects": viewport._preview_objects}, selected_id) == others_before,
+            "object movement leaves every nonselected object unchanged",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(QPointF(36.0, 18.0)))
+        app.processEvents()
+        require(
+            panel.object_scene["history_cursor"] == history_before + 1,
+            "one pointer release records exactly one undoable move command",
+        )
+
+        selected = panel._selected_scene_object()
+        rotation_before = copy.deepcopy(selected["rotation_deg"])
+        history_before = panel.object_scene["history_cursor"]
+        panel.set_interaction_mode("rotate")
+        viewport._drag_start = QPointF(0.0, 0.0)
+        viewport._begin_object_drag("rotate", "axis_y", selected)
+        viewport.mouseMoveEvent(FakeMouseEvent(QPointF(30.0, -10.0)))
+        rotated_preview = viewport.selected_object()
+        require(
+            rotated_preview["rotation_deg"]["y"] != rotation_before["y"]
+            and rotated_preview["rotation_deg"]["x"] == rotation_before["x"]
+            and rotated_preview["rotation_deg"]["z"] == rotation_before["z"],
+            "Rotate Y ring changes only the selected object's Y rotation",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(QPointF(30.0, -10.0)))
+        require(
+            panel.object_scene["history_cursor"] == history_before + 1,
+            "one pointer release records exactly one undoable rotation command",
+        )
+
+        selected = panel._selected_scene_object()
+        size_before = copy.deepcopy(selected["size"])
+        history_before = panel.object_scene["history_cursor"]
+        panel.set_interaction_mode("resize")
+        viewport._drag_start = QPointF(0.0, 0.0)
+        viewport._begin_object_drag("resize", "axis_z", selected)
+        viewport.mouseMoveEvent(FakeMouseEvent(QPointF(0.0, -24.0)))
+        resized_preview = viewport.selected_object()
+        require(
+            resized_preview["size"]["z"] != size_before["z"]
+            and resized_preview["size"]["x"] == size_before["x"]
+            and resized_preview["size"]["y"] == size_before["y"],
+            "Resize Z handle changes only the selected object's depth",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(QPointF(0.0, -24.0)))
+        require(
+            panel.object_scene["history_cursor"] == history_before + 1,
+            "one pointer release records exactly one undoable resize command",
+        )
+
+        panel.set_interaction_mode("move")
+        viewport.grab()
+        require(
+            set(viewport._axis_handles) == {"x", "y", "z"}
+            and set(viewport._plane_handles) == {"xy", "xz", "yz"},
+            "Move mode renders X/Y/Z axis handles and XY/XZ/YZ plane handles",
+        )
+        panel.set_interaction_mode("rotate")
+        viewport.grab()
+        require(
+            set(viewport._rotation_rings) == {"x", "y", "z"},
+            "Rotate mode renders separate X/Y/Z rotation rings",
+        )
+
+        objects_before_orbit = copy.deepcopy(panel.object_scene["objects"])
+        original_view = copy.deepcopy(panel.object_scene["view"])
+        panel.set_interaction_mode("orbit")
+        viewport._drag_start = QPointF(0.0, 0.0)
+        viewport._drag_mode = "orbit"
+        viewport._drag_original_view = copy.deepcopy(original_view)
+        viewport.mouseMoveEvent(FakeMouseEvent(QPointF(45.0, 30.0)))
+        require(
+            viewport.scene_data["view"] != original_view
+            and viewport._preview_objects == objects_before_orbit,
+            "Orbit View changes only camera state and leaves every object unchanged",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(QPointF(45.0, 30.0)))
 
         selected = panel._selected_scene_object()
         changed_from_panel = copy.deepcopy(selected)
