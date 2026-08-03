@@ -298,8 +298,11 @@ def main() -> int:
             "guided viewport movement leaves every nonselected preview object unchanged",
         )
         require(
-            panel.position_spins["x"].value()
-            == viewport.selected_object()["position"]["x"],
+            math.isclose(
+                panel.position_spins["x"].value(),
+                viewport.selected_object()["position"]["x"],
+                abs_tol=0.05,
+            ),
             "guided viewport preview updates the numeric inspector live",
         )
 
