@@ -210,6 +210,73 @@ def _sync_editor_actions_with_selector(panel) -> None:
     panel.project_selector.setEnabled(bool(unlocked and panel.project_selector.count() > 0))
 
 
+def _set_shared_selector_path(selector: QComboBox, path: Path) -> bool:
+    """Select the same canonical path without recursively emitting selector signals."""
+    index = project_ui._item_index_for_path(selector, path)
+    if index < 0:
+        return False
+    if selector.currentIndex() == index:
+        project_ui._show_current_raw_name(selector)
+        return True
+    signals_were_blocked = selector.blockSignals(True)
+    try:
+        selector.setCurrentIndex(index)
+        project_ui._show_current_raw_name(selector)
+    finally:
+        selector.blockSignals(signals_were_blocked)
+    return True
+
+
+def _apply_shared_project_selection(controller) -> None:
+    """Reapply the controller-owned target after either selector is rebuilt."""
+    if getattr(controller, "_mxztar_syncing_project_selection", False):
+        return
+    selected_path = getattr(controller, "_mxztar_shared_project_path", None)
+    if selected_path is None:
+        return
+
+    controller._mxztar_syncing_project_selection = True
+    try:
+        window = controller.window
+        start_available = _set_shared_selector_path(
+            window.start_here_panel.project_selector,
+            selected_path,
+        )
+        editor_available = _set_shared_selector_path(
+            window.editor_panel.project_selector,
+            selected_path,
+        )
+    finally:
+        controller._mxztar_syncing_project_selection = False
+
+    if not (start_available and editor_available):
+        return
+    _sync_start_here_actions_with_selector(controller)
+    _sync_editor_actions_with_selector(controller.window.editor_panel)
+
+
+def _synchronize_project_selection(controller, source_panel) -> None:
+    """Share one selected target between Start Here and Editor without switching authority."""
+    if getattr(controller, "_mxztar_syncing_project_selection", False):
+        return
+    selected_path = project_ui._resolved_path(
+        source_panel.project_selector.currentData()
+    )
+    if selected_path is None:
+        return
+
+    controller._mxztar_shared_project_path = selected_path
+    _apply_shared_project_selection(controller)
+
+
+def _reapply_shared_selection_after_refresh(panel) -> None:
+    """Restore the shared target after a signal-blocked project-list refresh."""
+    window = panel.window()
+    controller = getattr(window, "start_here_project_controller", None)
+    if controller is not None:
+        _apply_shared_project_selection(controller)
+
+
 def install_project_menu_review_fixes() -> None:
     """Install the review corrections once after the base project-menu contract."""
     if getattr(install_project_menu_review_fixes, "_installed", False):
@@ -226,6 +293,65 @@ def install_project_menu_review_fixes() -> None:
     project_ui._commit_name_edit = _fixed_commit_name_edit
     project_ui._sync_start_here_actions = _sync_start_here_actions_with_selector
     project_ui._sync_editor_actions = _sync_editor_actions_with_selector
+
+    original_start_refresh = project_ui.StartHerePanel.refresh_projects
+
+    def shared_start_refresh(self, *_args):
+        result = original_start_refresh(self, *_args)
+        _reapply_shared_selection_after_refresh(self)
+        return result
+
+    shared_start_refresh._mxztar_manifest_project_names = getattr(
+        original_start_refresh,
+        "_mxztar_manifest_project_names",
+        False,
+    )
+    project_ui.StartHerePanel.refresh_projects = shared_start_refresh
+
+    original_editor_refresh = project_ui.ProjectAwareEditorPanel.refresh_project_choices
+
+    def shared_editor_refresh(self, *_args):
+        result = original_editor_refresh(self, *_args)
+        _reapply_shared_selection_after_refresh(self)
+        return result
+
+    shared_editor_refresh._mxztar_manifest_project_names = getattr(
+        original_editor_refresh,
+        "_mxztar_manifest_project_names",
+        False,
+    )
+    project_ui.ProjectAwareEditorPanel.refresh_project_choices = shared_editor_refresh
+
+    controller_class = project_ui.authoring_app.StartHereProjectController
+    original_controller_init = controller_class.__init__
+
+    def shared_selection_controller_init(self, window) -> None:
+        original_controller_init(self, window)
+        self._mxztar_syncing_project_selection = False
+        self._mxztar_shared_project_path = (
+            project_ui._resolved_path(window.start_here_panel.project_selector.currentData())
+            or project_ui._resolved_path(window.editor_panel.project_selector.currentData())
+        )
+        for source_panel in (window.start_here_panel, window.editor_panel):
+            source_panel.project_selector.currentIndexChanged.connect(
+                lambda _index, panel=source_panel: _synchronize_project_selection(
+                    self,
+                    panel,
+                )
+            )
+        _apply_shared_project_selection(self)
+
+    shared_selection_controller_init._mxztar_unified_project_menu = getattr(
+        original_controller_init,
+        "_mxztar_unified_project_menu",
+        False,
+    )
+    shared_selection_controller_init._mxztar_dedicated_project_management_row = getattr(
+        original_controller_init,
+        "_mxztar_dedicated_project_management_row",
+        False,
+    )
+    controller_class.__init__ = shared_selection_controller_init
 
 
 install_project_menu_review_fixes._mxztar_codex_review_corrections = True

@@ -26,6 +26,8 @@ from core.project_session import ProjectSession, ProjectSessionError  # noqa: E4
 from core.shape_document import load_shape_document  # noqa: E402
 from qt_editor_app import EDITOR_PAGE_INDEX  # noqa: E402
 from qt_editor_authoring_app import AuthoringEditorForgeWindow  # noqa: E402
+import qt_project_menu_and_rename as project_ui  # noqa: E402
+import qt_project_menu_review_fixes as project_review_fixes  # noqa: E402
 
 
 def require(condition: bool, message: str) -> None:
@@ -41,6 +43,8 @@ def select_combo_data(combo, value: str) -> None:
 
 
 def main() -> int:
+    project_ui.install_project_menu_and_rename()
+    project_review_fixes.install_project_menu_review_fixes()
     QApplication.instance() or QApplication([])
     with tempfile.TemporaryDirectory(prefix="mxztar-editor-authoring-") as temporary:
         projects_root = Path(temporary) / "projects"
@@ -136,11 +140,35 @@ def main() -> int:
         second_session.close()
 
         window.start_here_panel.refresh_projects()
+        window.editor_panel.refresh_project_choices()
         select_combo_data(window.start_here_panel.project_selector, str(second_project))
-        switched = window.start_here_panel.open_selected_project()
         require(
-            switched is not None and session.project_dir == second_project,
-            "Start Here switches safely from an attached project to another project",
+            window.editor_panel.project_selector.currentData() == str(second_project)
+            and session.project_dir == first_project,
+            "Start Here selection is shared with Editor without switching authority",
+        )
+        window.editor_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(second_project)
+            and window.editor_panel.project_selector.currentData() == str(second_project)
+            and session.project_dir == first_project,
+            "Editor Refresh preserves the shared target without switching authority",
+        )
+        window.start_here_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(second_project)
+            and window.editor_panel.project_selector.currentData() == str(second_project)
+            and session.project_dir == first_project,
+            "Start Here Refresh preserves the shared target without switching authority",
+        )
+        require(
+            window.start_here_panel.project_switch_action.isEnabled(),
+            "Start Here enables Switch Project for the shared target",
+        )
+        window.start_here_panel.project_switch_action.trigger()
+        require(
+            session.project_dir == second_project,
+            "Start Here Switch Project menu action changes authority to the shared target",
         )
         require(
             window.start_here_panel.project_selector.isEnabled(),
@@ -153,11 +181,35 @@ def main() -> int:
             "Editor creates a blank document when the switched project has none",
         )
         window.editor_panel.refresh_project_choices()
+        window.start_here_panel.refresh_projects()
         select_combo_data(window.editor_panel.project_selector, str(first_project))
-        switched_back = window.editor_panel.switch_selected_project()
         require(
-            switched_back is not None and session.project_dir == first_project,
-            "Editor project chooser switches authority back to the first project",
+            window.start_here_panel.project_selector.currentData() == str(first_project)
+            and session.project_dir == second_project,
+            "Editor selection is shared with Start Here without switching authority",
+        )
+        window.start_here_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(first_project)
+            and window.editor_panel.project_selector.currentData() == str(first_project)
+            and session.project_dir == second_project,
+            "Start Here Refresh preserves an Editor-selected shared target",
+        )
+        window.editor_panel.refresh_projects_button.click()
+        require(
+            window.start_here_panel.project_selector.currentData() == str(first_project)
+            and window.editor_panel.project_selector.currentData() == str(first_project)
+            and session.project_dir == second_project,
+            "Editor Refresh preserves its shared target before switching",
+        )
+        require(
+            window.editor_panel.project_switch_action.isEnabled(),
+            "Editor enables Switch Project for the shared target",
+        )
+        window.editor_panel.project_switch_action.trigger()
+        require(
+            session.project_dir == first_project,
+            "Editor Switch Project menu action changes authority back to the shared target",
         )
         require(
             window.editor_panel.document is not None
