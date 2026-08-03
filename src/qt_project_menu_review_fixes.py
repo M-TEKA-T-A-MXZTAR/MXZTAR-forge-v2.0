@@ -210,6 +210,43 @@ def _sync_editor_actions_with_selector(panel) -> None:
     panel.project_selector.setEnabled(bool(unlocked and panel.project_selector.count() > 0))
 
 
+def _set_shared_selector_path(selector: QComboBox, path: Path) -> None:
+    """Select the same canonical path without recursively emitting selector signals."""
+    index = project_ui._item_index_for_path(selector, path)
+    if index < 0 or selector.currentIndex() == index:
+        return
+    signals_were_blocked = selector.blockSignals(True)
+    try:
+        selector.setCurrentIndex(index)
+        project_ui._show_current_raw_name(selector)
+    finally:
+        selector.blockSignals(signals_were_blocked)
+
+
+def _synchronize_project_selection(controller, source_panel) -> None:
+    """Share one selected target between Start Here and Editor without switching authority."""
+    if getattr(controller, "_mxztar_syncing_project_selection", False):
+        return
+    selected_path = project_ui._resolved_path(
+        source_panel.project_selector.currentData()
+    )
+    if selected_path is None:
+        return
+
+    controller._mxztar_syncing_project_selection = True
+    try:
+        window = controller.window
+        for target_panel in (window.start_here_panel, window.editor_panel):
+            if target_panel is source_panel:
+                continue
+            _set_shared_selector_path(target_panel.project_selector, selected_path)
+    finally:
+        controller._mxztar_syncing_project_selection = False
+
+    _sync_start_here_actions_with_selector(controller)
+    _sync_editor_actions_with_selector(controller.window.editor_panel)
+
+
 def install_project_menu_review_fixes() -> None:
     """Install the review corrections once after the base project-menu contract."""
     if getattr(install_project_menu_review_fixes, "_installed", False):
@@ -226,6 +263,22 @@ def install_project_menu_review_fixes() -> None:
     project_ui._commit_name_edit = _fixed_commit_name_edit
     project_ui._sync_start_here_actions = _sync_start_here_actions_with_selector
     project_ui._sync_editor_actions = _sync_editor_actions_with_selector
+
+    controller_class = project_ui.authoring_app.StartHereProjectController
+    original_controller_init = controller_class.__init__
+
+    def shared_selection_controller_init(self, window) -> None:
+        original_controller_init(self, window)
+        self._mxztar_syncing_project_selection = False
+        for source_panel in (window.start_here_panel, window.editor_panel):
+            source_panel.project_selector.currentIndexChanged.connect(
+                lambda _index, panel=source_panel: _synchronize_project_selection(
+                    self,
+                    panel,
+                )
+            )
+
+    controller_class.__init__ = shared_selection_controller_init
 
 
 install_project_menu_review_fixes._mxztar_codex_review_corrections = True
