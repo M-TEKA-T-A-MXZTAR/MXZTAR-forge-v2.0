@@ -28,6 +28,7 @@ from core.positioning_guides import (  # noqa: E402
 )
 from core.project_session import ProjectSession  # noqa: E402
 from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel  # noqa: E402
+from qt_panels.object_cad_panel import ObjectViewport  # noqa: E402
 from qt_panels.positioning_guides import (  # noqa: E402
     GuidedObjectViewport,
     apply_positioning_guide_options,
@@ -252,6 +253,11 @@ def main() -> int:
             "official authoring Editor uses visual guides with snapping off by default",
         )
         require(
+            viewport.interaction_mode == "select"
+            and viewport._scene_target() == ObjectViewport.WORLD_ORIGIN,
+            "guided live viewport starts in Select mode with a fixed world-origin target",
+        )
+        require(
             panel.guide_tolerance_spin.minimum() == MIN_SNAP_TOLERANCE
             and panel.guide_tolerance_spin.maximum() == MAX_SNAP_TOLERANCE,
             "Editor exposes a bounded configurable guide tolerance",
@@ -267,10 +273,11 @@ def main() -> int:
             if item["object_id"] != selected["object_id"]
         }
 
+        panel.set_interaction_mode("move")
         viewport._drag_mode = "move"
+        viewport._drag_constraint = "plane_xy"
         viewport._drag_start = QPointF(0.0, 0.0)
         viewport._drag_original_object = copy.deepcopy(selected)
-        viewport._drag_original_view = copy.deepcopy(panel.object_scene["view"])
         viewport.mouseMoveEvent(FakeMouseEvent(QPointF(24.0, 16.0)))
         overlay = viewport.guide_overlay_lines()
         require(
@@ -289,6 +296,11 @@ def main() -> int:
                 if item["object_id"] in other_before
             ),
             "guided viewport movement leaves every nonselected preview object unchanged",
+        )
+        require(
+            panel.position_spins["x"].value()
+            == viewport.selected_object()["position"]["x"],
+            "guided viewport preview updates the numeric inspector live",
         )
 
         viewport.mouseReleaseEvent(FakeMouseEvent(QPointF(24.0, 16.0)))
@@ -318,19 +330,32 @@ def main() -> int:
         )
 
         original_view = copy.deepcopy(viewport.scene_data["view"])
+        selected_before_orbit = viewport.selected_object_id
+        panel.set_interaction_mode("move")
         viewport.mousePressEvent(
             FakeMouseEvent(QPointF(-100.0, -100.0), Qt.MouseButton.LeftButton)
         )
         require(
-            viewport._drag_mode == "orbit" and viewport.selected_object_id is None,
-            "left-drag beginning in empty space enters orbit instead of moving an object",
+            viewport._drag_mode is None
+            and viewport.scene_data["view"] == original_view,
+            "empty-space drag cannot move the camera outside Orbit View mode",
+        )
+
+        panel.set_interaction_mode("orbit")
+        viewport.mousePressEvent(
+            FakeMouseEvent(QPointF(-100.0, -100.0), Qt.MouseButton.LeftButton)
+        )
+        require(
+            viewport._drag_mode == "orbit"
+            and viewport.selected_object_id == selected_before_orbit,
+            "explicit Orbit View begins camera movement without discarding object selection",
         )
         viewport.mouseMoveEvent(FakeMouseEvent(QPointF(-55.0, -70.0)))
         require(
             viewport.scene_data["view"]["yaw_deg"] != original_view["yaw_deg"]
             and viewport.scene_data["view"]["pitch_deg"] != original_view["pitch_deg"]
             and viewport._guide_state is None,
-            "empty-space drag reorients perspective without showing movement guides",
+            "Orbit View reorients perspective without showing movement guides",
         )
         viewport.mouseReleaseEvent(FakeMouseEvent(QPointF(-55.0, -70.0)))
         require(
