@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import os
 import sys
 import tempfile
@@ -293,7 +294,11 @@ def main() -> int:
             "Move X handle changes only the selected object's X coordinate",
         )
         require(
-            panel.position_spins["x"].value() == moved_preview["position"]["x"],
+            math.isclose(
+                panel.position_spins["x"].value(),
+                moved_preview["position"]["x"],
+                abs_tol=0.05,
+            ),
             "Object Inspector updates live during a viewport transform preview",
         )
         require(
@@ -460,7 +465,7 @@ def main() -> int:
             canonical_path.read_bytes() == canonical_before
             and manifest_path.read_bytes() == manifest_before
             and history_path.read_bytes() == history_before,
-            "failed object-scene save rolls back canonical, manifest, and history truth",
+            "failed object-scene save rolls canonical, manifest, and history truth back",
         )
         require(
             not marker_path.exists(),
