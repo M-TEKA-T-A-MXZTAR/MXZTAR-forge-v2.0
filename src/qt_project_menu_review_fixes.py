@@ -278,6 +278,16 @@ def install_project_menu_review_fixes() -> None:
                 )
             )
 
+    shared_selection_controller_init._mxztar_unified_project_menu = getattr(
+        original_controller_init,
+        "_mxztar_unified_project_menu",
+        False,
+    )
+    shared_selection_controller_init._mxztar_dedicated_project_management_row = getattr(
+        original_controller_init,
+        "_mxztar_dedicated_project_management_row",
+        False,
+    )
     controller_class.__init__ = shared_selection_controller_init
 
 
