@@ -24,49 +24,14 @@ from qt_panels.object_cad_panel import ObjectCadEditorPanel, ObjectViewport
 
 
 class StableObjectViewport(ObjectViewport):
-    """Keep the camera stable during one-object transforms, not membership changes."""
-
-    def __init__(self):
-        super().__init__()
-        self._anchor_scene_id: str | None = None
-        self._anchor_membership: frozenset[str] = frozenset()
-        self._scene_anchor: tuple[float, float, float] | None = None
+    """Keep the world origin, grid, and camera target stable during object transforms."""
 
     @staticmethod
-    def _anchor_for_scene(scene: dict | None) -> tuple[float, float, float]:
-        if not isinstance(scene, dict):
-            return 512.0, 512.0, 0.0
-        objects = scene.get("objects", [])
-        if not isinstance(objects, list) or not objects:
-            return 512.0, 512.0, 0.0
-        count = len(objects)
-        return (
-            sum(float(item["position"]["x"]) for item in objects) / count,
-            sum(float(item["position"]["y"]) for item in objects) / count,
-            sum(float(item["position"]["z"]) for item in objects) / count,
-        )
-
-    def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
-        scene_id = scene.get("scene_id") if isinstance(scene, dict) else None
-        membership = frozenset(
-            item.get("object_id")
-            for item in scene.get("objects", [])
-            if isinstance(item, dict) and isinstance(item.get("object_id"), str)
-        ) if isinstance(scene, dict) else frozenset()
-        if not isinstance(scene_id, str):
-            self._anchor_scene_id = None
-            self._anchor_membership = frozenset()
-            self._scene_anchor = None
-        elif scene_id != self._anchor_scene_id or membership != self._anchor_membership:
-            self._anchor_scene_id = scene_id
-            self._anchor_membership = membership
-            self._scene_anchor = self._anchor_for_scene(scene)
-        super().set_scene(scene, selected_object_id)
+    def _anchor_for_scene(_scene: dict | None) -> tuple[float, float, float]:
+        return ObjectViewport.WORLD_ORIGIN
 
     def _scene_target(self) -> tuple[float, float, float]:
-        if self._scene_anchor is not None:
-            return self._scene_anchor
-        return super()._scene_target()
+        return self._anchor_for_scene(self.scene_data)
 
 
 class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
@@ -97,11 +62,7 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
         self.view_stack.removeWidget(old_viewport)
 
         stable_viewport = StableObjectViewport()
-        stable_viewport.selection_changed.connect(self.select_cad_object)
-        stable_viewport.object_committed.connect(self.commit_viewport_object)
-        stable_viewport.view_committed.connect(self.commit_view_state)
-        stable_viewport.view_previewed.connect(self.schedule_view_state_commit)
-        stable_viewport.status_changed.connect(self.set_status)
+        self._connect_object_viewport(stable_viewport)
         self.view_stack.insertWidget(max(0, viewport_index), stable_viewport)
         self.object_viewport = stable_viewport
 
@@ -363,7 +324,7 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
             item = self._selected_scene_object()
             if item is not None:
                 self.set_status(
-                    f"Selected one {item['primitive_type']} object. Only this object will move or resize."
+                    f"Selected one {item['primitive_type']} object. Only this object can be transformed."
                 )
 
     def commit_viewport_object(self, object_id: str, updated_object: dict) -> None:
