@@ -144,6 +144,14 @@ class GuidedObjectViewport(StableObjectViewport):
 
     def mousePressEvent(self, event) -> None:
         self.clear_positioning_guides()
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and self.interaction_mode in {"move", "rotate", "resize"}
+            and self.selected_object_id is not None
+            and self._hit_transform_handle(event.position()) is None
+            and self._hit_object(event.position()) is None
+        ):
+            return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
