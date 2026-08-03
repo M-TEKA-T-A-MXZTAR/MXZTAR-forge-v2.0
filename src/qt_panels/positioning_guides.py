@@ -142,6 +142,16 @@ class GuidedObjectViewport(StableObjectViewport):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         self._draw_positioning_guides(painter)
 
+    def wheelEvent(self, event) -> None:
+        """Honor the established explicit 3D-wheel-zoom route without enabling drag orbit."""
+        previous_mode = self.interaction_mode
+        try:
+            self.interaction_mode = "orbit"
+            super().wheelEvent(event)
+        finally:
+            self.interaction_mode = previous_mode
+            self.update()
+
     def mousePressEvent(self, event) -> None:
         self.clear_positioning_guides()
         if (
