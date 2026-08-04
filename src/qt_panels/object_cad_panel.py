@@ -445,9 +445,9 @@ class ObjectViewport(QWidget):
             painter.setPen(QPen(highlight, 2.0, Qt.PenStyle.DashLine))
             painter.drawRect(bounds)
             position = selected_item["position"]
-            self._selected_screen_center, _depth, _scale = self._project(
+            self._selected_screen_center = self._project(
                 (position["x"], position["y"], position["z"]), target
-            )
+            )[0]
             if self.interaction_mode in {"move", "resize"}:
                 self._draw_axis_handles(painter, selected_item, target)
                 self._draw_plane_handles(painter)
