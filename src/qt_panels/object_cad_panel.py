@@ -654,9 +654,6 @@ class ObjectViewport(QWidget):
     def wheelEvent(self, event) -> None:
         if self.scene_data is None:
             return
-        if self.interaction_mode != "orbit":
-            self.status_changed.emit("Switch to Orbit View before zooming the camera.")
-            return
         factor = 1.12 if event.angleDelta().y() > 0 else 1.0 / 1.12
         view = copy.deepcopy(self.scene_data["view"])
         view["zoom"] = max(0.05, min(20.0, view["zoom"] * factor))
