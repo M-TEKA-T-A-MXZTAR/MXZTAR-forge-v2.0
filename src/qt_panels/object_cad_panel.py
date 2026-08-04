@@ -40,7 +40,6 @@ from core.object_scene import (
     undo_scene,
     update_scene_object,
 )
-from core.shape_document import save_shape_document
 from qt_panels.editor_panel import EditorPanel
 
 
@@ -89,9 +88,9 @@ class ObjectViewport(QWidget):
 
     def _update_tooltip(self) -> None:
         self.setToolTip(
-            "3D object view: select an object and drag its always-visible square handle to "
-            "resize directly. Move, Rotate, and advanced Resize modes add constrained handles; "
-            "Orbit View changes the camera. Exact X/Y/Z values remain in Object Inspector."
+            "3D object view with explicit modes: Select chooses an object; Move, Rotate, "
+            "and Resize affect only the selected object; Orbit View alone changes the camera. "
+            "Exact X/Y/Z values remain available in Object Inspector."
         )
 
     def set_interaction_mode(self, mode: str) -> None:
@@ -454,22 +453,23 @@ class ObjectViewport(QWidget):
                 self._draw_plane_handles(painter)
             if self.interaction_mode == "rotate":
                 self._draw_rotation_handles(painter)
-            self._resize_handle = QRectF(
-                bounds.right() - 7.0,
-                bounds.bottom() - 7.0,
-                14.0,
-                14.0,
-            )
-            painter.fillRect(self._resize_handle, highlight)
+            if self.interaction_mode == "resize":
+                self._resize_handle = QRectF(
+                    bounds.right() - 7.0,
+                    bounds.bottom() - 7.0,
+                    14.0,
+                    14.0,
+                )
+                painter.fillRect(self._resize_handle, highlight)
 
         painter.setPen(self.palette().color(QPalette.ColorRole.Text))
         mode_label = self.MODE_LABELS[self.interaction_mode]
         instructions = {
-            "select": "click an object; drag its square handle to resize",
-            "move": "drag object/axis/plane handles; square handle resizes",
-            "rotate": "drag an X/Y/Z ring; square handle resizes",
-            "resize": "drag constrained handles or the square uniform handle",
-            "orbit": "drag empty space to orbit; square handle still resizes",
+            "select": "click an object to select it",
+            "move": "drag object/axis/plane handles; grid remains at world origin",
+            "rotate": "drag an X/Y/Z rotation ring",
+            "resize": "drag axis/plane handles or the square uniform handle",
+            "orbit": "drag to orbit; use the wheel to zoom",
         }[self.interaction_mode]
         painter.drawText(
             QRectF(10.0, 8.0, self.width() - 20.0, 24.0),
@@ -526,15 +526,6 @@ class ObjectViewport(QWidget):
             return
         self._drag_start = event.position()
 
-        selected = self.selected_object()
-        if (
-            event.button() == Qt.MouseButton.LeftButton
-            and selected is not None
-            and self._resize_handle.contains(event.position())
-        ):
-            self._begin_object_drag("resize", "uniform", selected)
-            return
-
         if self.interaction_mode == "orbit":
             if event.button() in {
                 Qt.MouseButton.LeftButton,
@@ -550,6 +541,7 @@ class ObjectViewport(QWidget):
         if event.button() != Qt.MouseButton.LeftButton:
             return
 
+        selected = self.selected_object()
         handle = self._hit_transform_handle(event.position()) if selected is not None else None
         if selected is not None and handle is not None:
             if self.interaction_mode == "move":
@@ -1026,43 +1018,6 @@ class ObjectCadEditorPanel(EditorPanel):
             return
         self._pending_view_state = None
         self.commit_view_state(view)
-
-    def save_project(self, *_args) -> bool:
-        """Explicitly flush every active Editor surface into the attached project."""
-        state = self.project_session.state
-        if state is None:
-            self.set_status("Open a project before using Save Project.")
-            return False
-        if not self.project_session.is_writable:
-            self.set_status("The active project is read-only; Save Project is unavailable.")
-            return False
-        try:
-            if self._pending_view_state is not None and self.object_scene is not None:
-                pending_view = copy.deepcopy(self._pending_view_state)
-                self._cancel_pending_view_state()
-                self.object_scene = set_scene_view(self.object_scene, **pending_view)
-
-            saved_parts: list[str] = []
-            document_id: str | None = None
-            if self.document is not None:
-                document_id = self.document["document_id"]
-                document_path = save_shape_document(self.project_session, self.document)
-                saved_parts.append(document_path.name)
-            if self.object_scene is not None:
-                scene_path = save_object_scene(self.project_session, self.object_scene)
-                saved_parts.append(scene_path.name)
-            if document_id is not None:
-                self.refresh_documents(document_id)
-
-            project_name = state.assessment.manifest.get(
-                "project_name", state.assessment.project_dir.name
-            )
-            detail = ", ".join(saved_parts) if saved_parts else "project metadata already canonical"
-            self.set_status(f"Saved active project {project_name}: {detail}.")
-            return True
-        except Exception as exc:
-            self.set_status(f"Could not save the active project: {exc}")
-            return False
 
     def commit_view_state(self, view: dict) -> None:
         self._cancel_pending_view_state()
