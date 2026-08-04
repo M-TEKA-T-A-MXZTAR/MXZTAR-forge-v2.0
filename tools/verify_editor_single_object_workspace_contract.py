@@ -285,8 +285,8 @@ def main() -> int:
         )
         require(
             guarded_viewport._drag_mode == "move"
-            and guarded_viewport._drag_constraint == "plane_xy",
-            "first object drag after 3D re-entry begins movement rather than orbit",
+            and guarded_viewport._drag_constraint == "precise_xy",
+            "first object drag after 3D re-entry begins precise movement rather than orbit",
         )
         drag_end = QPointF(drag_start.x() + 42.0, drag_start.y() + 19.0)
         guarded_viewport.mouseMoveEvent(FakeMouseEvent(drag_end))
