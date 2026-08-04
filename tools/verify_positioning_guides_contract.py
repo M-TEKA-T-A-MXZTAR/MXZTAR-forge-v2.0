@@ -258,9 +258,10 @@ def main() -> int:
             "guided live viewport starts in Select mode with a fixed world-origin target",
         )
         require(
-            panel.guide_tolerance_spin.minimum() == MIN_SNAP_TOLERANCE
+            "drag an object to move" in viewport.toolTip().lower()
+            and panel.guide_tolerance_spin.minimum() == MIN_SNAP_TOLERANCE
             and panel.guide_tolerance_spin.maximum() == MAX_SNAP_TOLERANCE,
-            "Editor exposes a bounded configurable guide tolerance",
+            "Editor exposes direct-move guidance and a bounded guide tolerance",
         )
 
         viewport.resize(900, 560)
@@ -272,6 +273,63 @@ def main() -> int:
         require(selected is not None, "one explicit CAD object is selected for guided movement")
 
         panel.set_interaction_mode("select")
+        viewport.scene_data["view"]["yaw_deg"] = 45.0
+        viewport.grab()
+        move_history_before = panel.object_scene["history_cursor"]
+        move_before = copy.deepcopy(selected)
+        move_other_before = {
+            item["object_id"]: copy.deepcopy(item)
+            for item in panel.object_scene["objects"]
+            if item["object_id"] != selected["object_id"]
+        }
+        move_bounds = viewport._selected_projected_bounds()
+        require(move_bounds is not None, "selected object has projected direct-drag bounds")
+        move_start = move_bounds.center()
+        require(
+            not viewport._resize_handle.contains(move_start),
+            "direct move starts away from the resize handle",
+        )
+        viewport.mousePressEvent(
+            FakeMouseEvent(move_start, Qt.MouseButton.LeftButton)
+        )
+        require(
+            viewport._drag_mode == "move"
+            and viewport._drag_constraint == "plane_xy",
+            "Select-mode object press begins direct X/Y movement",
+        )
+        move_end = QPointF(move_start.x() + 40.0, move_start.y() + 18.0)
+        viewport.mouseMoveEvent(FakeMouseEvent(move_end))
+        moved_preview = viewport.selected_object()
+        require(
+            moved_preview["position"]["x"] != move_before["position"]["x"]
+            and moved_preview["position"]["y"] != move_before["position"]["y"]
+            and moved_preview["position"]["z"] == move_before["position"]["z"]
+            and moved_preview["size"] == move_before["size"]
+            and viewport._guide_state is not None,
+            "direct movement changes only X/Y and uses the existing guide path",
+        )
+        require(
+            all(
+                item == move_other_before[item["object_id"]]
+                for item in viewport._preview_objects
+                if item["object_id"] in move_other_before
+            )
+            and math.isclose(
+                panel.position_spins["x"].value(),
+                moved_preview["position"]["x"],
+                abs_tol=0.05,
+            ),
+            "direct movement preserves nonselected objects and previews in the inspector",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(move_end))
+        app.processEvents()
+        require(
+            panel.object_scene["history_cursor"] == move_history_before + 1
+            and viewport._guide_state is None,
+            "direct movement commits one object command and clears guides on release",
+        )
+
+        selected = viewport.selected_object()
         viewport.scene_data["view"]["yaw_deg"] = 45.0
         viewport.grab()
         resize_history_before = panel.object_scene["history_cursor"]
@@ -321,6 +379,14 @@ def main() -> int:
         require(
             viewport._resize_handle.isNull() or viewport._resize_handle.isEmpty(),
             "read-only direct-resize authority removes the actionable handle",
+        )
+        read_only_bounds = viewport._selected_projected_bounds()
+        viewport.mousePressEvent(
+            FakeMouseEvent(read_only_bounds.center(), Qt.MouseButton.LeftButton)
+        )
+        require(
+            viewport._drag_mode is None,
+            "read-only authority also blocks direct object movement",
         )
         viewport.setProperty("mxztar_direct_resize_enabled", True)
         viewport.grab()
