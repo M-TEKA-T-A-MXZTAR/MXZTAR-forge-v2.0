@@ -101,6 +101,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_object_cad_contract.py \
   tools/verify_persistent_options_and_project_trash_contract.py \
   tools/verify_positioning_guides_contract.py \
+  tools/verify_precise_object_movement_contract.py \
   tools/verify_project_birth_contract.py \
   tools/verify_project_session_contract.py \
   tools/verify_project_source_intake_ui_contract.py \
@@ -142,6 +143,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_objec
 echo
 echo "=== SINGLE-OBJECT EDITOR USABILITY CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_editor_single_object_workspace_contract.py
+
+echo
+echo "=== PRECISE 2D AND 3D MOVEMENT CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_precise_object_movement_contract.py
 
 echo
 echo "=== POSITIONING GUIDES AND VIEWPORT NAVIGATION CONTRACT ==="
