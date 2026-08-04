@@ -266,47 +266,64 @@ def main() -> int:
         viewport.resize(900, 560)
         viewport.show()
         viewport.set_scene(panel.object_scene, panel.selected_object_id)
+        panel._update_cad_controls()
         app.processEvents()
         selected = viewport.selected_object()
         require(selected is not None, "one explicit CAD object is selected for guided movement")
 
-        panel.set_interaction_mode("move")
+        panel.set_interaction_mode("select")
+        viewport.scene_data["view"]["yaw_deg"] = 45.0
         viewport.grab()
         resize_history_before = panel.object_scene["history_cursor"]
         resize_size_before = copy.deepcopy(selected["size"])
         require(
-            not viewport._resize_handle.isNull() and not viewport._resize_handle.isEmpty(),
-            "guided live viewport keeps the direct square resize handle visible in Move mode",
+            not viewport._resize_handle.isNull()
+            and not viewport._resize_handle.isEmpty(),
+            "Select mode exposes the writable direct resize handle",
         )
         resize_start = viewport._resize_handle.center()
         viewport.mousePressEvent(
             FakeMouseEvent(resize_start, Qt.MouseButton.LeftButton)
         )
         require(
-            viewport._drag_mode == "resize" and viewport._drag_constraint == "uniform",
-            "guided empty-space protection does not swallow the direct resize handle",
+            viewport._drag_mode == "resize"
+            and viewport._drag_constraint == "direct_xy",
+            "direct resize begins through its dedicated screen-space constraint",
         )
-        resize_end = QPointF(resize_start.x() + 50.0, resize_start.y())
+        resize_end = QPointF(resize_start.x() + 50.0, resize_start.y() + 30.0)
         viewport.mouseMoveEvent(FakeMouseEvent(resize_end))
         resized_preview = viewport.selected_object()
         require(
-            all(
-                not math.isclose(
-                    resized_preview["size"][axis],
-                    resize_size_before[axis],
-                    abs_tol=0.01,
-                )
-                for axis in ("x", "y", "z")
-            ),
-            "direct square handle resizes the selected object in the final guided viewport",
+            resized_preview["size"]["x"] > resize_size_before["x"]
+            and resized_preview["size"]["y"] > resize_size_before["y"]
+            and resized_preview["size"]["z"] == resize_size_before["z"],
+            "direct resize remains responsive at 45-degree yaw and changes only width/height",
         )
         viewport.mouseReleaseEvent(FakeMouseEvent(resize_end))
         app.processEvents()
         require(
             panel.object_scene["history_cursor"] == resize_history_before + 1
             and viewport._guide_state is None,
-            "guided direct resize commits one command without creating movement guides",
+            "direct resize commits one command without changing depth or creating guides",
         )
+
+        for mode in ("move", "rotate", "orbit"):
+            panel.set_interaction_mode(mode)
+            viewport.grab()
+            require(
+                viewport._resize_handle.isNull() or viewport._resize_handle.isEmpty(),
+                f"{mode.title()} mode does not expose the direct resize handle",
+            )
+
+        panel.set_interaction_mode("select")
+        viewport.setProperty("mxztar_direct_resize_enabled", False)
+        viewport.grab()
+        require(
+            viewport._resize_handle.isNull() or viewport._resize_handle.isEmpty(),
+            "read-only direct-resize authority removes the actionable handle",
+        )
+        viewport.setProperty("mxztar_direct_resize_enabled", True)
+        viewport.grab()
 
         selected = viewport.selected_object()
         other_before = {
