@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify visible placement, synchronized history, isolated edits, and Editor sizing."""
+"""Verify placement, synchronized history, stable 3D design view, and Editor sizing."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtCore import QPointF, QSize, Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication, QWidget  # noqa: E402
 
-from core.object_scene import load_object_scene  # noqa: E402
+from core.object_scene import load_object_scene, set_scene_view  # noqa: E402
 from core.project_session import ProjectSession  # noqa: E402
 from qt_editor_usability_app import CurrentPageStack  # noqa: E402
 from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel  # noqa: E402
@@ -98,6 +98,18 @@ def landmarks_match(
         and math.isclose(first_y, second_y, abs_tol=1.0e-9)
         for (first_x, first_y), (second_x, second_y) in zip(first, second)
     )
+
+
+def projected_object_size(viewport, item: dict) -> tuple[float, float]:
+    target = viewport._scene_target()
+    projected = [
+        viewport._project(point, target)[0]
+        for face in viewport._object_faces(item)
+        for point in face
+    ]
+    x_values = [point.x() for point in projected]
+    y_values = [point.y() for point in projected]
+    return max(x_values) - min(x_values), max(y_values) - min(y_values)
 
 
 def main() -> int:
@@ -242,6 +254,13 @@ def main() -> int:
         )
         guarded_viewport.resize(900, 560)
         guarded_viewport.show()
+        guarded_panel.object_scene = set_scene_view(
+            guarded_panel.object_scene,
+            yaw_deg=35.0,
+            pitch_deg=28.0,
+            zoom=0.75,
+            perspective=True,
+        )
         guarded_viewport.set_scene(
             guarded_panel.object_scene,
             guarded_panel.selected_object_id,
@@ -253,6 +272,7 @@ def main() -> int:
         view_before_reentry = copy.deepcopy(guarded_viewport.scene_data["view"])
         guarded_panel.show_3d_view()
         app.processEvents()
+        design_view = copy.deepcopy(guarded_viewport.scene_data["view"])
         require(
             guarded_panel.view_stack.currentWidget() is guarded_viewport
             and guarded_panel.interaction_mode == "select"
@@ -261,8 +281,30 @@ def main() -> int:
             "Orbit to 2D to 3D re-entry always restores Select mode",
         )
         require(
-            guarded_viewport.scene_data["view"] == view_before_reentry,
-            "3D re-entry changes interaction mode without changing the camera view",
+            design_view["yaw_deg"] == 0.0
+            and design_view["pitch_deg"] == 0.0
+            and not design_view["perspective"]
+            and math.isclose(
+                design_view["zoom"],
+                guarded_panel.DESIGN_VIEW_ZOOM,
+                abs_tol=1.0e-12,
+            )
+            and design_view["grid_visible"] == view_before_reentry["grid_visible"]
+            and design_view["edges_visible"] == view_before_reentry["edges_visible"]
+            and not guarded_panel.perspective_action.isChecked(),
+            "3D re-entry replaces angled perspective with front orthographic Design View",
+        )
+        target = guarded_viewport._scene_target()
+        origin_screen, _origin_depth, _origin_scale = guarded_viewport._project(
+            target,
+            target,
+        )
+        require(
+            math.isclose(origin_screen.x(), guarded_viewport.width() / 2.0, abs_tol=1.0e-9)
+            and math.isclose(
+                origin_screen.y(), guarded_viewport.height() / 2.0, abs_tol=1.0e-9
+            ),
+            "3D Design View keeps the 1024 canvas world centre at viewport centre",
         )
 
         guarded_viewport.grab()
@@ -270,6 +312,10 @@ def main() -> int:
         require(selected is not None, "one object remains selected after 3D re-entry")
         bounds = guarded_viewport._selected_projected_bounds()
         require(bounds is not None, "selected object has visible projected bounds after re-entry")
+        projected_width_before, projected_height_before = projected_object_size(
+            guarded_viewport,
+            selected,
+        )
         drag_start = bounds.center()
         require(
             not guarded_viewport._resize_handle.contains(drag_start),
@@ -291,12 +337,25 @@ def main() -> int:
         drag_end = QPointF(drag_start.x() + 42.0, drag_start.y() + 19.0)
         guarded_viewport.mouseMoveEvent(FakeMouseEvent(drag_end))
         moved_preview = guarded_viewport.selected_object()
+        projected_width_after, projected_height_after = projected_object_size(
+            guarded_viewport,
+            moved_preview,
+        )
         grid_during_drag = grid_landmarks(guarded_viewport)
         require(
             moved_preview["position"]["x"] != selected_before_drag["position"]["x"]
             and moved_preview["position"]["y"] != selected_before_drag["position"]["y"]
             and moved_preview["position"]["z"] == selected_before_drag["position"]["z"],
             "re-entry drag changes only the selected object's X/Y position",
+        )
+        require(
+            math.isclose(
+                projected_width_after, projected_width_before, abs_tol=1.0e-9
+            )
+            and math.isclose(
+                projected_height_after, projected_height_before, abs_tol=1.0e-9
+            ),
+            "front orthographic movement preserves the object's projected size and shape",
         )
         require(
             guarded_viewport.scene_data["view"] == camera_before_drag
@@ -312,7 +371,7 @@ def main() -> int:
             and guarded_panel.object_scene["view"] == camera_before_drag
             and guarded_viewport.scene_data["view"] == camera_before_drag
             and landmarks_match(grid_before_drag, grid_after_drag),
-            "object release commits once while camera and grid remain stationary",
+            "object release commits once while Design View camera and grid remain stationary",
         )
 
         guarded_panel.deleteLater()

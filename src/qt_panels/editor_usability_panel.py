@@ -8,7 +8,11 @@ import copy
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QSizePolicy, QSplitter
 
-from core.object_scene import save_object_scene, sync_scene_from_shape_document
+from core.object_scene import (
+    save_object_scene,
+    set_scene_view,
+    sync_scene_from_shape_document,
+)
 from core.object_scene_membership import reconcile_scene_membership
 from core.shape_document import (
     add_circle,
@@ -44,6 +48,7 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
     GRID_TOP = 70.0
     GRID_STEP_X = 310.0
     GRID_STEP_Y = 300.0
+    DESIGN_VIEW_ZOOM = 900.0 / 1024.0
 
     def __init__(self, project_session):
         super().__init__(project_session)
@@ -142,6 +147,41 @@ class SingleObjectWorkspacePanel(ObjectCadEditorPanel):
 
         self.setMinimumHeight(0)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def _activate_design_view(self) -> None:
+        """Use one front orthographic canvas view without changing object authority."""
+        if self.object_scene is None:
+            return
+        self._cancel_pending_view_state()
+        current_view = self.object_scene["view"]
+        design_view = {
+            **current_view,
+            "yaw_deg": 0.0,
+            "pitch_deg": 0.0,
+            "zoom": self.DESIGN_VIEW_ZOOM,
+            "perspective": False,
+        }
+        if design_view != current_view:
+            self.object_scene = set_scene_view(self.object_scene, **design_view)
+        self.object_viewport.set_scene(
+            self.object_scene,
+            self.selected_object_id,
+        )
+        self._load_view_controls()
+
+    def show_3d_view(self, *_args) -> None:
+        """Enter a centred front design view; Orbit remains an explicit operation."""
+        if self.object_scene is None:
+            self.ensure_object_scene(switch_to_3d=False)
+        if self.object_scene is not None:
+            self._activate_design_view()
+        super().show_3d_view(*_args)
+        if self.object_scene is not None:
+            self.set_status(
+                "3D Design View active: front orthographic canvas centred on world origin. "
+                "Objects move without perspective growth, shrinkage, skew, or camera drift; "
+                "use Orbit View or Perspective deliberately when needed."
+            )
 
     def _next_primitive_position(self) -> tuple[float, float]:
         count = len(self.document.get("objects", [])) if isinstance(self.document, dict) else 0
