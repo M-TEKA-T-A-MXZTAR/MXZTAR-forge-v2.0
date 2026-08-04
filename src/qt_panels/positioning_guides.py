@@ -26,9 +26,9 @@ class GuidedObjectViewport(StableObjectViewport):
         self.snap_tolerance = DEFAULT_SNAP_TOLERANCE
         self._guide_state: dict | None = None
         self.setToolTip(
-            "3D object view: choose Select, Move, Rotate, Resize, or Orbit View. Position "
-            "guides appear only while moving the selected object; Orbit View alone changes "
-            "the camera and grid view."
+            "3D object view: the selected object's square handle always resizes directly. "
+            "Choose Move, Rotate, or Resize for constrained handles; positioning guides appear "
+            "only while moving, and Orbit View changes the camera and grid view."
         )
 
     def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
@@ -158,6 +158,7 @@ class GuidedObjectViewport(StableObjectViewport):
             event.button() == Qt.MouseButton.LeftButton
             and self.interaction_mode in {"move", "rotate", "resize"}
             and self.selected_object_id is not None
+            and not self._resize_handle.contains(event.position())
             and self._hit_transform_handle(event.position()) is None
             and self._hit_object(event.position()) is None
         ):
