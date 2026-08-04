@@ -69,6 +69,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/core/source_library.py \
   src/mxztar_forge.py \
   src/qt_app.py \
+  src/qt_direct_2d_resize.py \
   src/qt_editor_app.py \
   src/qt_editor_authoring_app.py \
   src/qt_editor_usability_app.py \
@@ -90,6 +91,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_panels/start_here_panel.py \
   tools/verify_agent_panel_execution_contract.py \
   tools/verify_codeql_configuration_contract.py \
+  tools/verify_direct_2d_resize_contract.py \
   tools/verify_document_lifecycle_and_static_guidance_contract.py \
   tools/verify_documentation_runtime_state_contract.py \
   tools/verify_sticky_editor_options_documentation_contract.py \
@@ -147,6 +149,10 @@ QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_edito
 echo
 echo "=== PRECISE 2D AND 3D MOVEMENT CONTRACT ==="
 QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_precise_object_movement_contract.py
+
+echo
+echo "=== DIRECT 2D RESIZE CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_direct_2d_resize_contract.py
 
 echo
 echo "=== POSITIONING GUIDES AND VIEWPORT NAVIGATION CONTRACT ==="

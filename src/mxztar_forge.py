@@ -26,12 +26,14 @@ from qt_startup_guards import install_my_library_refresh_guard
 from qt_live_acceptance_guards import install_live_acceptance_guards
 from qt_project_menu_and_rename import install_project_menu_and_rename
 from qt_project_menu_review_fixes import install_project_menu_review_fixes
+from qt_direct_2d_resize import install_direct_2d_resize
 
 install_source_image_compatibility()
 install_my_library_refresh_guard()
 install_live_acceptance_guards()
 install_project_menu_and_rename()
 install_project_menu_review_fixes()
+install_direct_2d_resize()
 
 from qt_editor_authoring_app import main
 
