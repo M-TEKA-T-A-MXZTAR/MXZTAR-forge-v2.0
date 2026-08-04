@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import copy
+
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QAction, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QDoubleSpinBox, QLabel
@@ -26,9 +28,9 @@ class GuidedObjectViewport(StableObjectViewport):
         self.snap_tolerance = DEFAULT_SNAP_TOLERANCE
         self._guide_state: dict | None = None
         self.setToolTip(
-            "3D object view: the selected object's square handle always resizes directly. "
-            "Choose Move, Rotate, or Resize for constrained handles; positioning guides appear "
-            "only while moving, and Orbit View changes the camera and grid view."
+            "3D object view: Select exposes the direct planar resize handle; advanced Resize "
+            "adds constrained X/Y/Z controls. Move and Rotate affect only the selected object, "
+            "and Orbit View changes only the camera and grid view."
         )
 
     def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
@@ -136,14 +138,41 @@ class GuidedObjectViewport(StableObjectViewport):
                 line,
             )
 
+    def _selected_projected_bounds(self) -> QRectF | None:
+        bounds: QRectF | None = None
+        for _depth, object_id, polygon in self._projected_faces:
+            if object_id != self.selected_object_id:
+                continue
+            face_bounds = polygon.boundingRect()
+            bounds = QRectF(face_bounds) if bounds is None else bounds.united(face_bounds)
+        return bounds
+
+    def _direct_resize_enabled(self) -> bool:
+        return bool(self.property("mxztar_direct_resize_enabled"))
+
     def paintEvent(self, event) -> None:
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        if self.interaction_mode == "select" and self._direct_resize_enabled():
+            bounds = self._selected_projected_bounds()
+            if bounds is not None:
+                self._resize_handle = QRectF(
+                    bounds.right() - 7.0,
+                    bounds.bottom() - 7.0,
+                    14.0,
+                    14.0,
+                )
+                painter.fillRect(
+                    self._resize_handle,
+                    self.palette().color(QPalette.ColorRole.Highlight),
+                )
+
         self._draw_positioning_guides(painter)
 
     def wheelEvent(self, event) -> None:
-        """Honor the established explicit 3D-wheel-zoom route without enabling drag orbit."""
+        """Honor the explicit 3D-wheel-zoom route without enabling drag orbit."""
         previous_mode = self.interaction_mode
         try:
             self.interaction_mode = "orbit"
@@ -154,11 +183,25 @@ class GuidedObjectViewport(StableObjectViewport):
 
     def mousePressEvent(self, event) -> None:
         self.clear_positioning_guides()
+        direct_handle_hit = (
+            event.button() == Qt.MouseButton.LeftButton
+            and self.interaction_mode in {"select", "resize"}
+            and self._resize_handle.contains(event.position())
+        )
+        if direct_handle_hit:
+            if not self._direct_resize_enabled():
+                return
+            selected = self.selected_object()
+            if selected is None:
+                return
+            self._drag_start = event.position()
+            self._begin_object_drag("resize", "direct_xy", selected)
+            return
+
         if (
             event.button() == Qt.MouseButton.LeftButton
             and self.interaction_mode in {"move", "rotate", "resize"}
             and self.selected_object_id is not None
-            and not self._resize_handle.contains(event.position())
             and self._hit_transform_handle(event.position()) is None
             and self._hit_object(event.position()) is None
         ):
@@ -166,6 +209,33 @@ class GuidedObjectViewport(StableObjectViewport):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
+        if (
+            self.scene_data is not None
+            and self._drag_mode == "resize"
+            and self._drag_constraint == "direct_xy"
+            and self._drag_original_object is not None
+        ):
+            delta = event.position() - self._drag_start
+            view = self.scene_data["view"]
+            scale = max(
+                0.02,
+                view["zoom"]
+                * min(max(self.width(), 1), max(self.height(), 1))
+                / 900.0,
+            )
+            updated = copy.deepcopy(self._drag_original_object)
+            updated["size"]["x"] = max(
+                10.0,
+                self._drag_original_object["size"]["x"] + delta.x() / scale,
+            )
+            updated["size"]["y"] = max(
+                10.0,
+                self._drag_original_object["size"]["y"] + delta.y() / scale,
+            )
+            self._replace_preview(updated)
+            self.clear_positioning_guides()
+            return
+
         drag_mode = self._drag_mode
         super().mouseMoveEvent(event)
         if drag_mode != "move" or self._drag_mode != "move":
@@ -287,8 +357,17 @@ def update_positioning_guide_controls(panel) -> None:
     if not hasattr(panel, "guides_action"):
         return
     has_scene = panel.object_scene is not None
+    has_object = panel._selected_scene_object() is not None
+    direct_resize_enabled = bool(
+        has_scene and has_object and panel.project_session.is_writable
+    )
+    panel.object_viewport.setProperty(
+        "mxztar_direct_resize_enabled",
+        direct_resize_enabled,
+    )
     panel.guides_action.setEnabled(has_scene)
     if not has_scene:
         panel.snap_guides_action.setChecked(False)
         panel.object_viewport.clear_positioning_guides()
     apply_positioning_guide_options(panel, announce=False)
+    panel.object_viewport.update()
