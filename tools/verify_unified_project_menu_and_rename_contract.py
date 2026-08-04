@@ -27,13 +27,26 @@ import qt_editor_authoring_app as authoring_app  # noqa: E402
 import qt_live_acceptance_guards as live_guards  # noqa: E402
 import qt_project_menu_and_rename as project_ui  # noqa: E402
 import qt_project_menu_review_fixes as review_fixes  # noqa: E402
+from core.object_scene import (  # noqa: E402
+    OBJECT_SCENE_DIR,
+    OBJECT_SCENE_SUFFIX,
+    load_object_scene,
+)
 from core.project_manifest import load_project_manifest  # noqa: E402
 from core.project_session import ProjectSession  # noqa: E402
+from core.shape_document import (  # noqa: E402
+    AUTOSAVE_DIR,
+    SHAPE_DOCUMENT_DIR,
+    SHAPE_DOCUMENT_SUFFIX,
+    write_shape_document_autosave,
+)
+from core.shape_document_deletion import delete_shape_from_document  # noqa: E402
 from qt_app import SETTINGS_APP, SETTINGS_ORG  # noqa: E402
 
 
 EXPECTED_ACTIONS = [
     "Switch Project…",
+    "Save Project",
     "New Project + Document…",
     "Rename Selected Project…",
     "Delete Selected Project…",
@@ -83,6 +96,10 @@ def action_labels(menu) -> list[str]:
 
 def selector_labels(selector) -> list[str]:
     return [selector.itemText(index) for index in range(selector.count())]
+
+
+def file_bytes(path: Path) -> bytes | None:
+    return path.read_bytes() if path.is_file() else None
 
 
 def main() -> int:
@@ -148,7 +165,7 @@ def main() -> int:
             require(
                 action_labels(start_panel.project_menu) == EXPECTED_ACTIONS
                 and action_labels(editor_panel.project_menu) == EXPECTED_ACTIONS,
-                "both Project dropdowns expose switch, create, rename, and delete",
+                "both Project dropdowns expose switch, save, create, rename, and delete",
             )
             require(
                 controller.delete_project_button.isHidden()
@@ -156,6 +173,140 @@ def main() -> int:
                 and editor_panel.delete_project_button.isHidden()
                 and editor_panel.new_project_document_button.isHidden(),
                 "scattered project delete and create buttons are removed from view",
+            )
+            require(
+                start_panel.project_save_action.isEnabled()
+                and editor_panel.project_save_action.isEnabled(),
+                "Save Project is visibly enabled for the attached writable project",
+            )
+
+            editor_panel.create_blank_document()
+            editor_panel.add_rectangle_command()
+            editor_panel.add_square_command()
+            process(app)
+            editor_panel.show_2d_view()
+            require(
+                editor_panel.save_project()
+                and editor_panel.view_stack.currentWidget() is editor_panel.canvas,
+                "initial Save Project persists the active build without leaving 2D view",
+            )
+
+            document_id = editor_panel.document["document_id"]
+            manifest = session.state.assessment.manifest
+            document_path = (
+                alpha_path
+                / SHAPE_DOCUMENT_DIR
+                / f"{document_id}{SHAPE_DOCUMENT_SUFFIX}"
+            )
+            autosave_path = (
+                alpha_path / AUTOSAVE_DIR / f"{document_id}.autosave.json"
+            )
+            scene_path = (
+                alpha_path
+                / OBJECT_SCENE_DIR
+                / f"{document_id}{OBJECT_SCENE_SUFFIX}"
+            )
+            manifest_path = alpha_path / "project.json"
+            history_path = alpha_path / manifest["history_path"]
+
+            history_before_noop = history_path.read_bytes()
+            start_panel.project_save_action.trigger()
+            process(app)
+            require(
+                history_path.read_bytes() == history_before_noop
+                and editor_panel.view_stack.currentWidget() is editor_panel.canvas,
+                "visible Save Project performs no redundant history write and preserves 2D view",
+            )
+
+            editor_panel.add_rectangle_command()
+            process(app)
+            pending_view = {
+                **editor_panel.object_scene["view"],
+                "zoom": editor_panel.object_scene["view"]["zoom"] + 0.35,
+            }
+            editor_panel._pending_view_state = pending_view
+            editor_panel._view_commit_timer.stop()
+
+            rollback_paths = (
+                document_path,
+                scene_path,
+                autosave_path,
+                history_path,
+                manifest_path,
+            )
+            rollback_before = {path: file_bytes(path) for path in rollback_paths}
+            original_save_object_scene = project_ui.save_object_scene
+
+            def injected_scene_save_failure(*_args, **_kwargs):
+                raise OSError("injected second-stage object-scene failure")
+
+            project_ui.save_object_scene = injected_scene_save_failure
+            try:
+                require(
+                    not editor_panel.save_project(),
+                    "combined Save Project reports an injected second-stage failure",
+                )
+            finally:
+                project_ui.save_object_scene = original_save_object_scene
+
+            require(
+                all(file_bytes(path) == rollback_before[path] for path in rollback_paths)
+                and session.is_writable
+                and editor_panel._pending_view_state == pending_view,
+                "failed combined save restores document, scene, autosave, history, and manifest",
+            )
+
+            editor_panel.show_2d_view()
+            require(
+                editor_panel.save_project(),
+                "combined Save Project succeeds after the injected failure is removed",
+            )
+            saved_scene = load_object_scene(session, document_id)
+            require(
+                editor_panel.view_stack.currentWidget() is editor_panel.canvas
+                and editor_panel._pending_view_state is None
+                and saved_scene["view"] == pending_view
+                and not autosave_path.exists(),
+                "successful Save Project persists pending camera state without navigating from 2D",
+            )
+
+            removed_source_id = editor_panel.document["objects"][0]["object_id"]
+            editor_panel.document = delete_shape_from_document(
+                editor_panel.document,
+                removed_source_id,
+            )
+            write_shape_document_autosave(session, editor_panel.document)
+            editor_panel.render_document()
+            require(
+                any(
+                    item["source_shape_id"] == removed_source_id
+                    for item in editor_panel.object_scene["objects"]
+                ),
+                "verification setup contains one stale 3D object before Save Project",
+            )
+            editor_panel.show_2d_view()
+            require(
+                editor_panel.save_project(),
+                "Save Project reconciles deleted 2D shapes before scene persistence",
+            )
+            reconciled_scene = load_object_scene(session, document_id)
+            require(
+                {item["source_shape_id"] for item in reconciled_scene["objects"]}
+                == {item["object_id"] for item in editor_panel.document["objects"]}
+                and all(
+                    item["source_shape_id"] != removed_source_id
+                    for item in reconciled_scene["objects"]
+                )
+                and editor_panel.view_stack.currentWidget() is editor_panel.canvas,
+                "Save Project removes orphaned 3D membership and preserves the active view",
+            )
+
+            history_before_second_noop = history_path.read_bytes()
+            editor_panel.project_save_action.trigger()
+            process(app)
+            require(
+                history_path.read_bytes() == history_before_second_noop,
+                "Editor Project menu Save Project is a no-op when canonical state is unchanged",
             )
 
             alpha_index = start_panel.project_selector.findData(str(alpha_path))
