@@ -21,6 +21,7 @@ from PySide6.QtCore import QPointF, Qt  # noqa: E402
 from PySide6.QtGui import QTransform  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
+import core.shape_document as shape_document  # noqa: E402
 from core.object_scene import load_object_scene  # noqa: E402
 from core.project_session import ProjectSession  # noqa: E402
 from core.shape_document import load_shape_document  # noqa: E402
@@ -97,6 +98,58 @@ def click_shape(canvas, shape: dict) -> None:
     )
 
 
+def resize_via_handle(
+    panel,
+    shape: dict,
+    delta: QPointF,
+) -> tuple[dict, dict[str, float]]:
+    canvas = panel.canvas
+    click_shape(canvas, shape)
+    canvas.grab()
+    handle = canvas.current_resize_handle()
+    require(
+        not handle.isNull() and not handle.isEmpty(),
+        f"{shape['type']} exposes a visible resize handle",
+    )
+    start = handle.center()
+    target = start + delta
+    delivered_target_scene = canvas.mapToScene(target.toPoint())
+    expected_width = max(
+        canvas.MIN_SHAPE_SIZE,
+        delivered_target_scene.x() - float(shape["x"]),
+    )
+    expected_height = max(
+        canvas.MIN_SHAPE_SIZE,
+        delivered_target_scene.y() - float(shape["y"]),
+    )
+    if shape["type"] in {"square", "circle"}:
+        side = max(canvas.MIN_SHAPE_SIZE, expected_width, expected_height)
+        expected_width = expected_height = side
+    history_before = panel.document["history_cursor"]
+    canvas.mousePressEvent(FakeMouseEvent(start, Qt.MouseButton.LeftButton))
+    canvas.mouseMoveEvent(FakeMouseEvent(target))
+    preview = copy.deepcopy(canvas._resize_preview_geometry)
+    canvas.mouseReleaseEvent(FakeMouseEvent(target, Qt.MouseButton.LeftButton))
+    QApplication.processEvents()
+    resized = copy.deepcopy(shape_by_id(panel.document, shape["object_id"]))
+    require(
+        preview is not None
+        and close_enough(preview["x"], shape["x"])
+        and close_enough(preview["y"], shape["y"])
+        and close_enough(preview["width"], expected_width)
+        and close_enough(preview["height"], expected_height)
+        and panel.document["history_cursor"] == history_before + 1
+        and panel.document["commands"][-1]["type"] == "resize_shape",
+        f"{shape['type']} handle commits one expected resize_shape command",
+    )
+    return resized, {
+        "x": float(shape["x"]),
+        "y": float(shape["y"]),
+        "width": expected_width,
+        "height": expected_height,
+    }
+
+
 def main() -> int:
     app = QApplication.instance() or QApplication([])
     with tempfile.TemporaryDirectory(prefix="mxztar-direct-2d-resize-") as temporary:
@@ -116,6 +169,9 @@ def main() -> int:
         panel.create_blank_document()
         panel.add_rectangle_command()
         panel.add_square_command()
+        panel.add_ellipse_command()
+        panel.add_star_command()
+        panel.add_circle_command()
         app.processEvents()
 
         require(
@@ -124,10 +180,10 @@ def main() -> int:
         )
         require(
             panel.document is not None
-            and len(panel.document["objects"]) == 2
+            and len(panel.document["objects"]) == 5
             and panel.object_scene is not None
-            and len(panel.object_scene["objects"]) == 2,
-            "rectangle and square each have a paired 3D object",
+            and len(panel.object_scene["objects"]) == 5,
+            "all five primitive types have paired 3D objects",
         )
 
         panel.show_2d_view()
@@ -367,6 +423,130 @@ def main() -> int:
                 resized_square_object["size"]["y"], resized_square["height"]
             ),
             "square resize remains proportional and synchronizes its paired object",
+        )
+
+        minimum_rejected = False
+        try:
+            shape_document.resize_shape(
+                panel.document,
+                rectangle_id,
+                x=float(moved_after_resize["x"]),
+                y=float(moved_after_resize["y"]),
+                width=panel.canvas.MIN_SHAPE_SIZE - 1.0,
+                height=panel.canvas.MIN_SHAPE_SIZE,
+            )
+        except shape_document.ShapeDocumentError:
+            minimum_rejected = True
+        require(
+            minimum_rejected,
+            "resize_shape API rejects geometry below the durable 12-unit minimum",
+        )
+
+        tampered = copy.deepcopy(panel.document)
+        ellipse_for_tamper = next(
+            item for item in tampered["objects"] if item["type"] == "ellipse"
+        )
+        tampered["commands"] = copy.deepcopy(
+            tampered["commands"][: tampered["history_cursor"]]
+        )
+        tampered["commands"].append(
+            {
+                "command_id": "command_tampered_below_minimum",
+                "type": "resize_shape",
+                "created_at_utc": shape_document.utc_now_iso(),
+                "payload": {
+                    "object_id": ellipse_for_tamper["object_id"],
+                    "before": {
+                        key: float(ellipse_for_tamper[key])
+                        for key in ("x", "y", "width", "height")
+                    },
+                    "after": {
+                        "x": float(ellipse_for_tamper["x"]),
+                        "y": float(ellipse_for_tamper["y"]),
+                        "width": panel.canvas.MIN_SHAPE_SIZE - 1.0,
+                        "height": panel.canvas.MIN_SHAPE_SIZE + 5.0,
+                    },
+                },
+            }
+        )
+        tampered["history_cursor"] = len(tampered["commands"])
+        replay_minimum_rejected = False
+        try:
+            shape_document.validate_shape_document(tampered)
+        except shape_document.ShapeDocumentError:
+            replay_minimum_rejected = True
+        require(
+            replay_minimum_rejected,
+            "replay validation rejects a persisted resize command below minimum",
+        )
+
+        ellipse = copy.deepcopy(
+            next(item for item in panel.document["objects"] if item["type"] == "ellipse")
+        )
+        resized_ellipse, expected_ellipse = resize_via_handle(
+            panel,
+            ellipse,
+            QPointF(63.0, 29.0),
+        )
+        ellipse_object = scene_object_by_source(
+            panel.object_scene,
+            ellipse["object_id"],
+        )
+        require(
+            close_enough(resized_ellipse["width"], expected_ellipse["width"])
+            and close_enough(resized_ellipse["height"], expected_ellipse["height"])
+            and not close_enough(
+                resized_ellipse["width"] - ellipse["width"],
+                resized_ellipse["height"] - ellipse["height"],
+            )
+            and close_enough(ellipse_object["size"]["x"], resized_ellipse["width"])
+            and close_enough(ellipse_object["size"]["y"], resized_ellipse["height"]),
+            "ellipse resizes width and height independently and synchronizes 3D",
+        )
+
+        star = copy.deepcopy(
+            next(item for item in panel.document["objects"] if item["type"] == "star")
+        )
+        resized_star, expected_star = resize_via_handle(
+            panel,
+            star,
+            QPointF(35.0, 71.0),
+        )
+        star_object = scene_object_by_source(
+            panel.object_scene,
+            star["object_id"],
+        )
+        require(
+            close_enough(resized_star["width"], expected_star["width"])
+            and close_enough(resized_star["height"], expected_star["height"])
+            and not close_enough(
+                resized_star["width"] - star["width"],
+                resized_star["height"] - star["height"],
+            )
+            and close_enough(star_object["size"]["x"], resized_star["width"])
+            and close_enough(star_object["size"]["y"], resized_star["height"]),
+            "star resizes width and height independently and synchronizes 3D",
+        )
+
+        circle = copy.deepcopy(
+            next(item for item in panel.document["objects"] if item["type"] == "circle")
+        )
+        resized_circle, expected_circle = resize_via_handle(
+            panel,
+            circle,
+            QPointF(58.0, 21.0),
+        )
+        circle_object = scene_object_by_source(
+            panel.object_scene,
+            circle["object_id"],
+        )
+        require(
+            close_enough(resized_circle["width"], expected_circle["width"])
+            and close_enough(resized_circle["height"], expected_circle["height"])
+            and close_enough(resized_circle["width"], resized_circle["height"])
+            and close_enough(circle_object["size"]["x"], resized_circle["width"])
+            and close_enough(circle_object["size"]["y"], resized_circle["height"]),
+            "circle remains proportional and synchronizes its paired 3D object",
         )
 
         panel.deleteLater()
