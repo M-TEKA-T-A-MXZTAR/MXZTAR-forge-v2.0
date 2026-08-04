@@ -132,9 +132,9 @@ def main() -> int:
         )
         four_object_anchor = panel.object_viewport._scene_target()
         require(
-            four_object_anchor == StableObjectViewport._anchor_for_scene(panel.object_scene)
-            and four_object_anchor != five_object_anchor,
-            "camera anchor refreshes when Undo removes a scene member",
+            four_object_anchor == five_object_anchor
+            == StableObjectViewport._anchor_for_scene(panel.object_scene),
+            "world-origin anchor remains stationary when Undo removes a scene member",
         )
 
         panel.redo_command()
@@ -157,10 +157,9 @@ def main() -> int:
             "shape Redo persists the restored 3D membership",
         )
         require(
-            panel.object_viewport._scene_target()
-            == StableObjectViewport._anchor_for_scene(panel.object_scene)
-            and panel.object_viewport._scene_target() != four_object_anchor,
-            "camera anchor refreshes when Redo restores a scene member",
+            panel.object_viewport._scene_target() == four_object_anchor
+            == StableObjectViewport._anchor_for_scene(panel.object_scene),
+            "world-origin anchor remains stationary when Redo restores a scene member",
         )
 
         target_before = panel.object_viewport._scene_target()

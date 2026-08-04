@@ -26,9 +26,9 @@ class GuidedObjectViewport(StableObjectViewport):
         self.snap_tolerance = DEFAULT_SNAP_TOLERANCE
         self._guide_state: dict | None = None
         self.setToolTip(
-            "3D object view: drag a selected object to move it with transient guides and "
-            "measurements; drag the square handle to resize; drag empty space to orbit; "
-            "use the wheel to zoom."
+            "3D object view: choose Select, Move, Rotate, Resize, or Orbit View. Position "
+            "guides appear only while moving the selected object; Orbit View alone changes "
+            "the camera and grid view."
         )
 
     def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
@@ -142,8 +142,26 @@ class GuidedObjectViewport(StableObjectViewport):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         self._draw_positioning_guides(painter)
 
+    def wheelEvent(self, event) -> None:
+        """Honor the established explicit 3D-wheel-zoom route without enabling drag orbit."""
+        previous_mode = self.interaction_mode
+        try:
+            self.interaction_mode = "orbit"
+            super().wheelEvent(event)
+        finally:
+            self.interaction_mode = previous_mode
+            self.update()
+
     def mousePressEvent(self, event) -> None:
         self.clear_positioning_guides()
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and self.interaction_mode in {"move", "rotate", "resize"}
+            and self.selected_object_id is not None
+            and self._hit_transform_handle(event.position()) is None
+            and self._hit_object(event.position()) is None
+        ):
+            return
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
@@ -174,11 +192,7 @@ class GuidedObjectViewport(StableObjectViewport):
 
 
 def _connect_viewport(panel, viewport: GuidedObjectViewport) -> None:
-    viewport.selection_changed.connect(panel.select_cad_object)
-    viewport.object_committed.connect(panel.commit_viewport_object)
-    viewport.view_committed.connect(panel.commit_view_state)
-    viewport.view_previewed.connect(panel.schedule_view_state_commit)
-    viewport.status_changed.connect(panel.set_status)
+    panel._connect_object_viewport(viewport)
 
 
 def install_positioning_guides(panel) -> None:

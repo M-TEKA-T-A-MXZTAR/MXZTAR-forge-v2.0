@@ -44,9 +44,21 @@ from qt_panels.editor_panel import EditorPanel
 
 
 class ObjectViewport(QWidget):
-    """Small CPU-rendered 3D viewport for project-owned extruded shape objects."""
+    """CPU-rendered 3D viewport with explicit object and camera interaction modes."""
+
+    INTERACTION_MODES = ("select", "move", "rotate", "resize", "orbit")
+    MODE_LABELS = {
+        "select": "Select",
+        "move": "Move",
+        "rotate": "Rotate",
+        "resize": "Resize",
+        "orbit": "Orbit View",
+    }
+    WORLD_ORIGIN = (512.0, 512.0, 0.0)
+    HANDLE_SIZE = 14.0
 
     selection_changed = Signal(object)
+    object_previewed = Signal(str, object)
     object_committed = Signal(str, object)
     view_committed = Signal(object)
     view_previewed = Signal(object)
@@ -56,20 +68,43 @@ class ObjectViewport(QWidget):
         super().__init__()
         self.scene_data: dict | None = None
         self.selected_object_id: str | None = None
+        self.interaction_mode = "select"
         self._preview_objects: list[dict] = []
         self._projected_faces: list[tuple[float, str, QPolygonF]] = []
         self._resize_handle = QRectF()
+        self._axis_handles: dict[str, QRectF] = {}
+        self._plane_handles: dict[str, QRectF] = {}
+        self._rotation_rings: dict[str, QRectF] = {}
+        self._selected_screen_center = QPointF()
         self._drag_mode: str | None = None
+        self._drag_constraint: str | None = None
         self._drag_start = QPointF()
         self._drag_original_object: dict | None = None
         self._drag_original_view: dict | None = None
         self.setMinimumHeight(360)
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self._update_tooltip()
+
+    def _update_tooltip(self) -> None:
         self.setToolTip(
-            "3D object view: click an object to select, drag it to move, drag the square "
-            "handle to resize, drag empty space to orbit, and use the wheel to zoom."
+            "3D object view with explicit modes: Select chooses an object; Move, Rotate, "
+            "and Resize affect only the selected object; Orbit View alone changes the camera. "
+            "Exact X/Y/Z values remain available in Object Inspector."
         )
+
+    def set_interaction_mode(self, mode: str) -> None:
+        if mode not in self.INTERACTION_MODES:
+            raise ValueError(f"Unsupported object interaction mode: {mode}")
+        self.interaction_mode = mode
+        self._clear_drag_state()
+        self.update()
+
+    def _clear_drag_state(self) -> None:
+        self._drag_mode = None
+        self._drag_constraint = None
+        self._drag_original_object = None
+        self._drag_original_view = None
 
     def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
         self.scene_data = copy.deepcopy(scene) if scene is not None else None
@@ -85,6 +120,7 @@ class ObjectViewport(QWidget):
             self.selected_object_id = (
                 self._preview_objects[0]["object_id"] if self._preview_objects else None
             )
+        self._clear_drag_state()
         self.update()
 
     def selected_object(self) -> dict | None:
@@ -187,14 +223,8 @@ class ObjectViewport(QWidget):
         return transformed
 
     def _scene_target(self) -> tuple[float, float, float]:
-        if not self._preview_objects:
-            return 512.0, 512.0, 0.0
-        count = len(self._preview_objects)
-        return (
-            sum(item["position"]["x"] for item in self._preview_objects) / count,
-            sum(item["position"]["y"] for item in self._preview_objects) / count,
-            sum(item["position"]["z"] for item in self._preview_objects) / count,
-        )
+        """Keep one immutable world-origin reference while objects are transformed."""
+        return self.WORLD_ORIGIN
 
     def _project(
         self,
@@ -263,12 +293,95 @@ class ObjectViewport(QWidget):
         """Map canonical 0.0–1.0 opacity to Qt's complete 0–255 alpha range."""
         return round(max(0.0, min(1.0, float(opacity))) * 255)
 
+    @staticmethod
+    def _axis_color(axis: str) -> QColor:
+        return {
+            "x": QColor("#d85b5b"),
+            "y": QColor("#63b86b"),
+            "z": QColor("#5f82d9"),
+        }[axis]
+
+    def _handle_rect(self, point: QPointF, size: float | None = None) -> QRectF:
+        width = size or self.HANDLE_SIZE
+        return QRectF(point.x() - width / 2.0, point.y() - width / 2.0, width, width)
+
+    def _draw_axis_handles(
+        self,
+        painter: QPainter,
+        item: dict,
+        target: tuple[float, float, float],
+    ) -> None:
+        position = item["position"]
+        center, _depth, _scale = self._project(
+            (position["x"], position["y"], position["z"]), target
+        )
+        self._selected_screen_center = center
+        axis_length = max(90.0, min(180.0, max(item["size"].values()) * 0.8))
+        endpoints = {
+            "x": (position["x"] + axis_length, position["y"], position["z"]),
+            "y": (position["x"], position["y"] + axis_length, position["z"]),
+            "z": (position["x"], position["y"], position["z"] + axis_length),
+        }
+        for axis, world_point in endpoints.items():
+            endpoint, _depth, _scale = self._project(world_point, target)
+            color = self._axis_color(axis)
+            painter.setPen(QPen(color, 2.5))
+            painter.drawLine(center, endpoint)
+            rect = self._handle_rect(endpoint)
+            self._axis_handles[axis] = rect
+            painter.fillRect(rect, color)
+            painter.setPen(color)
+            painter.drawText(
+                QRectF(endpoint.x() + 8.0, endpoint.y() - 10.0, 22.0, 20.0),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                axis.upper(),
+            )
+
+    def _draw_plane_handles(self, painter: QPainter) -> None:
+        offsets = {
+            "xy": QPointF(20.0, 20.0),
+            "xz": QPointF(20.0, -20.0),
+            "yz": QPointF(-20.0, -20.0),
+        }
+        highlight = self.palette().color(QPalette.ColorRole.Highlight)
+        for plane, offset in offsets.items():
+            point = self._selected_screen_center + offset
+            rect = self._handle_rect(point, 16.0)
+            self._plane_handles[plane] = rect
+            color = QColor(highlight)
+            color.setAlpha(190)
+            painter.fillRect(rect, color)
+            painter.setPen(self.palette().color(QPalette.ColorRole.Text))
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, plane.upper())
+
+    def _draw_rotation_handles(self, painter: QPainter) -> None:
+        radii = {"x": 34.0, "y": 47.0, "z": 60.0}
+        for axis, radius in radii.items():
+            rect = QRectF(
+                self._selected_screen_center.x() - radius,
+                self._selected_screen_center.y() - radius,
+                radius * 2.0,
+                radius * 2.0,
+            )
+            self._rotation_rings[axis] = rect
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(self._axis_color(axis), 2.0))
+            painter.drawEllipse(rect)
+            painter.drawText(
+                QRectF(rect.right() + 3.0, rect.center().y() - 9.0, 20.0, 18.0),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                axis.upper(),
+            )
+
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.fillRect(self.rect(), self.palette().color(QPalette.ColorRole.Base))
         self._projected_faces = []
         self._resize_handle = QRectF()
+        self._axis_handles = {}
+        self._plane_handles = {}
+        self._rotation_rings = {}
         if self.scene_data is None:
             painter.setPen(self.palette().color(QPalette.ColorRole.Text))
             painter.drawText(
@@ -282,8 +395,11 @@ class ObjectViewport(QWidget):
         self._draw_grid(painter, target)
         faces_to_draw: list[tuple[float, dict, QPolygonF, int]] = []
         selected_points: list[QPointF] = []
+        selected_item: dict | None = None
 
         for item in self._preview_objects:
+            if item["object_id"] == self.selected_object_id:
+                selected_item = item
             for face_index, face in enumerate(self._object_faces(item)):
                 projected = []
                 depths = []
@@ -322,25 +438,43 @@ class ObjectViewport(QWidget):
             painter.drawPolygon(polygon)
             self._projected_faces.append((depth, item["object_id"], polygon))
 
-        if selected_points:
+        if selected_points and selected_item is not None:
             bounds = QPolygonF(selected_points).boundingRect()
             highlight = self.palette().color(QPalette.ColorRole.Highlight)
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(QPen(highlight, 2.0, Qt.PenStyle.DashLine))
             painter.drawRect(bounds)
-            self._resize_handle = QRectF(
-                bounds.right() - 6.0,
-                bounds.bottom() - 6.0,
-                12.0,
-                12.0,
-            )
-            painter.fillRect(self._resize_handle, highlight)
+            position = selected_item["position"]
+            self._selected_screen_center = self._project(
+                (position["x"], position["y"], position["z"]), target
+            )[0]
+            if self.interaction_mode in {"move", "resize"}:
+                self._draw_axis_handles(painter, selected_item, target)
+                self._draw_plane_handles(painter)
+            if self.interaction_mode == "rotate":
+                self._draw_rotation_handles(painter)
+            if self.interaction_mode == "resize":
+                self._resize_handle = QRectF(
+                    bounds.right() - 7.0,
+                    bounds.bottom() - 7.0,
+                    14.0,
+                    14.0,
+                )
+                painter.fillRect(self._resize_handle, highlight)
 
         painter.setPen(self.palette().color(QPalette.ColorRole.Text))
+        mode_label = self.MODE_LABELS[self.interaction_mode]
+        instructions = {
+            "select": "click an object to select it",
+            "move": "drag object/axis/plane handles; grid remains at world origin",
+            "rotate": "drag an X/Y/Z rotation ring",
+            "resize": "drag axis/plane handles or the square uniform handle",
+            "orbit": "drag to orbit; use the wheel to zoom",
+        }[self.interaction_mode]
         painter.drawText(
             QRectF(10.0, 8.0, self.width() - 20.0, 24.0),
             Qt.AlignmentFlag.AlignLeft,
-            "3D: drag object to move • drag square handle to resize • drag empty space to orbit",
+            f"Mode: {mode_label} — {instructions}",
         )
 
     def _hit_object(self, point: QPointF) -> str | None:
@@ -349,47 +483,110 @@ class ObjectViewport(QWidget):
                 return object_id
         return None
 
+    def _hit_transform_handle(self, point: QPointF) -> str | None:
+        if self.interaction_mode in {"move", "resize"}:
+            for axis, rect in self._axis_handles.items():
+                if rect.contains(point):
+                    return f"axis_{axis}"
+            for plane, rect in self._plane_handles.items():
+                if rect.contains(point):
+                    return f"plane_{plane}"
+            if self.interaction_mode == "resize" and self._resize_handle.contains(point):
+                return "uniform"
+        if self.interaction_mode == "rotate":
+            distances: list[tuple[float, str]] = []
+            for axis, rect in self._rotation_rings.items():
+                radius = rect.width() / 2.0
+                distance = math.hypot(
+                    point.x() - rect.center().x(), point.y() - rect.center().y()
+                )
+                distances.append((abs(distance - radius), axis))
+            if distances:
+                nearest_distance, axis = min(distances)
+                if nearest_distance <= 7.0:
+                    return f"axis_{axis}"
+        return None
+
     def _replace_preview(self, updated: dict) -> None:
         self._preview_objects = [
             copy.deepcopy(updated) if item["object_id"] == updated["object_id"] else item
             for item in self._preview_objects
         ]
+        self.object_previewed.emit(updated["object_id"], copy.deepcopy(updated))
         self.update()
+
+    def _begin_object_drag(self, mode: str, constraint: str, selected: dict) -> None:
+        self._drag_mode = mode
+        self._drag_constraint = constraint
+        self._drag_original_object = copy.deepcopy(selected)
+        self._drag_original_view = None
 
     def mousePressEvent(self, event) -> None:
         if self.scene_data is None:
             return
         self._drag_start = event.position()
-        self._drag_original_view = copy.deepcopy(self.scene_data["view"])
+
+        if self.interaction_mode == "orbit":
+            if event.button() in {
+                Qt.MouseButton.LeftButton,
+                Qt.MouseButton.MiddleButton,
+                Qt.MouseButton.RightButton,
+            }:
+                self._drag_mode = "orbit"
+                self._drag_constraint = None
+                self._drag_original_view = copy.deepcopy(self.scene_data["view"])
+                self._drag_original_object = None
+            return
+
+        if event.button() != Qt.MouseButton.LeftButton:
+            return
+
         selected = self.selected_object()
-        if (
-            event.button() == Qt.MouseButton.LeftButton
-            and selected is not None
-            and self._resize_handle.contains(event.position())
-        ):
-            self._drag_mode = "resize"
-            self._drag_original_object = selected
+        handle = self._hit_transform_handle(event.position()) if selected is not None else None
+        if selected is not None and handle is not None:
+            if self.interaction_mode == "move":
+                self._begin_object_drag("move", handle, selected)
+            elif self.interaction_mode == "rotate":
+                self._begin_object_drag("rotate", handle, selected)
+            elif self.interaction_mode == "resize":
+                self._begin_object_drag("resize", handle, selected)
             return
 
         object_id = self._hit_object(event.position())
-        if event.button() == Qt.MouseButton.LeftButton and object_id is not None:
+        if object_id is not None:
             self.selected_object_id = object_id
             self.selection_changed.emit(object_id)
-            self._drag_mode = "move"
-            self._drag_original_object = self.selected_object()
+            selected = self.selected_object()
             self.update()
+            if selected is None or self.interaction_mode == "select":
+                return
+            default_constraint = {
+                "move": "plane_xy",
+                "rotate": "axis_z",
+                "resize": "uniform",
+            }[self.interaction_mode]
+            self._begin_object_drag(self.interaction_mode, default_constraint, selected)
             return
 
-        if event.button() in {
-            Qt.MouseButton.LeftButton,
-            Qt.MouseButton.MiddleButton,
-            Qt.MouseButton.RightButton,
-        }:
-            self._drag_mode = "orbit"
-            if event.button() == Qt.MouseButton.LeftButton:
-                self.selected_object_id = None
-                self.selection_changed.emit(None)
-                self.update()
+        self.selected_object_id = None
+        self.selection_changed.emit(None)
+        self.update()
+
+    def _world_drag_delta(self, delta: QPointF) -> tuple[float, float, float]:
+        view = self.scene_data["view"]
+        scale = max(
+            0.02,
+            view["zoom"]
+            * min(max(self.width(), 1), max(self.height(), 1))
+            / 900.0,
+        )
+        yaw = math.radians(view["yaw_deg"])
+        dx = delta.x() / scale
+        dy = delta.y() / scale
+        world_x = dx * math.cos(yaw) + dy * math.sin(yaw)
+        world_y = -dx * math.sin(yaw) + dy * math.cos(yaw)
+        world_z = -delta.y() / scale
+        return world_x, world_y, world_z
 
     def mouseMoveEvent(self, event) -> None:
         if self.scene_data is None or self._drag_mode is None:
@@ -409,43 +606,50 @@ class ObjectViewport(QWidget):
             return
 
         updated = copy.deepcopy(self._drag_original_object)
-        view = self.scene_data["view"]
-        scale = max(
-            0.02,
-            view["zoom"]
-            * min(max(self.width(), 1), max(self.height(), 1))
-            / 900.0,
-        )
+        world_x, world_y, world_z = self._world_drag_delta(delta)
+        constraint = self._drag_constraint or ""
         if self._drag_mode == "move":
-            yaw = math.radians(view["yaw_deg"])
-            dx = delta.x() / scale
-            dy = delta.y() / scale
-            updated["position"]["x"] += dx * math.cos(yaw) + dy * math.sin(yaw)
-            updated["position"]["y"] += -dx * math.sin(yaw) + dy * math.cos(yaw)
+            if constraint in {"axis_x", "plane_xy", "plane_xz"}:
+                updated["position"]["x"] += world_x
+            if constraint in {"axis_y", "plane_xy", "plane_yz"}:
+                updated["position"]["y"] += world_y
+            if constraint in {"axis_z", "plane_xz", "plane_yz"}:
+                updated["position"]["z"] += world_z
+        elif self._drag_mode == "rotate":
+            axis = constraint.removeprefix("axis_") if constraint.startswith("axis_") else "z"
+            degrees = (delta.x() - delta.y()) * 0.6
+            updated["rotation_deg"][axis] += degrees
         elif self._drag_mode == "resize":
-            updated["size"]["x"] = max(
-                10.0,
-                self._drag_original_object["size"]["x"] + delta.x() / scale,
-            )
-            updated["size"]["y"] = max(
-                10.0,
-                self._drag_original_object["size"]["y"] + delta.y() / scale,
-            )
+            def resize_axis(axis: str, amount: float) -> None:
+                updated["size"][axis] = max(
+                    1.0,
+                    self._drag_original_object["size"][axis] + amount,
+                )
+
+            if constraint == "uniform":
+                amount = (world_x + world_y + world_z) / 3.0
+                for axis in ("x", "y", "z"):
+                    resize_axis(axis, amount)
+            else:
+                if constraint in {"axis_x", "plane_xy", "plane_xz"}:
+                    resize_axis("x", world_x)
+                if constraint in {"axis_y", "plane_xy", "plane_yz"}:
+                    resize_axis("y", world_y)
+                if constraint in {"axis_z", "plane_xz", "plane_yz"}:
+                    resize_axis("z", world_z)
         self._replace_preview(updated)
 
     def mouseReleaseEvent(self, _event) -> None:
         if self.scene_data is None:
             return
-        if self._drag_mode in {"move", "resize"} and self._drag_original_object is not None:
+        if self._drag_mode in {"move", "rotate", "resize"} and self._drag_original_object is not None:
             updated = self.selected_object()
             if updated is not None and updated != self._drag_original_object:
                 self.object_committed.emit(updated["object_id"], updated)
         elif self._drag_mode == "orbit" and self._drag_original_view is not None:
             if self.scene_data["view"] != self._drag_original_view:
                 self.view_committed.emit(copy.deepcopy(self.scene_data["view"]))
-        self._drag_mode = None
-        self._drag_original_object = None
-        self._drag_original_view = None
+        self._clear_drag_state()
 
     def wheelEvent(self, event) -> None:
         if self.scene_data is None:
@@ -462,11 +666,13 @@ class ObjectCadEditorPanel(EditorPanel):
     """Extend the native shape editor into a direct-manipulation object CAD workspace."""
 
     VIEW_COMMIT_DEBOUNCE_MS = 250
+    INTERACTION_LABELS = ObjectViewport.MODE_LABELS
 
     def __init__(self, project_session):
         super().__init__(project_session)
         self.object_scene: dict | None = None
         self.selected_object_id: str | None = None
+        self.interaction_mode = "select"
         self._updating_inspector = False
         self._loading_scene_controls = False
         self._pending_view_state: dict | None = None
@@ -477,7 +683,7 @@ class ObjectCadEditorPanel(EditorPanel):
 
         self.header_label.setText(
             "EDITOR; shape/object CAD workspace. Create reusable shapes, construct real 3D "
-            "objects, then move, resize, rotate, style, inspect, and save them locally."
+            "objects, then select, move, rotate, resize, style, inspect, and save them locally."
         )
 
         self.object_button = self._make_menu_button("Object")
@@ -501,6 +707,20 @@ class ObjectCadEditorPanel(EditorPanel):
                 self.color_object_action,
             ]
         )
+        self.object_menu.addSeparator()
+        self.interaction_group = QActionGroup(self.object_menu)
+        self.interaction_group.setExclusive(True)
+        self.interaction_actions: dict[str, QAction] = {}
+        for mode in ObjectViewport.INTERACTION_MODES:
+            action = QAction(self.INTERACTION_LABELS[mode], self.interaction_group)
+            action.setCheckable(True)
+            self.interaction_group.addAction(action)
+            action.triggered.connect(
+                lambda checked=False, value=mode: checked and self.set_interaction_mode(value)
+            )
+            self.object_menu.addAction(action)
+            self.interaction_actions[mode] = action
+        self.interaction_actions["select"].setChecked(True)
         self.object_button.setMenu(self.object_menu)
 
         self.view_button = self._make_menu_button("View")
@@ -533,11 +753,7 @@ class ObjectCadEditorPanel(EditorPanel):
         self.menu_row.insertWidget(4, self.view_button)
 
         self.object_viewport = ObjectViewport()
-        self.object_viewport.selection_changed.connect(self.select_cad_object)
-        self.object_viewport.object_committed.connect(self.commit_viewport_object)
-        self.object_viewport.view_committed.connect(self.commit_view_state)
-        self.object_viewport.view_previewed.connect(self.schedule_view_state_commit)
-        self.object_viewport.status_changed.connect(self.set_status)
+        self._connect_object_viewport(self.object_viewport)
 
         layout = self.layout()
         layout.removeWidget(self.canvas)
@@ -596,6 +812,35 @@ class ObjectCadEditorPanel(EditorPanel):
         layout.insertWidget(3, self.inspector)
 
         self._update_cad_controls()
+
+    def _connect_object_viewport(self, viewport: ObjectViewport) -> None:
+        viewport.selection_changed.connect(self.select_cad_object)
+        viewport.object_previewed.connect(self.preview_viewport_object)
+        viewport.object_committed.connect(self.commit_viewport_object)
+        viewport.view_committed.connect(self.commit_view_state)
+        viewport.view_previewed.connect(self.schedule_view_state_commit)
+        viewport.status_changed.connect(self.set_status)
+        viewport.set_interaction_mode(self.interaction_mode)
+
+    def set_interaction_mode(self, mode: str) -> None:
+        if mode not in ObjectViewport.INTERACTION_MODES:
+            return
+        self.interaction_mode = mode
+        if hasattr(self, "interaction_actions"):
+            action = self.interaction_actions[mode]
+            if not action.isChecked():
+                action.setChecked(True)
+        if hasattr(self, "object_viewport"):
+            self.object_viewport.set_interaction_mode(mode)
+        self._update_cad_controls()
+        self.set_status(
+            f"3D interaction mode: {self.INTERACTION_LABELS[mode]}. "
+            + (
+                "Camera and grid movement are enabled."
+                if mode == "orbit"
+                else "Camera and grid remain stationary."
+            )
+        )
 
     def _add_vector_controls(
         self,
@@ -732,8 +977,8 @@ class ObjectCadEditorPanel(EditorPanel):
         self.view_3d_action.setChecked(True)
         self.object_viewport.setFocus()
         self.set_status(
-            "3D object view active. Drag objects to move, drag the square handle to resize, "
-            "or drag empty space to orbit."
+            f"3D object view active in {self.INTERACTION_LABELS[self.interaction_mode]} mode. "
+            "Choose Object → Select, Move, Rotate, Resize, or Orbit View."
         )
 
     def _load_view_controls(self) -> None:
@@ -807,10 +1052,7 @@ class ObjectCadEditorPanel(EditorPanel):
             None,
         )
 
-    def _update_inspector(self) -> None:
-        if not hasattr(self, "inspector_title"):
-            return
-        item = self._selected_scene_object()
+    def _show_inspector_item(self, item: dict | None) -> None:
         self._updating_inspector = True
         try:
             enabled = item is not None and self.project_session.is_writable
@@ -830,6 +1072,17 @@ class ObjectCadEditorPanel(EditorPanel):
             self.opacity_spin.setValue(item["appearance"]["opacity"])
         finally:
             self._updating_inspector = False
+
+    def _update_inspector(self) -> None:
+        if not hasattr(self, "inspector_title"):
+            return
+        self._show_inspector_item(self._selected_scene_object())
+
+    def preview_viewport_object(self, object_id: str, preview_object: dict) -> None:
+        """Reflect drag previews in the inspector without mutating canonical scene authority."""
+        if object_id != self.selected_object_id:
+            return
+        self._show_inspector_item(copy.deepcopy(preview_object))
 
     def commit_inspector(self) -> None:
         if self._updating_inspector:
@@ -865,7 +1118,7 @@ class ObjectCadEditorPanel(EditorPanel):
             self._update_inspector()
             self._update_cad_controls()
             self.set_status(
-                "Saved the selected object's position, size, rotation, color, and opacity."
+                "Saved one selected-object transform/style command. Camera and grid were unchanged."
             )
         except Exception as exc:
             self.object_viewport.set_scene(self.object_scene, self.selected_object_id)
@@ -957,6 +1210,11 @@ class ObjectCadEditorPanel(EditorPanel):
         self.object_redo_action.setEnabled(writable and can_redo_scene(self.object_scene))
         self.reset_object_action.setEnabled(writable and has_object)
         self.color_object_action.setEnabled(writable and has_object)
+
+        for mode, action in self.interaction_actions.items():
+            action.setEnabled(
+                has_scene and (mode in {"select", "orbit"} or (writable and has_object))
+            )
 
         self.view_button.setEnabled(attached and has_document)
         self.view_3d_action.setEnabled(has_scene)
