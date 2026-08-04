@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import copy
+import json
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -10,9 +12,27 @@ from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QComboBox, QMenu
 
 import qt_editor_authoring_app as authoring_app
-from core.project_manifest import load_project_manifest
+from core.editor_project_access import EDITOR_TRANSACTION_FILENAME
+from core.object_scene import (
+    OBJECT_SCENE_DIR,
+    OBJECT_SCENE_SUFFIX,
+    save_object_scene,
+    set_scene_view,
+)
+from core.object_scene_membership import reconcile_scene_membership
+from core.project_manifest import (
+    atomic_write_text,
+    fsync_directory,
+    load_project_manifest,
+)
 from core.project_rename import ProjectRenameError, normalize_project_display_name, rename_project
 from core.project_session import ProjectSession
+from core.shape_document import (
+    AUTOSAVE_DIR,
+    SHAPE_DOCUMENT_DIR,
+    SHAPE_DOCUMENT_SUFFIX,
+    save_shape_document,
+)
 from qt_panels.editor_authoring_panel import ProjectAwareEditorPanel
 from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel
 from qt_panels.start_here_panel import StartHerePanel
@@ -134,6 +154,225 @@ def _refresh_project_surfaces(window, selected_path: Path | None) -> None:
     window.editor_panel.refresh_project_choices()
     _set_selected_path(window.start_here_panel.project_selector, selected_path)
     _set_selected_path(window.editor_panel.project_selector, selected_path)
+
+
+def _read_text(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    return path.read_text(encoding="utf-8")
+
+
+def _read_json(path: Path) -> dict | None:
+    text = _read_text(path)
+    return json.loads(text) if text is not None else None
+
+
+def _restore_project_snapshot(snapshot: dict[Path, str | None]) -> None:
+    for path, text in snapshot.items():
+        if text is None:
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                continue
+            fsync_directory(path.parent)
+        else:
+            atomic_write_text(path, text)
+
+
+def _save_editor_project(panel, *_args) -> bool:
+    """Persist the active Editor state without navigation or partial project writes."""
+    session = panel.project_session
+    state = session.state
+    project_dir = session.project_dir
+    if state is None or project_dir is None:
+        panel.set_status("Open a project before using Save Project.")
+        return False
+    if not session.is_writable:
+        panel.set_status("The active project is read-only; Save Project is unavailable.")
+        return False
+
+    document = copy.deepcopy(panel.document)
+    scene = copy.deepcopy(panel.object_scene)
+    pending_view = copy.deepcopy(getattr(panel, "_pending_view_state", None))
+    added = removed = 0
+
+    try:
+        if scene is not None and document is not None:
+            scene, added, removed = reconcile_scene_membership(scene, document)
+        if scene is not None and isinstance(pending_view, dict):
+            if pending_view != scene["view"]:
+                scene = set_scene_view(scene, **pending_view)
+    except Exception as exc:
+        panel.set_status(f"Could not prepare the active project save: {exc}")
+        return False
+
+    manifest = state.assessment.manifest
+    manifest_path = project_dir / "project.json"
+    history_path = project_dir / manifest["history_path"]
+    marker_path = project_dir / EDITOR_TRANSACTION_FILENAME
+    if marker_path.exists() or marker_path.is_symlink():
+        panel.set_status(
+            "Save Project is blocked because an earlier Editor transaction requires recovery."
+        )
+        return False
+
+    document_path: Path | None = None
+    autosave_path: Path | None = None
+    if document is not None:
+        document_id = document["document_id"]
+        document_path = (
+            project_dir / SHAPE_DOCUMENT_DIR / f"{document_id}{SHAPE_DOCUMENT_SUFFIX}"
+        )
+        autosave_path = project_dir / AUTOSAVE_DIR / f"{document_id}.autosave.json"
+
+    scene_path: Path | None = None
+    if scene is not None:
+        scene_path = (
+            project_dir
+            / OBJECT_SCENE_DIR
+            / f"{scene['source_document_id']}{OBJECT_SCENE_SUFFIX}"
+        )
+
+    try:
+        document_changed = bool(
+            document is not None
+            and document_path is not None
+            and _read_json(document_path) != document
+        )
+        scene_changed = bool(
+            scene is not None
+            and scene_path is not None
+            and _read_json(scene_path) != scene
+        )
+    except Exception as exc:
+        panel.set_status(f"Could not compare the active project with canonical files: {exc}")
+        return False
+
+    stale_autosave = bool(
+        autosave_path is not None
+        and autosave_path.is_file()
+        and not document_changed
+    )
+
+    if not document_changed and not scene_changed:
+        try:
+            if stale_autosave and autosave_path is not None:
+                autosave_path.unlink()
+                fsync_directory(autosave_path.parent)
+            if isinstance(pending_view, dict):
+                panel._cancel_pending_view_state()
+            project_name = manifest.get("project_name", project_dir.name)
+            detail = (
+                "canonical state unchanged; stale autosave cleared"
+                if stale_autosave
+                else "canonical state already current"
+            )
+            panel.set_status(f"Saved active project {project_name}: {detail}.")
+            return True
+        except Exception as exc:
+            panel.set_status(f"Could not finish Save Project cleanup: {exc}")
+            return False
+
+    snapshot_paths = [
+        path
+        for path in (
+            document_path,
+            scene_path,
+            autosave_path,
+            history_path,
+            manifest_path,
+        )
+        if path is not None
+    ]
+    try:
+        snapshot = {path: _read_text(path) for path in snapshot_paths}
+    except Exception as exc:
+        panel.set_status(f"Could not snapshot the active project before saving: {exc}")
+        return False
+
+    saved_parts: list[str] = []
+    try:
+        with session.mutation_guard():
+            if (
+                session.state is None
+                or not session.is_writable
+                or session.project_dir != project_dir
+                or session.state.assessment.manifest["project_id"]
+                != manifest["project_id"]
+            ):
+                raise RuntimeError("Project authority changed before Save Project began.")
+
+            if document_changed and document is not None:
+                saved_parts.append(save_shape_document(session, document).name)
+            if scene_changed and scene is not None:
+                saved_parts.append(save_object_scene(session, scene).name)
+            if stale_autosave and autosave_path is not None and autosave_path.exists():
+                autosave_path.unlink()
+                fsync_directory(autosave_path.parent)
+    except Exception as exc:
+        if not session.is_writable:
+            panel.set_status(
+                "Save Project failed and writable authority was revoked; explicit recovery "
+                f"is required: {exc}"
+            )
+            return False
+        try:
+            with session.mutation_guard():
+                _restore_project_snapshot(snapshot)
+                manifest_before = snapshot.get(manifest_path)
+                if manifest_before is None:
+                    raise RuntimeError("The pre-save project manifest snapshot is unavailable.")
+                session.update_manifest_snapshot(json.loads(manifest_before))
+        except Exception as rollback_error:
+            session.revoke_writable_authority(
+                "Combined Save Project rollback failed; explicit recovery is required."
+            )
+            panel.set_status(
+                "Save Project failed and combined rollback could not be confirmed; explicit "
+                f"recovery is required: {rollback_error}"
+            )
+            return False
+        panel.set_status(
+            f"Save Project failed; every project file was restored to its pre-save state: {exc}"
+        )
+        return False
+
+    panel.document = document
+    panel.object_scene = scene
+    if isinstance(pending_view, dict):
+        panel._cancel_pending_view_state()
+
+    if document is not None:
+        document_id = document["document_id"]
+        index = panel.document_selector.findData(document_id)
+        if index >= 0:
+            panel.document_selector.setItemText(
+                index,
+                f"{document['title']} — r{document['revision']}",
+            )
+        panel.render_document()
+
+    if scene is not None:
+        available = {item["object_id"] for item in scene["objects"]}
+        if panel.selected_object_id not in available:
+            panel.selected_object_id = (
+                scene["objects"][0]["object_id"] if scene["objects"] else None
+            )
+        panel.object_viewport.set_scene(scene, panel.selected_object_id)
+        panel._load_view_controls()
+        panel._update_inspector()
+        panel._update_cad_controls()
+
+    project_name = session.state.assessment.manifest.get(
+        "project_name", project_dir.name
+    )
+    membership = ""
+    if added or removed:
+        membership = f"; reconciled 3D membership (+{added}/-{removed})"
+    panel.set_status(
+        f"Saved active project {project_name}: {', '.join(saved_parts)}{membership}."
+    )
+    return True
 
 
 def _save_active_project(window, status_panel) -> bool:
@@ -258,8 +497,7 @@ def _install_start_here_menu(controller) -> None:
     rename_action = QAction("Rename Selected Project…", menu)
     delete_action = QAction("Delete Selected Project…", menu)
     save_action.setToolTip(
-        "Save the currently attached project, including its open document, object scene, "
-        "and pending 3D camera state."
+        "Save the currently attached project without changing the current Editor view."
     )
     switch_action.triggered.connect(controller.open_selected_project)
     save_action.triggered.connect(
@@ -301,8 +539,7 @@ def _install_editor_menu(panel) -> None:
     rename_action = QAction("Rename Selected Project…", menu)
     delete_action = QAction("Delete Selected Project…", menu)
     save_action.setToolTip(
-        "Save the currently attached project, including its open document, object scene, "
-        "and pending 3D camera state."
+        "Save the currently attached project without changing the current Editor view."
     )
     switch_action.triggered.connect(panel.switch_selected_project)
     save_action.triggered.connect(
@@ -370,6 +607,8 @@ def install_project_menu_and_rename() -> None:
     if getattr(install_project_menu_and_rename, "_installed", False):
         return
     install_project_menu_and_rename._installed = True
+
+    ProjectAwareEditorPanel.save_project = _save_editor_project
 
     original_start_refresh = StartHerePanel.refresh_projects
     original_show_state = StartHerePanel._show_project_state
