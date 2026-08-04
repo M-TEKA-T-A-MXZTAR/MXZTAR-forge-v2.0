@@ -170,7 +170,7 @@ class GuidedObjectViewport(StableObjectViewport):
                 )
 
             background = self.palette().color(QPalette.ColorRole.Base)
-            background.setAlpha(235)
+            background.setAlpha(255)
             painter.fillRect(QRectF(8.0, 5.0, self.width() - 16.0, 28.0), background)
             painter.setPen(self.palette().color(QPalette.ColorRole.Text))
             painter.drawText(
