@@ -16,6 +16,7 @@ from qt_panels import editor_authority_guard as guard
 
 
 _BASE_GUARDED_PANEL = guard.GuardedProjectAwareEditorPanel
+_MIN_SHAPE_SIZE = 12.0
 
 
 def _geometry(value: object, label: str) -> dict[str, float]:
@@ -33,6 +34,20 @@ def _geometry(value: object, label: str) -> dict[str, float]:
             value.get("height"), f"{label} height", positive=True
         ),
     }
+
+
+def _require_minimum_resize_geometry(
+    geometry: dict[str, float],
+    label: str,
+) -> dict[str, float]:
+    if (
+        geometry["width"] < _MIN_SHAPE_SIZE
+        or geometry["height"] < _MIN_SHAPE_SIZE
+    ):
+        raise shape_document.ShapeDocumentError(
+            f"{label} width and height must each be at least {_MIN_SHAPE_SIZE:g}."
+        )
+    return geometry
 
 
 def _install_shape_resize_command_support() -> None:
@@ -138,7 +153,10 @@ def _install_shape_resize_command_support() -> None:
                     payload, "object_id"
                 )
                 before = _geometry(payload.get("before"), "Shape resize before")
-                after = _geometry(payload.get("after"), "Shape resize after")
+                after = _require_minimum_resize_geometry(
+                    _geometry(payload.get("after"), "Shape resize after"),
+                    "Shape resize after",
+                )
                 current = objects.get(object_id)
                 if current is None:
                     raise shape_document.ShapeDocumentError(
@@ -203,16 +221,19 @@ def _install_shape_resize_command_support() -> None:
             key: float(selected[key])
             for key in ("x", "y", "width", "height")
         }
-        after = {
-            "x": shape_document._require_number(x, "Shape resize x"),
-            "y": shape_document._require_number(y, "Shape resize y"),
-            "width": shape_document._require_number(
-                width, "Shape resize width", positive=True
-            ),
-            "height": shape_document._require_number(
-                height, "Shape resize height", positive=True
-            ),
-        }
+        after = _require_minimum_resize_geometry(
+            {
+                "x": shape_document._require_number(x, "Shape resize x"),
+                "y": shape_document._require_number(y, "Shape resize y"),
+                "width": shape_document._require_number(
+                    width, "Shape resize width", positive=True
+                ),
+                "height": shape_document._require_number(
+                    height, "Shape resize height", positive=True
+                ),
+            },
+            "Shape resize",
+        )
         if (
             selected["type"] in {"square", "circle"}
             and not math.isclose(
@@ -262,7 +283,7 @@ class DirectResizeShapeCanvas(guard.PreciseShapeCanvas):
     """Add one visible bottom-right resize handle without changing body movement."""
 
     HANDLE_SIZE = 14.0
-    MIN_SHAPE_SIZE = 12.0
+    MIN_SHAPE_SIZE = _MIN_SHAPE_SIZE
 
     def __init__(self, scene, panel):
         super().__init__(scene, panel)
