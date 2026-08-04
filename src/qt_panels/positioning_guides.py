@@ -28,9 +28,9 @@ class GuidedObjectViewport(StableObjectViewport):
         self.snap_tolerance = DEFAULT_SNAP_TOLERANCE
         self._guide_state: dict | None = None
         self.setToolTip(
-            "3D object view: Select exposes the direct planar resize handle; advanced Resize "
-            "adds constrained X/Y/Z controls. Move and Rotate affect only the selected object, "
-            "and Orbit View changes only the camera and grid view."
+            "3D object view: in Select, drag an object to move it on X/Y or drag the square "
+            "handle to resize it. Advanced Move and Resize add constrained X/Y/Z controls; "
+            "Rotate changes only the selected object and Orbit View changes only the camera."
         )
 
     def set_scene(self, scene: dict | None, selected_object_id: str | None = None) -> None:
@@ -169,6 +169,16 @@ class GuidedObjectViewport(StableObjectViewport):
                     self.palette().color(QPalette.ColorRole.Highlight),
                 )
 
+            background = self.palette().color(QPalette.ColorRole.Base)
+            background.setAlpha(235)
+            painter.fillRect(QRectF(8.0, 5.0, self.width() - 16.0, 28.0), background)
+            painter.setPen(self.palette().color(QPalette.ColorRole.Text))
+            painter.drawText(
+                QRectF(10.0, 8.0, self.width() - 20.0, 24.0),
+                Qt.AlignmentFlag.AlignLeft,
+                "Mode: Select — drag object to move • drag square handle to resize",
+            )
+
         self._draw_positioning_guides(painter)
 
     def wheelEvent(self, event) -> None:
@@ -197,6 +207,23 @@ class GuidedObjectViewport(StableObjectViewport):
             self._drag_start = event.position()
             self._begin_object_drag("resize", "direct_xy", selected)
             return
+
+        if (
+            event.button() == Qt.MouseButton.LeftButton
+            and self.interaction_mode == "select"
+            and self._direct_resize_enabled()
+        ):
+            object_id = self._hit_object(event.position())
+            if object_id is not None:
+                self.selected_object_id = object_id
+                self.selection_changed.emit(object_id)
+                selected = self.selected_object()
+                if selected is None:
+                    return
+                self._drag_start = event.position()
+                self._begin_object_drag("move", "plane_xy", selected)
+                self.update()
+                return
 
         if (
             event.button() == Qt.MouseButton.LeftButton
@@ -357,9 +384,11 @@ def update_positioning_guide_controls(panel) -> None:
     if not hasattr(panel, "guides_action"):
         return
     has_scene = panel.object_scene is not None
-    has_object = panel._selected_scene_object() is not None
+    has_objects = bool(
+        has_scene and panel.object_scene.get("objects")
+    )
     direct_resize_enabled = bool(
-        has_scene and has_object and panel.project_session.is_writable
+        has_objects and panel.project_session.is_writable
     )
     panel.object_viewport.setProperty(
         "mxztar_direct_resize_enabled",
