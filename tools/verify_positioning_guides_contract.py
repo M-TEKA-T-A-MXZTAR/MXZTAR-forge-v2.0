@@ -294,8 +294,8 @@ def main() -> int:
         )
         require(
             viewport._drag_mode == "move"
-            and viewport._drag_constraint == "plane_xy",
-            "Select-mode object press begins direct X/Y movement",
+            and viewport._drag_constraint == "precise_xy",
+            "Select-mode object press begins precise direct X/Y movement",
         )
         move_end = QPointF(move_start.x() + 40.0, move_start.y() + 18.0)
         viewport.mouseMoveEvent(FakeMouseEvent(move_end))
