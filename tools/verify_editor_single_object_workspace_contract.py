@@ -100,6 +100,18 @@ def landmarks_match(
     )
 
 
+def projected_object_size(viewport, item: dict) -> tuple[float, float]:
+    target = viewport._scene_target()
+    projected = [
+        viewport._project(point, target)[0]
+        for face in viewport._object_faces(item)
+        for point in face
+    ]
+    x_values = [point.x() for point in projected]
+    y_values = [point.y() for point in projected]
+    return max(x_values) - min(x_values), max(y_values) - min(y_values)
+
+
 def main() -> int:
     app = QApplication.instance() or QApplication([])
     with tempfile.TemporaryDirectory(prefix="mxztar-single-object-") as temporary:
@@ -300,8 +312,10 @@ def main() -> int:
         require(selected is not None, "one object remains selected after 3D re-entry")
         bounds = guarded_viewport._selected_projected_bounds()
         require(bounds is not None, "selected object has visible projected bounds after re-entry")
-        projected_width_before = bounds.width()
-        projected_height_before = bounds.height()
+        projected_width_before, projected_height_before = projected_object_size(
+            guarded_viewport,
+            selected,
+        )
         drag_start = bounds.center()
         require(
             not guarded_viewport._resize_handle.contains(drag_start),
@@ -322,9 +336,11 @@ def main() -> int:
         )
         drag_end = QPointF(drag_start.x() + 42.0, drag_start.y() + 19.0)
         guarded_viewport.mouseMoveEvent(FakeMouseEvent(drag_end))
-        guarded_viewport.grab()
         moved_preview = guarded_viewport.selected_object()
-        moved_bounds = guarded_viewport._selected_projected_bounds()
+        projected_width_after, projected_height_after = projected_object_size(
+            guarded_viewport,
+            moved_preview,
+        )
         grid_during_drag = grid_landmarks(guarded_viewport)
         require(
             moved_preview["position"]["x"] != selected_before_drag["position"]["x"]
@@ -333,12 +349,11 @@ def main() -> int:
             "re-entry drag changes only the selected object's X/Y position",
         )
         require(
-            moved_bounds is not None
-            and math.isclose(
-                moved_bounds.width(), projected_width_before, abs_tol=1.0e-6
+            math.isclose(
+                projected_width_after, projected_width_before, abs_tol=1.0e-9
             )
             and math.isclose(
-                moved_bounds.height(), projected_height_before, abs_tol=1.0e-6
+                projected_height_after, projected_height_before, abs_tol=1.0e-9
             ),
             "front orthographic movement preserves the object's projected size and shape",
         )
