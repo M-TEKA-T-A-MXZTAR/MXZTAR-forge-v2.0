@@ -34,6 +34,7 @@ from qt_app import SETTINGS_APP, SETTINGS_ORG  # noqa: E402
 
 EXPECTED_ACTIONS = [
     "Switch Project…",
+    "Save Project",
     "New Project + Document…",
     "Rename Selected Project…",
     "Delete Selected Project…",
@@ -148,7 +149,7 @@ def main() -> int:
             require(
                 action_labels(start_panel.project_menu) == EXPECTED_ACTIONS
                 and action_labels(editor_panel.project_menu) == EXPECTED_ACTIONS,
-                "both Project dropdowns expose switch, create, rename, and delete",
+                "both Project dropdowns expose switch, save, create, rename, and delete",
             )
             require(
                 controller.delete_project_button.isHidden()
@@ -156,6 +157,32 @@ def main() -> int:
                 and editor_panel.delete_project_button.isHidden()
                 and editor_panel.new_project_document_button.isHidden(),
                 "scattered project delete and create buttons are removed from view",
+            )
+
+            save_calls: list[str] = []
+            original_save_project = editor_panel.save_project
+
+            def counted_save_project(*_args) -> bool:
+                save_calls.append("save")
+                editor_panel.set_status("Saved active project verification.")
+                return True
+
+            editor_panel.save_project = counted_save_project
+            try:
+                require(
+                    start_panel.project_save_action.isEnabled()
+                    and editor_panel.project_save_action.isEnabled(),
+                    "Save Project is visibly enabled for the attached writable project",
+                )
+                start_panel.project_save_action.trigger()
+                process(app)
+                editor_panel.project_save_action.trigger()
+                process(app)
+            finally:
+                editor_panel.save_project = original_save_project
+            require(
+                save_calls == ["save", "save"],
+                "both visible Save Project actions route through the active Editor save authority",
             )
 
             alpha_index = start_panel.project_selector.findData(str(alpha_path))
