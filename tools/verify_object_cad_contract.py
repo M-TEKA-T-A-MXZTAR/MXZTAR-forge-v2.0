@@ -40,6 +40,7 @@ from core.shape_document import (  # noqa: E402
     add_square,
     add_star,
     create_blank_shape_document,
+    load_shape_document,
     save_shape_document,
     write_shape_document_autosave,
 )
@@ -247,6 +248,43 @@ def main() -> int:
             "viewport grid and camera use one stationary world-origin reference",
         )
 
+        viewport = panel.object_viewport
+        direct_selected = panel._selected_scene_object()
+        direct_size_before = copy.deepcopy(direct_selected["size"])
+        direct_history_before = panel.object_scene["history_cursor"]
+        panel.set_interaction_mode("select")
+        viewport.grab()
+        require(
+            not viewport._resize_handle.isNull() and not viewport._resize_handle.isEmpty(),
+            "Select mode keeps a visible direct square resize handle on the selected object",
+        )
+        handle_center = viewport._resize_handle.center()
+        viewport.mousePressEvent(
+            FakeMouseEvent(handle_center, Qt.MouseButton.LeftButton)
+        )
+        require(
+            viewport._drag_mode == "resize" and viewport._drag_constraint == "uniform",
+            "pressing the direct square handle starts uniform resize without entering Resize mode",
+        )
+        direct_end = QPointF(handle_center.x() + 60.0, handle_center.y())
+        viewport.mouseMoveEvent(FakeMouseEvent(direct_end))
+        direct_preview = viewport.selected_object()
+        direct_deltas = [
+            direct_preview["size"][axis] - direct_size_before[axis]
+            for axis in ("x", "y", "z")
+        ]
+        require(
+            all(abs(delta) > 0.01 for delta in direct_deltas)
+            and max(direct_deltas) - min(direct_deltas) < 0.01,
+            "direct square-handle drag resizes all three dimensions uniformly",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(direct_end))
+        app.processEvents()
+        require(
+            panel.object_scene["history_cursor"] == direct_history_before + 1,
+            "one direct resize release records exactly one undoable command",
+        )
+
         original_panel_save = object_cad_panel_module.save_object_scene
         panel_save_count = 0
 
@@ -274,6 +312,39 @@ def main() -> int:
             )
         finally:
             object_cad_panel_module.save_object_scene = original_panel_save
+
+        unsaved_document = add_rectangle(
+            panel.document,
+            x=40,
+            y=760,
+            width=70,
+            height=50,
+        )
+        panel.document = unsaved_document
+        project_save_zoom = panel.object_scene["view"]["zoom"] + 0.2
+        panel.schedule_view_state_commit(
+            {**panel.object_scene["view"], "zoom": project_save_zoom}
+        )
+        require(
+            panel.save_project(),
+            "Save Project explicitly flushes the active Editor project",
+        )
+        saved_document = load_shape_document(
+            session,
+            unsaved_document["document_id"],
+        ).document
+        saved_scene = load_object_scene(session, unsaved_document["document_id"])
+        require(
+            saved_document["revision"] == unsaved_document["revision"]
+            and math.isclose(saved_scene["view"]["zoom"], project_save_zoom)
+            and panel._pending_view_state is None
+            and not panel._view_commit_timer.isActive(),
+            "Save Project persists the open document and pending 3D camera state together",
+        )
+        require(
+            "Saved active project" in panel.status_label.text(),
+            "Save Project reports a truthful active-project confirmation",
+        )
 
         viewport = panel.object_viewport
         selected = panel._selected_scene_object()
