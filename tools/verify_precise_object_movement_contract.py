@@ -166,6 +166,9 @@ def main() -> int:
         target_scene = start_scene + QPointF(73.0, 41.0)
         start_view = QPointF(panel.canvas.mapFromScene(start_scene))
         target_view = QPointF(panel.canvas.mapFromScene(target_scene))
+        delivered_start_scene = panel.canvas.mapToScene(start_view.toPoint())
+        delivered_target_scene = panel.canvas.mapToScene(target_view.toPoint())
+        delivered_delta = delivered_target_scene - delivered_start_scene
         item = panel.canvas._items_by_object_id[source_shape_id]
 
         panel.canvas.mousePressEvent(
@@ -173,14 +176,20 @@ def main() -> int:
         )
         panel.canvas.mouseMoveEvent(FakeMouseEvent(target_view))
         require(
-            close_enough(item.pos().x(), 73.0)
-            and close_enough(item.pos().y(), 41.0),
-            "2D preview follows the pointer by the exact scene-space delta",
+            close_enough(item.pos().x(), delivered_delta.x())
+            and close_enough(item.pos().y(), delivered_delta.y()),
+            "2D preview follows the delivered pointer by the exact scene-space delta",
         )
         preview_x, preview_y = panel.canvas._drag_preview_xy
         require(
-            close_enough(preview_x + click_offset.x(), target_scene.x())
-            and close_enough(preview_y + click_offset.y(), target_scene.y()),
+            close_enough(
+                preview_x + panel.canvas._drag_offset.x(),
+                delivered_target_scene.x(),
+            )
+            and close_enough(
+                preview_y + panel.canvas._drag_offset.y(),
+                delivered_target_scene.y(),
+            ),
             "2D drag preserves the exact clicked offset instead of jumping to centre",
         )
         panel.canvas.mouseReleaseEvent(
@@ -192,8 +201,14 @@ def main() -> int:
             shape_by_id(panel.document, source_shape_id)
         )
         require(
-            close_enough(moved_shape["x"], source_shape["x"] + 73.0)
-            and close_enough(moved_shape["y"], source_shape["y"] + 41.0)
+            close_enough(
+                moved_shape["x"],
+                source_shape["x"] + delivered_delta.x(),
+            )
+            and close_enough(
+                moved_shape["y"],
+                source_shape["y"] + delivered_delta.y(),
+            )
             and panel.document["history_cursor"] == history_before + 1
             and panel.document["commands"][-1]["type"] == "move_shape",
             "2D release commits exactly one durable move command",
@@ -225,11 +240,11 @@ def main() -> int:
         require(
             close_enough(
                 paired_after_2d["position"]["x"],
-                paired_before["position"]["x"] + 73.0,
+                paired_before["position"]["x"] + delivered_delta.x(),
             )
             and close_enough(
                 paired_after_2d["position"]["y"],
-                paired_before["position"]["y"] + 41.0,
+                paired_before["position"]["y"] + delivered_delta.y(),
             )
             and paired_after_2d["position"]["z"]
             == paired_before["position"]["z"]
