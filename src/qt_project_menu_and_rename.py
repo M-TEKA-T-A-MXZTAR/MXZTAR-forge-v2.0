@@ -136,6 +136,19 @@ def _refresh_project_surfaces(window, selected_path: Path | None) -> None:
     _set_selected_path(window.editor_panel.project_selector, selected_path)
 
 
+def _save_active_project(window, status_panel) -> bool:
+    """Route the visible Save Project command to the active Editor authority."""
+    editor_panel = getattr(window, "editor_panel", None)
+    save_handler = getattr(editor_panel, "save_project", None)
+    if not callable(save_handler):
+        status_panel.set_status("Save Project is unavailable in the active Editor build.")
+        return False
+    result = bool(save_handler())
+    if status_panel is not editor_panel and hasattr(editor_panel, "status_label"):
+        status_panel.set_status(editor_panel.status_label.text())
+    return result
+
+
 def rename_selected_project(panel, window, new_name: str) -> bool:
     """Rename the selected project through its own writable authority boundary."""
     selected_path = _resolved_path(panel.project_selector.currentData())
@@ -240,20 +253,29 @@ def _install_start_here_menu(controller) -> None:
 
     menu = QMenu(panel.open_project_button)
     switch_action = QAction("Switch Project…", menu)
+    save_action = QAction("Save Project", menu)
     new_action = QAction("New Project + Document…", menu)
     rename_action = QAction("Rename Selected Project…", menu)
     delete_action = QAction("Delete Selected Project…", menu)
+    save_action.setToolTip(
+        "Save the currently attached project, including its open document, object scene, "
+        "and pending 3D camera state."
+    )
     switch_action.triggered.connect(controller.open_selected_project)
+    save_action.triggered.connect(
+        lambda _checked=False: _save_active_project(window, panel)
+    )
     new_action.triggered.connect(controller.create_fresh_project_document)
     rename_action.triggered.connect(lambda _checked=False: _begin_name_edit(panel))
     delete_action.triggered.connect(controller.delete_selected_project)
-    menu.addActions([switch_action, new_action, rename_action])
+    menu.addActions([switch_action, save_action, new_action, rename_action])
     menu.addSeparator()
     menu.addAction(delete_action)
 
     panel.open_project_button.setText("Project")
     panel.open_project_button.setToolTip(
-        "Switch, create, rename, or move the selected project to Project Trash."
+        "Save or switch the active project, create a project, rename a selection, or move "
+        "the selected project to Project Trash."
     )
     panel.open_project_button.setMenu(menu)
     controller.delete_project_button.hide()
@@ -263,6 +285,7 @@ def _install_start_here_menu(controller) -> None:
 
     panel.project_menu = menu
     panel.project_switch_action = switch_action
+    panel.project_save_action = save_action
     panel.project_new_document_action = new_action
     panel.project_rename_action = rename_action
     panel.project_delete_action = delete_action
@@ -273,22 +296,31 @@ def _install_editor_menu(panel) -> None:
 
     menu = QMenu(panel.switch_project_button)
     switch_action = QAction("Switch Project…", menu)
+    save_action = QAction("Save Project", menu)
     new_action = QAction("New Project + Document…", menu)
     rename_action = QAction("Rename Selected Project…", menu)
     delete_action = QAction("Delete Selected Project…", menu)
+    save_action.setToolTip(
+        "Save the currently attached project, including its open document, object scene, "
+        "and pending 3D camera state."
+    )
     switch_action.triggered.connect(panel.switch_selected_project)
+    save_action.triggered.connect(
+        lambda _checked=False: _save_active_project(panel.window(), panel)
+    )
     new_action.triggered.connect(panel.create_fresh_project_and_document)
     rename_action.triggered.connect(lambda _checked=False: _begin_name_edit(panel))
     delete_action.triggered.connect(
         lambda _checked=False: panel.delete_selected_project(confirm=True)
     )
-    menu.addActions([switch_action, new_action, rename_action])
+    menu.addActions([switch_action, save_action, new_action, rename_action])
     menu.addSeparator()
     menu.addAction(delete_action)
 
     panel.switch_project_button.setText("Project")
     panel.switch_project_button.setToolTip(
-        "Switch, create, rename, or move the selected project to Project Trash."
+        "Save or switch the active project, create a project, rename a selection, or move "
+        "the selected project to Project Trash."
     )
     panel.switch_project_button.setMenu(menu)
     panel.delete_project_button.hide()
@@ -296,6 +328,7 @@ def _install_editor_menu(panel) -> None:
 
     panel.project_menu = menu
     panel.project_switch_action = switch_action
+    panel.project_save_action = save_action
     panel.project_new_document_action = new_action
     panel.project_rename_action = rename_action
     panel.project_delete_action = delete_action
@@ -308,7 +341,9 @@ def _sync_start_here_actions(controller) -> None:
     unlocked = not panel._project_mutation_sources
     selected = _resolved_path(panel.project_selector.currentData())
     current = _resolved_path(panel.project_session.project_dir)
+    writable = bool(panel.project_session.state is not None and panel.project_session.is_writable)
     panel.project_switch_action.setEnabled(bool(unlocked and selected and selected != current))
+    panel.project_save_action.setEnabled(bool(unlocked and writable))
     panel.project_new_document_action.setEnabled(unlocked)
     panel.project_rename_action.setEnabled(bool(unlocked and selected))
     panel.project_delete_action.setEnabled(bool(unlocked and selected))
@@ -321,7 +356,9 @@ def _sync_editor_actions(panel) -> None:
     unlocked = not bool(getattr(panel, "_project_mutation_sources", set()))
     selected = _resolved_path(panel.project_selector.currentData())
     current = _resolved_path(panel.project_session.project_dir)
+    writable = bool(panel.project_session.state is not None and panel.project_session.is_writable)
     panel.project_switch_action.setEnabled(bool(unlocked and selected and selected != current))
+    panel.project_save_action.setEnabled(bool(unlocked and writable))
     panel.project_new_document_action.setEnabled(unlocked)
     panel.project_rename_action.setEnabled(bool(unlocked and selected))
     panel.project_delete_action.setEnabled(bool(unlocked and selected))
