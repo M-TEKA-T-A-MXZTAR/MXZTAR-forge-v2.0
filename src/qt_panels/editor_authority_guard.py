@@ -24,6 +24,11 @@ class GuardedProjectAwareEditorPanel(ProjectAwareEditorPanel):
         )
         self._update_project_controls()
 
+    def show_3d_view(self, *_args) -> None:
+        """Enter 3D in direct object-manipulation mode, never stale Orbit View mode."""
+        self.set_interaction_mode("select")
+        super().show_3d_view(*_args)
+
     def _authority_unlocked(self) -> bool:
         return not self._project_mutation_sources
 

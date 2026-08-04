@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import math
 import os
 import sys
 import tempfile
@@ -16,16 +17,18 @@ SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from PySide6.QtCore import QSize  # noqa: E402
+from PySide6.QtCore import QPointF, QSize, Qt  # noqa: E402
 from PySide6.QtWidgets import QApplication, QWidget  # noqa: E402
 
 from core.object_scene import load_object_scene  # noqa: E402
 from core.project_session import ProjectSession  # noqa: E402
 from qt_editor_usability_app import CurrentPageStack  # noqa: E402
+from qt_panels.editor_authority_guard import GuardedProjectAwareEditorPanel  # noqa: E402
 from qt_panels.editor_usability_panel import (  # noqa: E402
     SingleObjectWorkspacePanel,
     StableObjectViewport,
 )
+from qt_panels.positioning_guides import GuidedObjectViewport  # noqa: E402
 
 
 def require(condition: bool, message: str) -> None:
@@ -53,6 +56,48 @@ class HintWidget(QWidget):
 
     def minimumSizeHint(self) -> QSize:
         return self._hint
+
+
+class FakeMouseEvent:
+    def __init__(
+        self,
+        position: QPointF,
+        button: Qt.MouseButton = Qt.MouseButton.NoButton,
+    ):
+        self._position = position
+        self._button = button
+
+    def position(self) -> QPointF:
+        return self._position
+
+    def button(self) -> Qt.MouseButton:
+        return self._button
+
+
+def grid_landmarks(viewport) -> tuple[tuple[float, float], ...]:
+    target = viewport._scene_target()
+    world_points = (
+        (target[0], target[1], 0.0),
+        (target[0] + 100.0, target[1], 0.0),
+        (target[0], target[1] + 100.0, 0.0),
+    )
+    return tuple(
+        (screen.x(), screen.y())
+        for screen, _depth, _scale in (
+            viewport._project(point, target) for point in world_points
+        )
+    )
+
+
+def landmarks_match(
+    first: tuple[tuple[float, float], ...],
+    second: tuple[tuple[float, float], ...],
+) -> bool:
+    return all(
+        math.isclose(first_x, second_x, abs_tol=1.0e-9)
+        and math.isclose(first_y, second_y, abs_tol=1.0e-9)
+        for (first_x, first_y), (second_x, second_y) in zip(first, second)
+    )
 
 
 def main() -> int:
@@ -186,6 +231,92 @@ def main() -> int:
             ),
             "moving the selected object leaves every nonselected object unchanged",
         )
+
+        guarded_panel = GuardedProjectAwareEditorPanel(session)
+        guarded_panel.set_project_state(session.state)
+        app.processEvents()
+        guarded_viewport = guarded_panel.object_viewport
+        require(
+            isinstance(guarded_viewport, GuidedObjectViewport),
+            "final live Editor installs the guided stable 3D viewport",
+        )
+        guarded_viewport.resize(900, 560)
+        guarded_viewport.show()
+        guarded_viewport.set_scene(
+            guarded_panel.object_scene,
+            guarded_panel.selected_object_id,
+        )
+        guarded_viewport.grab()
+
+        guarded_panel.set_interaction_mode("orbit")
+        guarded_panel.show_2d_view()
+        view_before_reentry = copy.deepcopy(guarded_viewport.scene_data["view"])
+        guarded_panel.show_3d_view()
+        app.processEvents()
+        require(
+            guarded_panel.view_stack.currentWidget() is guarded_viewport
+            and guarded_panel.interaction_mode == "select"
+            and guarded_viewport.interaction_mode == "select"
+            and guarded_panel.interaction_actions["select"].isChecked(),
+            "Orbit to 2D to 3D re-entry always restores Select mode",
+        )
+        require(
+            guarded_viewport.scene_data["view"] == view_before_reentry,
+            "3D re-entry changes interaction mode without changing the camera view",
+        )
+
+        guarded_viewport.grab()
+        selected = guarded_viewport.selected_object()
+        require(selected is not None, "one object remains selected after 3D re-entry")
+        bounds = guarded_viewport._selected_projected_bounds()
+        require(bounds is not None, "selected object has visible projected bounds after re-entry")
+        drag_start = bounds.center()
+        require(
+            not guarded_viewport._resize_handle.contains(drag_start),
+            "re-entry movement begins on the object body rather than the resize handle",
+        )
+        grid_before_drag = grid_landmarks(guarded_viewport)
+        camera_before_drag = copy.deepcopy(guarded_viewport.scene_data["view"])
+        selected_before_drag = copy.deepcopy(selected)
+        history_before_drag = guarded_panel.object_scene["history_cursor"]
+
+        guarded_viewport.mousePressEvent(
+            FakeMouseEvent(drag_start, Qt.MouseButton.LeftButton)
+        )
+        require(
+            guarded_viewport._drag_mode == "move"
+            and guarded_viewport._drag_constraint == "plane_xy",
+            "first object drag after 3D re-entry begins movement rather than orbit",
+        )
+        drag_end = QPointF(drag_start.x() + 42.0, drag_start.y() + 19.0)
+        guarded_viewport.mouseMoveEvent(FakeMouseEvent(drag_end))
+        moved_preview = guarded_viewport.selected_object()
+        grid_during_drag = grid_landmarks(guarded_viewport)
+        require(
+            moved_preview["position"]["x"] != selected_before_drag["position"]["x"]
+            and moved_preview["position"]["y"] != selected_before_drag["position"]["y"]
+            and moved_preview["position"]["z"] == selected_before_drag["position"]["z"],
+            "re-entry drag changes only the selected object's X/Y position",
+        )
+        require(
+            guarded_viewport.scene_data["view"] == camera_before_drag
+            and landmarks_match(grid_before_drag, grid_during_drag),
+            "camera state and fixed grid landmarks remain stationary during object movement",
+        )
+
+        guarded_viewport.mouseReleaseEvent(FakeMouseEvent(drag_end))
+        app.processEvents()
+        grid_after_drag = grid_landmarks(guarded_viewport)
+        require(
+            guarded_panel.object_scene["history_cursor"] == history_before_drag + 1
+            and guarded_panel.object_scene["view"] == camera_before_drag
+            and guarded_viewport.scene_data["view"] == camera_before_drag
+            and landmarks_match(grid_before_drag, grid_after_drag),
+            "object release commits once while camera and grid remain stationary",
+        )
+
+        guarded_panel.deleteLater()
+        app.processEvents()
 
         panel.add_rectangle_command()
         panel.add_square_command()
