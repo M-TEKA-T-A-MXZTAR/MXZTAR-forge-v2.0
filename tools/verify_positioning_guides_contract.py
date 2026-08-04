@@ -264,9 +264,51 @@ def main() -> int:
         )
 
         viewport.resize(900, 560)
+        viewport.show()
         viewport.set_scene(panel.object_scene, panel.selected_object_id)
+        app.processEvents()
         selected = viewport.selected_object()
         require(selected is not None, "one explicit CAD object is selected for guided movement")
+
+        panel.set_interaction_mode("move")
+        viewport.grab()
+        resize_history_before = panel.object_scene["history_cursor"]
+        resize_size_before = copy.deepcopy(selected["size"])
+        require(
+            not viewport._resize_handle.isNull() and not viewport._resize_handle.isEmpty(),
+            "guided live viewport keeps the direct square resize handle visible in Move mode",
+        )
+        resize_start = viewport._resize_handle.center()
+        viewport.mousePressEvent(
+            FakeMouseEvent(resize_start, Qt.MouseButton.LeftButton)
+        )
+        require(
+            viewport._drag_mode == "resize" and viewport._drag_constraint == "uniform",
+            "guided empty-space protection does not swallow the direct resize handle",
+        )
+        resize_end = QPointF(resize_start.x() + 50.0, resize_start.y())
+        viewport.mouseMoveEvent(FakeMouseEvent(resize_end))
+        resized_preview = viewport.selected_object()
+        require(
+            all(
+                not math.isclose(
+                    resized_preview["size"][axis],
+                    resize_size_before[axis],
+                    abs_tol=0.01,
+                )
+                for axis in ("x", "y", "z")
+            ),
+            "direct square handle resizes the selected object in the final guided viewport",
+        )
+        viewport.mouseReleaseEvent(FakeMouseEvent(resize_end))
+        app.processEvents()
+        require(
+            panel.object_scene["history_cursor"] == resize_history_before + 1
+            and viewport._guide_state is None,
+            "guided direct resize commits one command without creating movement guides",
+        )
+
+        selected = viewport.selected_object()
         other_before = {
             item["object_id"]: copy.deepcopy(item)
             for item in panel.object_scene["objects"]
