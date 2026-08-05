@@ -1,0 +1,13 @@
+{
+  "schema": "mxztar_forge_repository_baseline",
+  "schema_version": "1.0.0",
+  "snapshot_date": "2026-08-06",
+  "baseline_branch": "main",
+  "baseline_pr": 80,
+  "active_gate": "G0",
+  "active_gate_name": "Governance recovery and final-runtime proof",
+  "next_gate": "G1",
+  "next_gate_name": "Final-runtime acceptance and interaction baseline",
+  "next_feature_gate": "S1",
+  "next_feature_gate_name": "Freeform Path Authority"
+}
