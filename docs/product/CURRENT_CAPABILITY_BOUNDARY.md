@@ -1,8 +1,8 @@
 # MXZTAR Forge v2.0 — Current Capability Boundary
 
 **Snapshot date:** 6 August 2026  
-**Merged runtime baseline:** `main` through PR #80 at `4c44f6d`  
-**Current engineering gate:** governance reset, final-runtime mapping and regression-contract consolidation before new broad feature work
+**Merged runtime baseline:** `main` through PR #81 at `e8659d5`  
+**Current engineering gate:** R1 final-runtime mapping, followed by R2 acceptance harness correction before new broad feature work
 
 ## 1. Purpose
 
@@ -12,6 +12,7 @@ It does not define the finished product. See:
 
 - `MASTER_BUILD_PLAN.md` for the Stage One–Two finished boundary;
 - `RECOVERY_AND_COMPLETION_PLAN.md` for the active engineering order;
+- `../architecture/FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md` for the official composed runtime and state owners;
 - `../PROGRESS_LEDGER.md` for chronology;
 - `../REGRESSION_AND_DRIFT_REGISTER.md` for causal learning.
 
@@ -37,7 +38,7 @@ Forge currently provides a real local project, editable primitive and 2D/3D bloc
 | Open, close, reopen and recovery | VERIFIED foundation | Project-owned files, writer authority, recovery classification and read-only recovery contracts exist |
 | Fresh project and document creation from Editor | DETERMINISTICALLY VERIFIED | Unique writable project/document creation and authority restoration are implemented |
 | Project switching | DETERMINISTICALLY VERIFIED | Start Here and Editor switching preserve project/document synchronization and restore prior authority after failed switching |
-| Recoverable Project Trash | DETERMINISTICALLY VERIFIED | Selected direct-child projects move into hidden project trash with typed confirmation, lock checks, active-work blocking, receipt and rollback; no permanent-delete command exists |
+| Recoverable Project Trash | DETERMINISTICALLY VERIFIED | Selected direct-child projects move into hidden project trash with confirmation, lock checks, active-work blocking, receipt and rollback; no permanent-delete command exists |
 | Save, autosave, rollback and reopen | VERIFIED foundation | Native document state is durable and replayable within implemented command families |
 
 ### Editor and direct interaction
@@ -63,7 +64,7 @@ Forge currently provides a real local project, editable primitive and 2D/3D bloc
 | Object resize and numeric editing | DETERMINISTICALLY VERIFIED foundation | Position, width, height, depth, rotation, colour and opacity persist |
 | Object versus camera interaction | DETERMINISTICALLY VERIFIED foundation | Object manipulation and empty-space camera navigation are separated |
 | Stable Design View | DETERMINISTICALLY VERIFIED through PR #79 | Front orthographic view is the editing default; orbit and perspective are deliberate viewing controls |
-| Pointer-following precision | DETERMINISTICALLY VERIFIED foundation | Screen/world transform correction reduces drag drift; a complete final-runtime camera-state matrix remains part of the recovery gate |
+| Pointer-following precision | DETERMINISTICALLY VERIFIED foundation | Screen/world transform correction reduces drag drift; a complete final-runtime camera-state event matrix remains part of R2 |
 | Smart positioning guides | DETERMINISTICALLY VERIFIED | Transient X/Y guides, centre deltas, nearest-object measurements and bounded optional snapping exist |
 | Camera, grid, line, perspective and zoom persistence | DETERMINISTICALLY VERIFIED foundation | View state persists through existing object-scene authority |
 
@@ -72,8 +73,9 @@ Forge currently provides a real local project, editable primitive and 2D/3D bloc
 | Capability | State | Current truth |
 |---|---|---|
 | Optional local AI evidence | PARTIAL | Seven prompt contracts and agent workflows can produce evidence; AI does not create authoritative editable geometry |
-| CPU-safe job policy | VERIFIED policy / PARTIAL runtime | One job at a time, asynchronous work and visible status are governing requirements; lifecycle regressions have occurred and remain protected by targeted checks |
-| Source Truth verification | PARTIAL governance gate | Broad deterministic verification exists, but manual inventory and stale documentation assertions can omit or fossilise checks; correction is an immediate priority |
+| CPU-safe job policy | VERIFIED policy / PARTIAL runtime | One job at a time, asynchronous work and visible status are governing requirements; lifecycle regressions remain protected by targeted checks |
+| Source Truth verification | DETERMINISTICALLY VERIFIED governance baseline through PR #81 | The hierarchy, capability baseline, causal register and semantic documentation checks pass; R1 adds the official composition target before R2 event-harness work |
+| Final runtime and state-authority map | DETERMINISTICALLY VERIFIED R1 boundary | The shell launcher, six installer order, final window hierarchy, final Editor binding, major mutable-state owners and retirement status are recorded and checked without changing runtime behaviour |
 | CodeQL Advanced | VERIFIED repository control | GitHub Actions and Python security analysis are configured |
 
 ## 4. Important limitations
@@ -105,14 +107,25 @@ No absent capability may appear as a functioning control or public claim.
 
 The official launcher currently composes behaviour through multiple subclasses, panel replacements, signal rewiring, compatibility guards and startup installers.
 
+The mapped final path is:
+
+```text
+run_mxztar_forge.sh
+→ src/mxztar_forge.py
+→ six startup installers
+→ AuthoringEditorForgeWindow
+→ DirectResizeProjectAwareEditorPanel
+```
+
 This means:
 
 - isolated component tests may not represent the launched application;
 - import and installer order can affect behaviour;
 - another narrow patch can accidentally become a competing authority;
-- deterministic verification must target the final composed runtime.
+- deterministic verification must target the final composed runtime;
+- compatibility layers must be retired incrementally only after equivalent final-runtime evidence exists.
 
-The recovery plan requires a durable final-runtime map and incremental consolidation. A sweeping rewrite is not authorised.
+The R1 map does not authorise a sweeping rewrite.
 
 ## 6. Present 2D-to-3D authority
 
@@ -131,20 +144,31 @@ This is a meaningful integrated blockout foundation. It is not yet the complete 
 
 ## 7. Current acceptance boundary
 
-Automated evidence through PR #80 covers substantial direct interaction and persistence behaviour, but the project has learned that deterministic success alone can miss live usability faults.
+Automated evidence through PR #81 covers governance and substantial direct interaction and persistence behaviour, but deterministic success alone can miss live usability faults.
 
-Before new broad feature work, the repository must:
+R1 records the official launcher, installer sequence, final class bindings and state owners. It does not prove every interaction through the final event path.
 
-1. reconcile governing documents;
-2. remove frozen documentation-verifier assumptions;
-3. map the official launcher and all runtime installers;
-4. convert PR #66–#80 lessons into final-runtime regression contracts;
-5. complete the applicable T1700 live-interaction acceptance;
-6. confirm the baseline remains stable through save, close and reopen.
+Before new broad feature work, R2 must:
 
-## 8. Next product gate
+1. convert PR #66–#80 lessons into official-launcher regression contracts;
+2. deliver real mouse and wheel events through the final composition;
+3. assert geometry, visibility and pointer/object lock;
+4. confirm create, select, move, resize, delete, undo/redo, save, close and reopen stability;
+5. protect interruption and rollback behaviour where applicable;
+6. prevent silent verifier omission through discovery or a complete manifest;
+7. complete applicable T1700 live-interaction acceptance.
 
-After the recovery gate closes, the next Stage One foundation is:
+## 8. Next recovery and product gates
+
+The immediate recovery sequence is:
+
+```text
+R1 final-runtime mapping
+→ R2 acceptance harness correction
+→ R3 canonical interaction foundation
+```
+
+After that recovery gate closes, the next Stage One foundation is:
 
 ```text
 freeform editable path
