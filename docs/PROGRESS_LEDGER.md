@@ -1,432 +1,159 @@
 # MXZTAR Forge v2.0 — Progress Ledger
 
-**Ledger date:** 27 July 2026  
+**Ledger date:** 6 August 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
-**Active product horizon:** integrated shape/object CAD, Stage One and Stage Two  
-**Merged runtime baseline:** `7db74ed` through PR #65  
-**Current delivery gate:** PR #66 persistent Editor action tree and recoverable Project Trash  
-**Current branch:** `agent/persistent-editor-options-and-project-trash`
+**Active product horizon:** Stage One editable 2D assets and Stage Two reversible 3D blockouts  
+**Merged runtime baseline:** `main` through PR #80 at `4c44f6d`  
+**Current delivery gate:** draft PR #81 governance reset, documentation-verifier repair and recovery sequencing
 
-This ledger records current product truth and priority changes. Detailed commit history remains available in Git.
+## 1. Purpose
 
----
+This ledger records dated implementation and verification chronology.
 
-## 1. Status vocabulary
+It does not replace:
+
+- `docs/product/MASTER_BUILD_PLAN.md` for the finished product boundary;
+- `docs/product/RECOVERY_AND_COMPLETION_PLAN.md` for the active engineering order;
+- `docs/product/CURRENT_CAPABILITY_BOUNDARY.md` for present capability;
+- `docs/REGRESSION_AND_DRIFT_REGISTER.md` for causal learning.
+
+Detailed commit and review history remains available in Git and GitHub. Historical implementation narration may be condensed here when its causal learning has been preserved elsewhere.
+
+## 2. Status vocabulary
 
 | Status | Meaning |
 |---|---|
-| VERIFIED | Required automated and recorded T1700 evidence exists for the stated boundary |
-| DETERMINISTICALLY VERIFIED | Automated contracts pass; required visual or downstream acceptance may remain |
-| MERGED | Code is on `main`; merge alone does not prove the complete product gate |
-| PARTIAL | Useful implementation exists, but the complete user workflow does not |
-| PLANNED | Required but not implemented |
-| BLOCKED | A named dependency or founder decision prevents safe progress |
-| DEFERRED | Outside the active product horizon |
+| VERIFIED | Applicable automated and recorded T1700 evidence exists for the stated boundary |
+| DETERMINISTICALLY VERIFIED | Automated contracts pass; required live, downstream or release acceptance may remain |
+| MERGED | Code is on `main`; merge alone does not prove a complete user journey |
+| PARTIAL | Useful implementation exists, but the complete workflow does not |
+| PLANNED | Required by the active product plan but not implemented |
+| BLOCKED | A named dependency or acceptance gate prevents safe progress |
+| DEFERRED | Outside the active Stage One–Two delivery sequence |
 
----
+## 3. Consolidated merged chronology
 
-## 2. Founder product direction
+### Foundation through PR #32
 
-Forge is developing as a sophisticated but approachable local CAD workbench based on editable shapes, reusable assets, real 3D components, and recoverable construction relationships.
+Earlier repository work established the local Qt application, source-art intelligence, project panels, agent workflows, jobs evidence, Shape Library evidence browsing and initial hardware-safe operation. Exact details remain in Git history and prior ledger revisions.
 
-The product value path is now explicitly:
+### Project and Editor authority — PR #33 to PR #53
 
-```text
-Purpose
-→ project
-→ source image, bundled starter asset, or blank document
-→ editable path and shape
-→ manual, deterministic, or optional AI-assisted candidate
-→ reviewed reusable asset
-→ reversible 3D component
-→ selectable object, surface, or area
-→ pivot, anchor, and surface-assisted placement
-→ group or recoverable assembly
-→ reversible effect stack
-→ explicit connection or geometry operation
-→ portable output
-```
-
-Asset extraction and generation are brought forward because they create the reusable asset pool from which later components, groups, assemblies, and constructions compound.
-
-The software will ship with a founder-controlled starter source-asset pack. Bundled assets remain read-only application assets and must be copied into a user project before editing.
-
-Interaction controls must remain reachable while the user is working. The complete Editor Options tree and wheel selector must remain continuously visible at the top of the currently visible Editor workspace while the page scrolls beneath them. Selecting an option must not close the tree, even when that option reveals another output and moves the page. Selecting a 2D or 3D output must bring that output into visible range, and an explicitly selected zoom mode must not also scroll the page.
-
-Project switching must include deliberate project deletion. Forge uses recoverable Project Trash rather than irreversible erasure: the exact selected canonical project moves out of discovery only after typed-name confirmation, lock checks, active-work checks, and receipt creation.
-
-Moving objects together around a central construct point must never silently group, assemble, stitch, weld, join, boolean, separate, or bake them.
-
-This direction does not authorise fake perspective effects, unsupported automatic reconstruction, manufacturing claims, engineering-material claims, dead context-menu options, or permanent project erasure from the current interface.
-
----
-
-## 3. Confirmed merged foundation
-
-- PR #33 — canonical project manifest, required directories, history, atomic creation.
+- PR #33 — canonical project manifest, required directories, history and atomic creation.
 - PR #34 — one-writer lock and recovery classification.
 - PR #35 — project session and Start Here create/open/close authority.
 - PR #36 — project-contained source intake and processed lifecycle.
-- PRs #39–#41 — asynchronous source intake and UI lifecycle corrections.
+- PRs #39–#41 — asynchronous source intake and Qt lifecycle corrections.
 - PR #42 — project-owned model-call evidence.
-- PR #44 — guided Next workflow and exact source handoff.
-- PRs #45–#47 — stable My Library lifecycle and accepted image compatibility.
+- PR #44 — guided next action and source handoff.
+- PRs #45–#47 — My Library lifecycle and accepted image compatibility.
 - PR #48 — Editor-first product reconciliation.
-- PR #49 — native shape document and minimum reversible Editor.
+- PR #49 — native shape document and reversible Editor foundation.
 - PR #50 — launcher import correction.
 - PR #51 — Stage One–Two source-truth reconciliation.
 - PR #52 — Purpose-driven Project Birth.
-- PR #53 — Start Here default launch, project routing, Editor menus, and five reversible primitives.
+- PR #53 — Start Here routing, Editor menus and five reversible primitives.
+
+### Integrated 2D/3D foundation — PR #54 to PR #65
+
 - PR #54 — project-owned 3D object-scene foundation and CPU-rendered 3D workspace.
-- PR #55 — single-object movement isolation, visible placement, immediate 3D synchronization, and stable layout.
-- PR #56 — fresh project/document creation, project switching, and explicit paired deletion.
-- PR #57 — restored Project Birth blank-document guidance and protected CodeQL Advanced.
-- PR #58 — GitHub-generated CodeQL Advanced workflow for Actions and Python.
-- PR #59 — reconciled README, Master Build Plan, Progress Ledger, capability boundary, and documentation-drift verification.
-- PR #60 — transient positioning guides, measurements, optional snapping, rotation-aware bounds, and preserved empty-space orbit.
-- PR #61 — default mouse-wheel page scrolling, selectable 3D zoom modes, and nominally pinned Editor options.
-- PR #62 — isolated wheel-verifier settings and guaranteed Qt background-thread cleanup.
-- PR #63 — real wheel-event consumption, active-output reveal, and reselecting an already-active output to reveal it again.
-- PR #64 — brought-forward asset generation, shipped starter-asset planning, and modular Construct architecture.
+- PR #55 — single-object movement isolation, visible placement and immediate 3D synchronization.
+- PR #56 — fresh project/document creation, project switching and explicit paired deletion.
+- PR #57 — Project Birth guidance restoration and CodeQL protection.
+- PR #58 — CodeQL Advanced workflow for Actions and Python.
+- PR #59 — documentation and capability reconciliation at that baseline.
+- PR #60 — transient positioning guides, measurements, optional snapping and preserved empty-space orbit.
+- PR #61 — mouse-wheel page scrolling and explicit 3D zoom modes.
+- PR #62 — isolated wheel-verifier settings and Qt background-thread cleanup.
+- PR #63 — real wheel-event consumption and active-output reveal.
+- PR #64 — asset-generation and modular Construct architecture planning.
 - PR #65 — sticky Editor control bar at the visible viewport top.
 
----
-
-## 4. Recorded T1700 evidence
-
-### Established merged-main repository boundary
-
-Status: **VERIFIED for the deterministic repository boundary**.
-
-Recorded evidence includes:
-
-- Project Birth focused verifier exit code `0`;
-- complete Source Truth verification exit code `0`;
-- required documentation files present;
-- documentation runtime-state contract passes;
-- listed Python files compile;
-- CodeQL Advanced contract passes;
-- launcher import contract passes;
-- native shape, 3D object, single-object usability, project authoring, paired deletion, positioning-guide, wheel-routing, and prompt contracts pass.
-
-### Smart-guide evidence
-
-Status: **DETERMINISTICALLY VERIFIED on merged `main`**.
-
-Recorded evidence:
-
-- focused positioning-guide contract exit code `0`;
-- complete Source Truth exit code `0`;
-- rotation-aware 90-degree and 45-degree bounds pass;
-- guidance-only movement does not force position;
-- snapping remains separate and off by default;
-- nonselected objects remain unchanged;
-- empty-space drag remains orbit.
-
-### PR #61 and PR #62 interaction evidence
-
-Status: **MERGED and deterministically verified; live acceptance found two remaining defects**.
-
-Recorded evidence:
-
-- focused isolated wheel verifier exit code `0`;
-- complete T1700 Source Truth exit code `0`;
-- page scrolling is the first-run default;
-- Editor options remain outside the scroll area;
-- settings persistence and Qt thread cleanup pass.
-
-Live T1700 inspection then found:
-
-1. switching to `3D Object View` left the object viewport below the current visible page range;
-2. selecting `Zoom 3D view` still allowed the real wheel event to scroll the outer page.
-
-The earlier verifier called handlers directly and therefore did not prove real Qt event delivery or parent propagation.
-
-### PR #63 live 3D output reveal and wheel-event routing
-
-Status at merge: **DETERMINISTICALLY VERIFIED on the PR #63 branch; T1700 live acceptance pending**.
-
-Recorded post-merge T1700 automated evidence:
-
-- T1700 synchronized to merge commit `b84f188`;
-- focused real-event verifier exit code `0`;
-- complete Source Truth exit code `0`;
-- switching from 2D to 3D reveals the selected output;
-- reselecting the already-active 3D action reveals its output;
-- real wheel zoom changes zoom without page-scroll leakage;
-- Ctrl+wheel zoom changes zoom without page-scroll leakage;
-- wheel over 2D continues to scroll the page;
-- real `QWheelEvent` objects are sent through Qt;
-- no Qt thread shutdown warning appears.
-
-Live T1700 acceptance confirmed the output reveal and zoom-routing corrections, but exposed a separate control-placement failure: the Editor Options tree did not remain at the top of the currently visible workspace while the page scrolled.
-
-No downstream export, production mesh, manufacturing, tracing, approved library, persistent surface-area, effect-stack, or advanced assembly acceptance is implied.
-
-### PR #64 architecture evidence
-
-Status: **MERGED and VERIFIED at the documentation-and-architecture boundary**.
-
-Recorded evidence:
-
-- synchronized to merge commit `1cbcc50`;
-- complete post-merge Source Truth exit code `0`;
-- asset-generation and Construct addendum is present and authoritative;
-- starter assets, surfaces, groups, assemblies, seams, and effects remain explicitly PLANNED;
-- no new runtime capability is claimed.
-
-### PR #65 sticky viewport-top controls
-
-Status at merge: **DETERMINISTICALLY VERIFIED on the PR #65 branch; T1700 live acceptance pending**.
-
-Correction:
-
-- the Editor interaction bar is no longer inserted beneath the full main content row;
-- a dedicated expanding right-hand column now contains the sticky control bar followed by `page_scroll`;
-- the bar is outside the scrollable content and directly above its visible viewport;
-- scrolling the Editor page cannot change the bar's window-relative top coordinate;
-- the bar hides on unrelated pages and the scroll viewport expands into the released space;
-- project files, geometry, object-scene state, and wheel-mode settings remain unchanged.
-
-Strengthened evidence:
-
-- the verifier checks the sticky-column widget order;
-- the verifier checks that the bar is not a descendant of `page_scroll`;
-- the verifier records the bar's window-relative top coordinate;
-- the page is scrolled to its maximum value;
-- the verifier requires the bar to remain at the exact same top coordinate;
-- returning to Editor must restore the controls at that same viewport-top position;
-- Python Compile Check, Security & Code Scan, Source Truth, and CodeQL Advanced pass.
-
-Post-merge focused and complete Source Truth outputs passed on the T1700. Live inspection then found a narrower usability defect: the sticky row remained visible, but `Editor Options` was still an auto-closing popup. Choosing an action dismissed the actual option tree, forcing the user to reopen it.
-
-### PR #66 persistent Editor actions and recoverable Project Trash
-
-Status: **DETERMINISTICALLY VERIFIED on the PR #66 branch; T1700 live acceptance pending**.
-
-Persistent-action correction:
-
-- the popup-only Editor Options control is replaced by an always-open `QTreeWidget`;
-- Document, Shape, Edit, Object, and View categories remain visible inside the fixed row;
-- real QAction enabled, visible, checked, label, and tooltip state is mirrored;
-- clicking a real tree item triggers the existing action without dismissing the tree;
-- action-driven output reveal may move the page, but the tree retains its window-relative position, current item, and mouse reachability;
-- the existing wheel selector remains in the same fixed control row.
-
-Project Trash correction:
-
-- Editor places `Delete Project…` directly beside `Switch Project`;
-- Start Here exposes `Delete Selected Project…` beside open/switch controls;
-- user-facing deletion requires the exact selected directory name to be typed;
-- only real non-symlink, non-hidden direct children of the canonical projects root are accepted;
-- another writer lock and active local-AI/source-intake work block deletion;
-- the selected project moves atomically into hidden `.project-trash` rather than being permanently erased;
-- a durable receipt records original identity, trash location, time, and active-project state;
-- deleting a non-active project preserves current authority;
-- deleting the active project closes its lease and leaves Forge detached;
-- no permanent-delete command is exposed.
-
-Deterministic evidence:
-
-- Python Compile Check passes;
-- Security & Code Scan passes;
-- Source Truth Check passes;
-- CodeQL Advanced passes;
-- a real `QTest.mouseClick` activates the 3D View tree item;
-- the tree remains visible and fixed after action-driven and maximum page movement;
-- a locked project cannot be trashed;
-- active work cannot trash a project;
-- canonical discovery excludes the moved project;
-- recovery receipts preserve identity;
-- out-of-root paths are rejected;
-- active project deletion detaches safely.
-
----
-
-## 5. Current workspace truth
-
-| Workspace | Current truth |
-|---|---|
-| Start Here | Purpose-driven Project Birth, discovery, open/switch, close, guided blank-document path, and PR #66 recoverable Delete Selected Project are implemented on the active branch |
-| Editor | Primary integrated 2D shape and 3D object workspace; PR #66 keeps the complete action tree continuously visible and adds Delete Project beside Switch Project |
-| My Library | Verified bounded source intake, previews, exact handoff, and guarded lifecycle |
-| Shape Library | Evidence browser only; approved editable lifecycle and insertion are not implemented |
-| Agent Workflows | Optional local-AI assessment and planning foundation; not geometry authority |
-| Jobs | Verified read-only evidence browser |
-| Construct | Current 3D object-scene foundation only; areas, anchors, groups, assemblies, effect stacks, and explicit connection operations remain planned |
-| Review | Planned |
-| Export | Verified SVG, PNG, GLB/glTF, and OBJ adapters are not implemented |
-
----
-
-## 6. Implemented shape and object boundary
-
-### Native 2D shape creation
-
-Status: **PARTIAL / DETERMINISTICALLY VERIFIED**.
-
-Implemented shapes:
-
-- Rectangle;
-- Square;
-- Circle;
-- Ellipse;
-- Star.
-
-Implemented authority:
-
-- native versioned shape document;
-- durable command replay;
-- Undo and Redo;
-- autosave and canonical save;
-- transaction rollback;
-- reopen and recovery;
-- explicit deletion requiring a valid selection.
-
-Not implemented:
-
-- pen or Bezier paths;
-- freehand drawing;
-- node and handle editing;
-- source-region tracing;
-- deterministic extraction;
-- layers, groups, locking, visibility, arrays, mirrors, 2D booleans, or reviewed reusable shape insertion.
-
-### Project-owned 3D object scene
-
-Status: **DETERMINISTICALLY VERIFIED foundation**.
-
-Implemented on merged `main`:
-
-- five native shapes become real extruded 3D objects;
-- source shape and object membership remain linked;
-- XYZ position, width, height, depth, and three-axis rotation;
-- colour and opacity;
-- object selection, drag movement, resize, and numeric inspector;
-- empty-space orbit;
-- perspective, grid, line, camera, and zoom persistence;
-- reversible object edits;
-- paired membership during Undo, Redo, and deletion;
-- atomic save, rollback, and restart restoration;
-- moving one selected object leaves nonselected objects unchanged.
-
-Not implemented:
-
-- persistent area or surface subsets;
-- primary focus objects or surfaces as project authority;
-- anchors, sockets, pivots beyond current object transform state;
-- object groups or recoverable assemblies;
-- surface-effect stacks;
-- visual seams;
-- stitch, weld, join mesh, booleans, separate, or bake;
-- revolve, sweep, loft, shell, relief, bevel, vertex/face editing, or sculpting;
-- verified 3D export.
-
----
-
-## 7. Active asset-generation and Construct architecture
-
-Status: **FOUNDER-AUTHORISED ACTIVE PLAN; NO NEW RUNTIME CAPABILITY CLAIMED**.
-
-The governing addendum is:
-
-- `docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`.
-
-It brings forward:
-
-- freeform path authority;
-- source-region and manual tracing;
-- deterministic contour, threshold, edge, mask, and silhouette candidates;
-- a versioned installed starter source-asset pack;
-- review and reusable Shape Library insertion;
-- reversible shape-to-component generation;
-- stable object, area, surface, focus, pivot, anchor, group, and assembly records;
-- central construct point and modular placement;
-- reversible targetable effect stacks;
-- greebling, roughness, distortion, bend, logic wiring, and metallic hue profiles;
-- explicit separation of placement, snapping, grouping, assembly contact, visual seams, mesh stitch or weld, join mesh, booleans, separate, and bake.
-
-Initial metallic visual profiles are:
-
-- Brushed Titanium;
-- Polished Chrome;
-- Anodized Aluminium;
-- Oxidized Copper;
-- Iridescent Nickel.
-
-Initial logic-wiring routing modes include Randomized, Symbiotic, Aligned, Radial, and Parallel.
-
-These are planned visual-design systems, not engineering material or electronics claims.
-
----
-
-## 8. Brought-forward engineering sequence
-
-PR #66 manual live acceptance remains the final gate before new asset-generation runtime work begins.
-
-The active sequence is:
-
-1. freeform path authority;
-2. source-region selection and manual tracing;
-3. deterministic extraction candidates;
-4. shipped starter source-asset pack and copy-into-project command;
-5. optional AI proposals through editable candidate authority;
-6. review, approval, versioning, and real Shape Library insertion;
-7. shape-to-component recipe registry;
-8. area, surface, pivot, anchor, focus, and named perspective authority;
-9. modular placement around the central construct point;
-10. object groups and recoverable assemblies;
-11. effect-stack core;
-12. greebling, roughness, distortion, bend, logic wiring, and metallic hue profiles;
-13. visual seams and separately verified stitch/weld/join/boolean/separate/bake operations;
-14. verified SVG, PNG, GLB/glTF, and OBJ continuation;
-15. release asset-pack installation, update, migration, backup, licence, and recovery gates.
-
-```text
-focused branch
-→ deterministic verifier
-→ Source Truth
-→ review comments
-→ merge confirmation
-→ T1700 sync
-→ focused output and inspection
-→ complete Source Truth output and inspection
-→ applicable live acceptance
-→ ledger and capability-boundary update
-```
-
----
-
-## 9. Current non-claims
-
-Forge does not currently claim:
-
-- a completed CAD release;
-- permanent project erasure from the interface;
-- freeform editable paths;
-- editable tracing from arbitrary source images;
-- automatic editable extraction;
-- a shipped starter asset pack;
-- approved Shape Library insertion;
-- stable selectable surface subsets;
-- primary focus surfaces;
-- anchors, sockets, object groups, or recoverable assemblies;
-- surface-effect stacks;
-- greebling, roughness, distortion, bend, logic wiring, or metallic profiles;
-- visual seams;
-- stitch, weld, join mesh, booleans, separate, bake, topology repair, rigging, UVs, LODs, collision, or production materials;
-- engineering-grade dimensions or tolerances;
-- engineering material properties;
-- manufacturing safety;
-- watertight or repaired meshes;
-- verified SVG, PNG, GLB/glTF, or OBJ continuation;
-- universal downstream compatibility;
-- an open-source licence.
-
----
-
-## 10. Verification rule
-
-No capability becomes VERIFIED solely because code was committed or merged.
-
-Evidence may include compile and import checks, schema and command replay, project integrity, interruption and rollback, Qt lifecycle and offscreen rendering, real event delivery, manual T1700 interaction, seed stability, stale-target recovery, failure rollback, and downstream continuation tests.
+### Interaction correction and recovery lessons — PR #66 to PR #80
+
+- PR #66 — introduced a persistent always-open Editor action tree and recoverable Project Trash. Deterministic checks passed, but the tree failed T1700 live usability because it consumed excessive workspace.
+- PR #67 — restored a compact fixed command strip with temporary dropdown menus while preserving Project Trash and wheel routing.
+- PR #68 — removed the pulsing Next Action behaviour and added explicit document lifecycle handling.
+- PR #69 — corrected deletion visibility and clipping.
+- PR #70 — simplified deletion interaction while preserving recoverability.
+- PR #71 — unified project menu and rename authority.
+- PR #72 — restored project and document selectors lost during menu unification.
+- PR #73 — corrected shared project-switch target authority.
+- PR #74 — separated object transforms from camera navigation.
+- PR #75 — restored direct object resize and Save Project access.
+- PR #76 — restored direct object movement.
+- PR #77 — restored safe Editor re-entry to Select.
+- PR #78 — corrected precise direct 2D and 3D movement and pointer-following behaviour.
+- PR #79 — restored stable front orthographic Design View as the editing default.
+- PR #80 — added direct durable 2D resize for all five primitives with minimum-geometry validation.
+
+## 4. Current merged evidence boundary
+
+Status: **DETERMINISTICALLY VERIFIED foundation through PR #80**, with live and final-runtime limitations recorded separately.
+
+The merged repository includes focused contracts for:
+
+- project birth, switching, recovery and Project Trash;
+- native shape-document creation and command replay;
+- project-owned 3D object scenes;
+- direct selection, movement, resize and deletion;
+- paired 2D/3D membership;
+- safe Editor re-entry;
+- stable Design View and object/camera separation;
+- positioning guides and optional snapping;
+- real wheel-event routing and active-output reveal;
+- compact Editor command controls;
+- launcher import and prompt contracts;
+- CodeQL configuration.
+
+Important evidence boundary:
+
+- deterministic success does not automatically prove live workspace usability;
+- isolated component success does not prove the official final composed runtime;
+- interaction-heavy changes require explicit T1700 live acceptance status;
+- save, close and reopen must be included when durable state changes;
+- downstream export and release claims require separate continuation or clean-install evidence.
+
+## 5. Draft PR #81 — governance reset
+
+Status: **DRAFT / NOT MERGED**.
+
+The draft governance reset:
+
+- rewrites `AGENTS.md` around complete user actions, preserved invariants, final-runtime verification and explicit state authority;
+- rewrites `docs/SOURCE_OF_TRUTH.md` into one finite authority chain;
+- adds `docs/product/RECOVERY_AND_COMPLETION_PLAN.md`;
+- adds `docs/REGRESSION_AND_DRIFT_REGISTER.md`;
+- refreshes the Current Capability Boundary through PR #80;
+- refreshes the README public boundary;
+- replaces frozen documentation assertions with relationship and monotonic-baseline checks;
+- stops the compact-command-strip verifier from treating PR #67 branch language as permanent current authority;
+- reduces the required-document inventory to governing documents rather than every historical correction note.
+
+No runtime capability is added by PR #81.
+
+## 6. Current recovery sequence
+
+1. make Source Truth pass against the corrected governing hierarchy;
+2. review and merge PR #81 only after all checks succeed;
+3. create the final-runtime and state-authority map;
+4. convert PR #66–#80 lessons into official-launcher regression contracts;
+5. complete applicable T1700 interaction acceptance;
+6. confirm create, select, move, resize, delete, undo/redo, save and reopen remain stable;
+7. begin Stage One freeform path and manual trace work only after the recovery gate closes.
+
+## 7. Current product boundary
+
+Forge currently has a meaningful integrated primitive-based 2D and 3D blockout foundation.
+
+Forge does not yet have a complete:
+
+- source-image-to-approved-reusable-asset workflow;
+- Shape Library approval and insertion workflow;
+- validated 2D export workflow;
+- reviewed shape-to-component recipe system;
+- recoverable assembly workflow;
+- validated 3D continuation profile;
+- end-user release installation path.
+
+The Current Capability Boundary is the present-tense authority for these limits.
