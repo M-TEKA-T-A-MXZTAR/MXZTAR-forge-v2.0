@@ -3,8 +3,8 @@
 **Ledger date:** 6 August 2026  
 **Repository:** `M-TEKA-T-A-MXZTAR/MXZTAR-forge-v2.0`  
 **Active product horizon:** Stage One editable 2D assets and Stage Two reversible 3D blockouts  
-**Merged runtime baseline:** `main` through PR #80 at `4c44f6d`  
-**Current delivery gate:** draft PR #81 governance reset, documentation-verifier repair and recovery sequencing
+**Merged runtime baseline:** `main` through PR #81 at `e8659d5`  
+**Current delivery gate:** R1 final-runtime and state-authority mapping before R2 acceptance-harness correction
 
 ## 1. Purpose
 
@@ -15,6 +15,7 @@ It does not replace:
 - `docs/product/MASTER_BUILD_PLAN.md` for the finished product boundary;
 - `docs/product/RECOVERY_AND_COMPLETION_PLAN.md` for the active engineering order;
 - `docs/product/CURRENT_CAPABILITY_BOUNDARY.md` for present capability;
+- `docs/architecture/FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md` for final composition and mutable-state ownership;
 - `docs/REGRESSION_AND_DRIFT_REGISTER.md` for causal learning.
 
 Detailed commit and review history remains available in Git and GitHub. Historical implementation narration may be condensed here when its causal learning has been preserved elsewhere.
@@ -87,9 +88,15 @@ Earlier repository work established the local Qt application, source-art intelli
 - PR #79 — restored stable front orthographic Design View as the editing default.
 - PR #80 — added direct durable 2D resize for all five primitives with minimum-geometry validation.
 
+### Governance reset — PR #81
+
+- PR #81 — replaced competing governance addenda with one finite authority chain; added the Recovery and Completion Plan and Regression and Drift Register; refreshed Current Capability and README truth; replaced fossilised documentation assertions with semantic relationship checks; restored full Source Truth success.
+
+PR #81 changed governance and verification contracts, not runtime behaviour.
+
 ## 4. Current merged evidence boundary
 
-Status: **DETERMINISTICALLY VERIFIED foundation through PR #80**, with live and final-runtime limitations recorded separately.
+Status: **DETERMINISTICALLY VERIFIED foundation and governance baseline through PR #81**, with live and final-event limitations recorded separately.
 
 The merged repository includes focused contracts for:
 
@@ -104,6 +111,7 @@ The merged repository includes focused contracts for:
 - real wheel-event routing and active-output reveal;
 - compact Editor command controls;
 - launcher import and prompt contracts;
+- one coherent governance hierarchy and causal regression register;
 - CodeQL configuration.
 
 Important evidence boundary:
@@ -114,33 +122,33 @@ Important evidence boundary:
 - save, close and reopen must be included when durable state changes;
 - downstream export and release claims require separate continuation or clean-install evidence.
 
-## 5. Draft PR #81 — governance reset
+## 5. Current R1 work — final runtime and state authority
 
-Status: **DRAFT / NOT MERGED**.
+Status: **ACTIVE BRANCH / NOT MERGED** until review and required checks complete.
 
-The draft governance reset:
+The R1 change:
 
-- rewrites `AGENTS.md` around complete user actions, preserved invariants, final-runtime verification and explicit state authority;
-- rewrites `docs/SOURCE_OF_TRUTH.md` into one finite authority chain;
-- adds `docs/product/RECOVERY_AND_COMPLETION_PLAN.md`;
-- adds `docs/REGRESSION_AND_DRIFT_REGISTER.md`;
-- refreshes the Current Capability Boundary through PR #80;
-- refreshes the README public boundary;
-- replaces frozen documentation assertions with relationship and monotonic-baseline checks;
-- stops the compact-command-strip verifier from treating PR #67 branch language as permanent current authority;
-- reduces the required-document inventory to governing documents rather than every historical correction note.
+- maps `run_mxztar_forge.sh` through `src/mxztar_forge.py` into the final authoring window;
+- records the six startup installers and their order;
+- records the final window hierarchy and successive Editor-panel replacements;
+- identifies `DirectResizeProjectAwareEditorPanel` as the final installed Editor binding;
+- names the authoritative owner of project, document, scene, camera, selection, source, worker and window state;
+- records why each compatibility layer exists and the conditions required before retirement;
+- adds an executable final-runtime composition contract;
+- promotes the map into Source Truth and required-document verification.
 
-No runtime capability is added by PR #81.
+No visible UI, persistence schema or runtime behaviour is changed by R1 mapping.
 
 ## 6. Current recovery sequence
 
-1. make Source Truth pass against the corrected governing hierarchy;
-2. review and merge PR #81 only after all checks succeed;
-3. create the final-runtime and state-authority map;
-4. convert PR #66–#80 lessons into official-launcher regression contracts;
-5. complete applicable T1700 interaction acceptance;
-6. confirm create, select, move, resize, delete, undo/redo, save and reopen remain stable;
-7. begin Stage One freeform path and manual trace work only after the recovery gate closes.
+1. review and merge the R1 map only after Source Truth, compile, security and composition checks pass;
+2. begin R2 acceptance harness correction against the mapped official runtime;
+3. convert PR #66–#80 lessons into official-launcher contracts;
+4. deliver real mouse and wheel events through the final composition;
+5. confirm geometry, visibility, pointer/object lock, save, close and reopen;
+6. complete applicable T1700 interaction acceptance;
+7. begin R3 consolidation only after the R2 evidence boundary is stable;
+8. begin Stage One freeform path and manual trace work only after the recovery gate closes.
 
 ## 7. Current product boundary
 
