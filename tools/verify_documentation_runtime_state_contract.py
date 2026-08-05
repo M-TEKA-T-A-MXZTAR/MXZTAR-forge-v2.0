@@ -144,7 +144,7 @@ def main() -> int:
             f"Recovery Plan omits Phase R{phase}",
         )
     for requirement in (
-        "final-runtime map",
+        "Final-runtime map",
         "official final runtime",
         "real mouse and wheel events",
         "save, close and reopen",
