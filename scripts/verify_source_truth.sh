@@ -6,25 +6,22 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 echo "=== MXZTAR-FORGE SOURCE TRUTH VERIFY ==="
 
 echo
-echo "=== REQUIRED DOCS ==="
+echo "=== REQUIRED GOVERNING DOCS ==="
 for f in \
+  AGENTS.md \
   README.md \
   docs/SOURCE_OF_TRUTH.md \
+  docs/PROGRESS_LEDGER.md \
+  docs/REGRESSION_AND_DRIFT_REGISTER.md \
   docs/NZ_COMPLIANCE_AND_SUBSCRIPTION_NOTES.md \
   docs/CODING_PRACTICE_PRINCIPLES.md \
-  docs/product/FIRST_RENTABLE_RELEASE.md \
+  docs/product/MASTER_BUILD_PLAN.md \
+  docs/product/RECOVERY_AND_COMPLETION_PLAN.md \
+  docs/product/CURRENT_CAPABILITY_BOUNDARY.md \
   docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md \
   docs/product/OUTPUT_ARTIFACT_CONTRACTS.md \
-  docs/product/MASTER_BUILD_PLAN.md \
   docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md \
-  docs/product/CURRENT_CAPABILITY_BOUNDARY.md \
-  docs/product/EDITOR_DOCUMENT_LIFECYCLE_CORRECTION.md \
-  docs/product/VISIBLE_DELETION_AND_EDITOR_ENTRY_CORRECTION.md \
-  docs/product/UNIFIED_PROJECT_MENU_AND_RENAME.md \
-  docs/product/FUTURE_CONSTRUCT_AND_WORLD_VISION.md \
-  docs/product/LEVEL_FOUR_PLATFORM_PRIORITIES.md \
-  docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md \
-  docs/PROGRESS_LEDGER.md
+  docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md
 do
   if [ -f "$f" ]; then
     echo "PASS FILE: $f"
@@ -119,7 +116,7 @@ echo "=== DOCUMENTATION RUNTIME-STATE CONTRACT ==="
 PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_documentation_runtime_state_contract.py
 
 echo
-echo "=== STICKY EDITOR OPTIONS DOCUMENTATION CONTRACT ==="
+echo "=== COMPACT EDITOR COMMAND-STRIP CONTRACT ==="
 PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_sticky_editor_options_documentation_contract.py
 
 echo
