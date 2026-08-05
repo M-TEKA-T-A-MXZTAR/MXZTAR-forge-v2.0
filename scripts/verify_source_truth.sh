@@ -21,6 +21,7 @@ for f in \
   docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md \
   docs/product/OUTPUT_ARTIFACT_CONTRACTS.md \
   docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md \
+  docs/architecture/FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md \
   docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md
 do
   if [ -f "$f" ]; then
@@ -72,6 +73,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   src/qt_editor_usability_app.py \
   src/qt_live_acceptance_guards.py \
   src/qt_project_menu_and_rename.py \
+  src/qt_project_menu_review_fixes.py \
   src/qt_panels/__init__.py \
   src/qt_panels/agent_panel.py \
   src/qt_panels/agent_worker.py \
@@ -91,6 +93,7 @@ PYTHONPATH=src "$PYTHON_EXECUTABLE" -m py_compile \
   tools/verify_direct_2d_resize_contract.py \
   tools/verify_document_lifecycle_and_static_guidance_contract.py \
   tools/verify_documentation_runtime_state_contract.py \
+  tools/verify_final_runtime_composition_contract.py \
   tools/verify_sticky_editor_options_documentation_contract.py \
   tools/verify_editor_mouse_wheel_contract.py \
   tools/verify_editor_project_authoring_contract.py \
@@ -114,6 +117,10 @@ echo "PASS: listed Python files compile"
 echo
 echo "=== DOCUMENTATION RUNTIME-STATE CONTRACT ==="
 PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_documentation_runtime_state_contract.py
+
+echo
+echo "=== FINAL RUNTIME COMPOSITION CONTRACT ==="
+QT_QPA_PLATFORM=offscreen PYTHONPATH=src "$PYTHON_EXECUTABLE" tools/verify_final_runtime_composition_contract.py
 
 echo
 echo "=== COMPACT EDITOR COMMAND-STRIP CONTRACT ==="
