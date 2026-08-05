@@ -20,6 +20,12 @@ README_PATH = PROJECT_ROOT / "README.md"
 SOURCE_TRUTH_PATH = PROJECT_ROOT / "docs" / "SOURCE_OF_TRUTH.md"
 LEDGER_PATH = PROJECT_ROOT / "docs" / "PROGRESS_LEDGER.md"
 REGISTER_PATH = PROJECT_ROOT / "docs" / "REGRESSION_AND_DRIFT_REGISTER.md"
+RUNTIME_MAP_PATH = (
+    PROJECT_ROOT
+    / "docs"
+    / "architecture"
+    / "FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md"
+)
 MASTER_PLAN_PATH = PROJECT_ROOT / "docs" / "product" / "MASTER_BUILD_PLAN.md"
 RECOVERY_PLAN_PATH = PROJECT_ROOT / "docs" / "product" / "RECOVERY_AND_COMPLETION_PLAN.md"
 ARCHITECTURE_PATH = (
@@ -27,7 +33,7 @@ ARCHITECTURE_PATH = (
 )
 CAPABILITY_PATH = PROJECT_ROOT / "docs" / "product" / "CURRENT_CAPABILITY_BOUNDARY.md"
 
-MINIMUM_RUNTIME_BASELINE_PR = 80
+MINIMUM_RUNTIME_BASELINE_PR = 81
 
 
 def require(condition: bool, message: str) -> None:
@@ -91,6 +97,7 @@ def main() -> int:
     source_truth = read(SOURCE_TRUTH_PATH)
     ledger = read(LEDGER_PATH)
     register = read(REGISTER_PATH)
+    runtime_map = read(RUNTIME_MAP_PATH)
     master = read(MASTER_PLAN_PATH)
     recovery = read(RECOVERY_PLAN_PATH)
     architecture = read(ARCHITECTURE_PATH)
@@ -101,6 +108,7 @@ def main() -> int:
         "docs/product/MASTER_BUILD_PLAN.md",
         "docs/product/RECOVERY_AND_COMPLETION_PLAN.md",
         "docs/product/CURRENT_CAPABILITY_BOUNDARY.md",
+        "docs/architecture/FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md",
         "docs/PROGRESS_LEDGER.md",
         "docs/REGRESSION_AND_DRIFT_REGISTER.md",
         "docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md",
@@ -119,6 +127,7 @@ def main() -> int:
         "must not remain permanent competing sources of current instruction",
         "must not fossilise old state through exact historical dates PR numbers or obsolete phrases",
         "official launcher and all installed runtime corrections are part of the tested system",
+        "Final Runtime and State Authority Map is the composition reference",
     ):
         require_semantic(
             source_truth,
@@ -150,6 +159,8 @@ def main() -> int:
         "Current branch: `agent/persistent-editor-options-and-project-trash`",
         "Pinned Editor options | DETERMINISTICALLY VERIFIED on merged main",
         "Persistent Editor action tree | DETERMINISTICALLY VERIFIED",
+        "Status: **DRAFT / NOT MERGED**",
+        "draft PR #81 governance reset",
     ):
         forbid_text(
             capability + "\n" + ledger,
@@ -176,6 +187,31 @@ def main() -> int:
             recovery,
             requirement,
             f"Recovery Plan omits required recovery control: {requirement}",
+        )
+
+    # The R1 map must describe the actual composition and state owners.
+    for requirement in (
+        "run_mxztar_forge.sh",
+        "src mxztar_forge.py",
+        "install source image compatibility",
+        "install my library refresh guard",
+        "install live acceptance guards",
+        "install project menu and rename",
+        "install project menu review fixes",
+        "install direct 2d resize",
+        "AuthoringEditorForgeWindow",
+        "DirectResizeProjectAwareEditorPanel",
+        "State authority table",
+        "Current retirement status",
+        "ProjectSession",
+        "shape document JSON",
+        "object scene JSON",
+        "R2",
+    ):
+        require_semantic(
+            runtime_map,
+            requirement,
+            f"Final Runtime and State Authority Map omits: {requirement}",
         )
 
     # Causal learning must be durable, not merely described in a PR.
@@ -249,12 +285,12 @@ def main() -> int:
         "Compact command strip",
         "Stable Design View",
         "Pointer following precision",
-        "Source Truth verification PARTIAL governance gate",
+        "Source Truth verification",
         "manual tracing into editable paths",
         "approval rejection supersession and reusable Shape Library authority",
         "validated GLB glTF or OBJ continuation profiles",
         "official launcher currently composes behaviour through multiple subclasses",
-        "final runtime mapping and regression contract consolidation",
+        "R2 acceptance harness correction",
     ):
         require_semantic(
             capability,
@@ -287,6 +323,7 @@ def main() -> int:
         f"PASS: Current Capability and Progress Ledger agree on PR #{capability_pr} at {capability_sha}"
     )
     print("PASS: governing documents form one finite authority chain")
+    print("PASS: final runtime map records composition, state ownership and retirement status")
     print("PASS: recovery phases and causal regression records are present")
     print("PASS: semantic checks tolerate punctuation without weakening authority")
     print("PASS: README and Current Capability retain truthful Stage One–Two limits")

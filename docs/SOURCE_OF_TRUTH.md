@@ -34,12 +34,13 @@ Detailed data authority is defined by:
 1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished Stage One–Two product boundary, workflow families, architecture and acceptance intent.
 2. **`docs/product/RECOVERY_AND_COMPLETION_PLAN.md`** — active consolidation, recovery and engineering sequence until the runtime and verification baseline is stable.
 3. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense truth about merged capability, partial foundations, limitations and next gate.
-4. **`docs/PROGRESS_LEDGER.md`** — dated implementation and verification chronology.
-5. **`docs/REGRESSION_AND_DRIFT_REGISTER.md`** — causal learning and recurrence-prevention status.
-6. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, inputs, outputs, failures, blockers and next-action rules.
-7. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery and index authority.
-8. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable artifact, approval, diagnostic, component, assembly and export contracts.
-9. **`README.md`** — public explanation and repository orientation; it may not exceed current capability truth.
+4. **`docs/architecture/FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md`** — official launcher, installer order, final window and Editor composition, mutable-state owners and compatibility-layer retirement status.
+5. **`docs/PROGRESS_LEDGER.md`** — dated implementation and verification chronology.
+6. **`docs/REGRESSION_AND_DRIFT_REGISTER.md`** — causal learning and recurrence-prevention status.
+7. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, inputs, outputs, failures, blockers and next-action rules.
+8. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery and index authority.
+9. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable artifact, approval, diagnostic, component, assembly and export contracts.
+10. **`README.md`** — public explanation and repository orientation; it may not exceed current capability truth.
 
 Other product notes, corrections, addenda and future-vision documents are supporting evidence only. Their still-valid requirements must be reconciled into the governing documents above. They do not override the hierarchy by remaining newer or more specific indefinitely.
 
@@ -69,6 +70,8 @@ The Recovery and Completion Plan states the active engineering order.
 
 The Current Capability Boundary states what users can do now.
 
+The Final Runtime and State Authority Map states which launcher, installers, classes and state owners actually serve those current user actions.
+
 The Progress Ledger states what changed and when.
 
 The Regression and Drift Register states why important failures occurred and how recurrence is prevented.
@@ -92,6 +95,8 @@ Runtime claims must identify applicable evidence:
 - clean release installation.
 
 The official launcher and all installed runtime corrections are part of the tested system. A feature that passes only before final composition is not verified.
+
+The Final Runtime and State Authority Map is the composition reference. Runtime work must update it when the launcher, installer order, final class binding, state owner or compatibility-layer retirement status materially changes.
 
 Deterministic verification and live acceptance must be labelled separately. Interaction-heavy changes require T1700 live acceptance before merge unless the PR remains explicitly draft or blocked.
 
@@ -122,7 +127,7 @@ Before work:
 1. confirm branch, status and latest remote state;
 2. identify product stage and complete user action;
 3. inspect Master Plan, Recovery Plan, Current Capability and recent related history;
-4. trace the official final runtime and state owners;
+4. trace the official final runtime and state owners through `docs/architecture/FINAL_RUNTIME_AND_STATE_AUTHORITY_MAP.md` and current source;
 5. declare preserved invariants;
 6. verify the relevant baseline still launches or passes.
 
@@ -133,11 +138,12 @@ After work:
 3. run final-runtime, persistence and recovery checks appropriate to risk;
 4. complete required T1700 live acceptance;
 5. run Source Truth and whitespace checks;
-6. update Current Capability and Progress Ledger when capability changes;
-7. update the Regression and Drift Register when correcting failure;
-8. reconcile README claims when public capability changes;
-9. review through a pull request;
-10. create a dated VX12 backup when a stable milestone warrants it.
+6. update the Final Runtime and State Authority Map when composition or ownership changes;
+7. update Current Capability and Progress Ledger when capability changes;
+8. update the Regression and Drift Register when correcting failure;
+9. reconcile README claims when public capability changes;
+10. review through a pull request;
+11. create a dated VX12 backup when a stable milestone warrants it.
 
 ## 10. Documentation-verification contract
 
@@ -151,6 +157,7 @@ At minimum, Source Truth should verify:
 - Stage One and Stage Two remain the active horizon;
 - AI evidence is not described as editable geometry or user approval;
 - the official final runtime is the verification target;
+- the Final Runtime and State Authority Map names the current launcher, installer order, final class composition, state owners and retirement status;
 - interaction-heavy changes require explicit live-acceptance status;
 - regression repairs update the causal register;
 - verifier discovery or registration cannot silently omit required checks;
