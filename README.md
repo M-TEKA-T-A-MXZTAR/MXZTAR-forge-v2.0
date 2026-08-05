@@ -2,114 +2,117 @@
 
 **Turn source art and scratch-built shapes into editable 2D documents, project-owned 3D blockouts, reusable components, and verified downstream assets—without surrendering project authority to a cloud pipeline.**
 
-MXZTAR Forge v2.0 is a local-first creative construction workbench from [MXZTAR Projects](https://www.mxztar.co.nz). It is being built for concept artists, vector and graphic artists, game and environment creators, Blender blockout artists, makers, and small teams that need to convert visual ideas into structured, reusable assets.
+MXZTAR Forge v2.0 is a local-first, human-governed creative concept-engineering forge from [MXZTAR Projects](https://www.mxztar.co.nz).
 
-Forge is not another image captioner and it is not a black-box “make 3D” promise. Its purpose is to close the difficult gap between **an image or idea that contains useful design language** and **an asset that can be edited, reused, assembled, validated, recovered, and handed into another production tool**.
+It is being built for concept artists, vector and graphic artists, pattern and shape-system creators, indie game and environment creators, Blender blockout artists, makers, and small teams that need structured reusable assets without making expensive hardware or cloud services the authority over their work.
+
+Forge is an active development project, not yet a finished end-user release.
 
 ## The workflow gap
 
-Creative source material often contains valuable silhouettes, panels, motifs, paths, surfaces, repeated modules, and structural relationships. Those ideas may be trapped in pixels or sketches while downstream tools expect:
+Creative source material often contains useful silhouettes, motifs, paths, panels, repeated modules, and structural relationships. Those ideas may be trapped in pixels while downstream tools expect:
 
 - editable paths, nodes, contours, layers, and transforms;
-- scale, units, axes, origins, pivots, hierarchy, and connection points;
+- units, axes, origins, pivots, hierarchy, and connection points;
 - explicit grouping, assembly, stitch, join, boolean, and bake decisions;
-- version history, provenance, approval state, and recoverable project files;
-- output settings that match the next program rather than a vague “universal” format.
+- provenance, approval, version history, and recoverable project files;
+- output settings proven for the next program.
 
-Creators commonly rebuild this missing structure across tracing software, painting tools, AI chats, Blender, CAD programs, game engines, and loosely organised folders. Forge is designed to preserve and compound that structure in one governed project path.
+Creators commonly rebuild this missing structure across tracing tools, painting software, AI chats, Blender, CAD applications, game engines, and loosely organised folders.
+
+Forge is designed to preserve and compound that structure in one governed project path.
 
 ## Intended product path
 
 ```text
-project purpose
-→ source image or blank document
-→ trace, extract, or draw editable geometry
-→ correct paths, nodes, transforms, and relationships
-→ approve a reusable Shape Library asset
-→ combine shapes into new designs
-→ generate reversible 3D components
-→ assemble components into recoverable structures
-→ export through a verified downstream profile
+Purpose
+→ project
+→ source image, starter asset, or blank document
+→ editable geometry
+→ correction and review
+→ reusable 2D asset
+→ reversible 3D component
+→ recoverable construction
+→ verified downstream handoff
 ```
 
-Forge is not intended to replace Krita, Inkscape, Blender, game engines, CAD systems, or slicers. It preserves the missing creative-production structure between them.
+Forge does not pretend to replace Krita, Inkscape, Blender, CAD systems, game engines, slicers, or other specialist tools. It prepares useful governed handoffs between them.
 
-## Current verified development foundation
+## Current development foundation
 
-Forge is an active development project, not yet a finished end-user release.
-
-The merged runtime currently includes:
+The repository baseline assessed through merged PR #80 includes:
 
 - Purpose-driven local project creation;
-- one-writer project authority and explicit recovery classification;
-- fresh project and blank-document creation from Start Here or Editor;
-- safe project switching from Start Here and Editor;
+- one-writer project authority and read-only recovery classification;
+- project open, close, switch, rename, and recoverable Project Trash foundations;
 - project-contained source intake with unchanged external source bytes;
-- bounded previews and accepted image compatibility;
-- guarded asynchronous Qt worker lifecycle;
-- project-owned job and model-call evidence;
-- native versioned shape-document authority;
+- bounded source previews and guarded Qt worker lifecycle;
+- read-only Jobs and Shape Library evidence browsers;
+- optional local Ollama assessment saved as project evidence;
+- native project-owned shape documents;
 - Rectangle, Square, Circle, Ellipse, and Star creation;
 - durable command replay, Undo, Redo, autosave, canonical save, rollback, and reopen;
+- direct 2D movement with click-offset preservation;
+- direct durable 2D resize with proportional Square and Circle behaviour;
 - project-owned 3D object scenes linked to native shapes;
-- real XYZ position, width, height, depth, three-axis rotation, colour, and opacity;
-- CPU-rendered 3D viewport, object selection, drag movement, resize, orbit, and zoom;
-- numeric Object Inspector;
-- persistent perspective, grid, line, camera, and zoom state;
-- paired 2D/3D membership during Undo, Redo, and explicit deletion;
-- direct deletion that requires an explicit selection;
-- exact restoration of prior project authority after failed switching or fresh-project creation;
-- CodeQL Advanced analysis for GitHub Actions and Python;
-- deterministic T1700 Source Truth verification.
+- paired 2D/3D position and planar-size synchronization;
+- direct 3D movement and resize;
+- explicit Select, Move, Rotate, Resize, and Orbit View modes;
+- front orthographic 3D Design View on entry, with deliberate Perspective and Orbit controls;
+- stable camera and world landmarks during object manipulation;
+- positioning guides, measurements, optional snapping, and separated wheel-routing modes;
+- Save Project transaction, project/document controls, and CodeQL Advanced repository checks.
 
-### Important current limitations
+Individual features carry focused verification. A fresh consolidated T1700 live acceptance of the complete official runtime remains the next pre-feature gate.
 
-Forge does **not** currently:
+The precise status is maintained in the [Current Capability Boundary](docs/product/CURRENT_CAPABILITY_BOUNDARY.md).
 
-- trace editable paths from a 2D source image;
-- calculate contour, threshold, mask, or silhouette candidates;
-- turn Ollama findings directly into editable geometry;
-- provide pen, Bezier, freehand, node, or handle editing;
-- display transient smart guides, centre measurements, equal-gap guides, or distance labels;
-- provide an approved reusable Shape Library lifecycle;
-- insert Shape Library assets into the current document;
-- create hierarchy, anchors, connectors, or recoverable assemblies;
-- stitch, weld, join meshes, apply 3D booleans, separate, or bake;
-- provide revolve, sweep, loft, shell, relief, bevel, vertex, face, or sculpt tools;
-- export through verified SVG, PNG, GLB/glTF, or OBJ profiles.
+## Important current limitations
 
-The [Current Capability Boundary](docs/product/CURRENT_CAPABILITY_BOUNDARY.md) records the precise implemented, partial, and planned state.
+Forge does **not** currently provide:
+
+- freeform paths, Bezier nodes, or handle editing;
+- exact source-region manual tracing;
+- deterministic contour, threshold, edge, mask, line, or silhouette candidates;
+- AI-generated authoritative editable geometry;
+- approved reusable Shape Library assets or reversible library insertion;
+- complete layers, groups, arrays, mirrors, or 2D boolean composition;
+- a general shape-to-component recipe registry;
+- persistent areas, surfaces, anchors, sockets, groups, or assemblies;
+- reversible effect stacks;
+- stitch/weld, join mesh, 3D booleans, separate, or bake;
+- advanced revolve, sweep, loft, shell, relief, bevel, or mesh editing;
+- verified SVG, PNG, GLB/glTF, or OBJ continuation profiles;
+- engineering-grade, watertight, printable, or manufacturing-safe output claims.
 
 ## Ollama assessment is not shape extraction
 
-The existing optional local-agent path can inspect source art and record findings such as likely shapes, regions, symmetry, repetition, or production recommendations.
+The optional local-agent path can inspect project-owned source art and record findings such as likely regions, shapes, symmetry, repetition, or production recommendations.
 
-Current path:
+Current boundary:
 
 ```text
-2D source image
-→ bounded preview
-→ optional Ollama assessment
-→ raw evidence or planning record
-→ no editable traced geometry
+project-owned source
+→ optional local-model assessment
+→ raw project evidence or proposal
+→ no authoritative editable geometry
 ```
 
-Required future path:
+Required future geometry boundary:
 
 ```text
 exact source region
-→ manual trace or deterministic contour proposal
-→ editable candidate geometry
+→ manual trace or deterministic candidate
+→ editable coordinates and path identity
 → user correction
 → review and approval
-→ optional Shape Library reuse
 ```
 
-Ollama may classify, rank, name, or explain candidate geometry. Coordinates, editable paths, user correction, and explicit approval establish project truth.
+A model may classify, explain, rank, or suggest. It does not silently become project truth.
 
 ## Current 2D-to-3D boundary
 
-The five implemented native shapes become real extruded objects in a project-owned `mxztar_forge_object_scene`.
+The five implemented native shapes become linked extruded objects inside a project-owned `mxztar_forge_object_scene`.
 
 Current object authority includes:
 
@@ -118,141 +121,95 @@ Current object authority includes:
 - width, height, and depth;
 - X/Y/Z rotation;
 - colour and opacity;
-- reversible object edits;
+- reversible edits;
 - camera and viewport state;
 - atomic save, rollback, and restart restoration.
 
-This is a real 3D blockout foundation. It is not yet a complete mesh modeller, assembly system, or production-ready CAD release.
-
-## Next direct-manipulation milestone
-
-The next planned runtime gate is transient smart positioning guidance:
-
-- centre and nearest-object alignment lines;
-- edge and centre comparisons;
-- live X/Y/Z and nearest-distance values;
-- equal-gap guidance;
-- guides that appear only while moving an object;
-- immediate guide removal when movement ends;
-- separate `Guides` and `Snap to guides` controls;
-- bounded snap tolerance;
-- preserved empty-space orbit behaviour;
-- CPU-safe calculations for the T1700.
+This is a real creative blockout foundation. It is not automatic production reconstruction or a complete Construct system.
 
 ## Finished product boundary
 
-MXZTAR Forge is planned as two complete product stages.
-
-### Stage One — Forge Editor
-
-Stage One delivers the local 2D shape editor and portable 2D asset system:
+### Stage One — Forge Editor and portable 2D assets
 
 ```text
-project purpose
-→ source intake or blank shape document
-→ manual, algorithmic, or optional AI-assisted candidate
-→ path and node editing
-→ composition and explicit 2D geometry operations
-→ review, approval, versioning, and Shape Library reuse
-→ verified SVG, PNG, and Forge Pack output
+project and source authority
+→ blank or source-derived editable geometry
+→ path and composition editing
+→ deterministic or optional AI-assisted candidates
+→ review, approval, versioning, and reusable Shape Library assets
+→ verified 2D continuation
 ```
 
-### Stage Two — Construct
-
-Stage Two extends approved shapes and declared primitives into reversible 3D blockouts:
+### Stage Two — Construct and portable 3D blockouts
 
 ```text
-approved 2D shape or declared 3D primitive
-→ reversible construction recipe
-→ editable 3D component
-→ positioned instances, anchors, connectors, and hierarchy
-→ recoverable assembly
-→ explicit geometry relationship or derived merge
-→ verified GLB/glTF and OBJ continuation
+approved shape or declared primitive
+→ reversible component recipe
+→ editable component
+→ pivots, anchors, surfaces, groups, and recoverable assemblies
+→ explicit geometry relationships and derived operations
+→ verified 3D continuation
 ```
 
-**Stage One and Stage Two together define the planned finished-product boundary.** Future Product Levels Three and Four remain deferred vision.
+**Stage One and Stage Two together define MXZTAR Forge v2.0.** Product Levels Three and Four remain deferred vision.
 
-## Controlled workflow architecture
+## Current engineering order
 
-Forge distinguishes:
+The current programme is:
 
-- **Workflow:** a user journey that creates durable project value;
-- **Operation:** a reversible or explicitly derived command inside a workflow;
-- **Job:** bounded work that may take time and must expose progress, elapsed time, evidence, cancellation boundaries, and truthful terminal state.
+```text
+Recoup accepted decisions and working behaviour
+→ Regroup authority, runtime composition, and verification
+→ Prove the complete PR #80 Editor baseline
+→ Proceed to Freeform Path Authority
+```
 
-The Stage One–Two product contains 18 first-class workflow families: four shared platform workflows, eight Stage One workflows, and six Stage Two workflows.
+The ordered gates and exclusions are maintained in the [Active Engineering Plan](docs/product/ACTIVE_ENGINEERING_PLAN.md).
 
-## Local-first and human-governed
+## Governance and engineering authority
 
-Forge separates:
+- [Source of Truth](docs/SOURCE_OF_TRUTH.md)
+- [Master Build Plan](docs/product/MASTER_BUILD_PLAN.md)
+- [Current Capability Boundary](docs/product/CURRENT_CAPABILITY_BOUNDARY.md)
+- [Active Engineering Plan](docs/product/ACTIVE_ENGINEERING_PLAN.md)
+- [Progress Ledger](docs/PROGRESS_LEDGER.md)
+- [Final Runtime Composition](docs/architecture/FINAL_RUNTIME_COMPOSITION.md)
+- [Regression and Drift Prevention](docs/architecture/REGRESSION_AND_DRIFT_PREVENTION.md)
+- [Agent Operating Rules](AGENTS.md)
 
-- unchanged source evidence;
-- algorithmic calculation;
-- model inference;
-- user-created geometry;
-- reviewed and approved project truth;
-- exported derivatives.
+Historical correction and future-vision documents preserve evidence and product lore. They are not current engineering instructions unless the Source of Truth explicitly promotes them.
 
-A successful job does not imply approval. A saved diagnostic does not imply workflow success. An AI proposal does not become reusable geometry until the creator reviews and accepts it.
+## Local-first and modest-hardware policy
 
-Durable project files are authoritative. SQLite may index them, but it must not become the only place where creative work exists.
+- project truth stays in durable local files;
+- originals remain unchanged;
+- long work stays outside the Qt main thread;
+- one heavy local job at a time by default;
+- previews and collections remain bounded;
+- no silent model download or hidden parallel escalation;
+- success, failure, invalid evidence, timeout, and failure-before-save remain distinct;
+- core creation and editing must remain useful without AI or network access.
 
-## Source-image compatibility
+## Launch and verification
 
-Accepted source originals currently include:
-
-- PNG;
-- JPEG/JPG;
-- WebP;
-- BMP;
-- TIFF/TIF;
-- GIF, using the first frame for preview generation.
-
-Originals remain unchanged and authoritative. PNG, JPEG, and WebP are currently model-ready. BMP, TIFF, and GIF may be imported and previewed but remain blocked from local vision-model execution until a separately verified normalized derivative preserves provenance.
-
-## Modest-hardware policy
-
-Safe defaults remain available for CPU-only systems:
-
-- `OLLAMA_NUM_THREAD=2` when hardware is unknown or modest;
-- `OLLAMA_NUM_PARALLEL=1` by default;
-- one heavy local job at a time;
-- bounded and rebuildable previews;
-- no AI work on the Qt main thread;
-- no silent model downloads;
-- no hidden parallelism or unexplained long-running process.
-
-## Development checkout
-
-Launch from an existing configured checkout:
+Use the repository launcher from the canonical checkout:
 
 ```bash
 ./run_mxztar_forge.sh
 ```
 
-Install or refresh the Desktop and application-menu launchers:
+Run the complete repository verification suite with:
 
 ```bash
-bash tools/install_desktop_launchers.sh
+bash scripts/verify_source_truth.sh
 ```
 
-Ordinary users will be directed to versioned official releases after the relevant release gates are complete.
+Interaction-heavy changes also require focused final-runtime verification and recorded T1700 live acceptance before they become accepted product baseline.
 
-## Access, licence, and support
+## Access, licence, and claims
 
-Use of official MXZTAR Forge software is intended to be free of charge. There is no confirmed timed trial, subscription, or core-feature paywall. Voluntary support may be offered through [Buy Me a Coffee](https://buymeacoffee.com/mxztar), but support status must not control access to local work or core editing features.
+Official access remains free of charge and founder support is voluntary.
 
-This repository is public, but a recognised software `LICENSE` and contributor policy have not yet been selected. Public visibility must not be mistaken for permission to modify or redistribute the software.
+A recognised open-source licence must not be claimed until a repository `LICENSE` is deliberately selected and added.
 
-## Product authority
-
-- [Master Build Plan](docs/product/MASTER_BUILD_PLAN.md) — product boundary, architecture, acceptance, and engineering sequence
-- [Workflow Compatibility Matrix](docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md) — readiness, inputs, outputs, blocking, and next-action rules
-- [Progress Ledger](docs/PROGRESS_LEDGER.md) — dated verified, merged, partial, planned, blocked, and deferred state
-- [Current Capability Boundary](docs/product/CURRENT_CAPABILITY_BOUNDARY.md) — concise present-tense capability audit
-- [Project State and Data Authority](docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md) — durable project truth and recovery hierarchy
-- [Output Artifact Contracts](docs/product/OUTPUT_ARTIFACT_CONTRACTS.md) — durable workflow and export records
-- [Source-of-Truth Policy](docs/SOURCE_OF_TRUTH.md) — repository and documentation authority
-
-Git history is the leading software-project source of truth. Validated project files are the authority for a user’s creative work. Terminal scrollback is not project truth.
+Forge does not claim engineering certification, manufacturing safety, universal interoperability, or finished-release status before the corresponding evidence exists.
