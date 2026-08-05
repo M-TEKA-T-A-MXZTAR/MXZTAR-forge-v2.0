@@ -37,20 +37,21 @@ The Master Build Plan changes only when the intended finished product changes. I
 
 ### Tier 2 — Present execution authority
 
-2. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — present-tense implemented, partial, planned, deferred, and evidence truth.
-3. **`docs/product/ACTIVE_ENGINEERING_PLAN.md`** — current ordered gate, entry conditions, preserved invariants, exit proof, and exclusions.
-4. **`docs/architecture/FINAL_RUNTIME_COMPOSITION.md`** — official launcher, installer order, shell/panel composition, and current consolidation debt.
-5. **`docs/architecture/REGRESSION_AND_DRIFT_PREVENTION.md`** — change packets, invariant rules, proof fidelity, causal records, and merge gates.
-6. **`AGENTS.md`** — compact operating rules for coding agents, subordinate to the detailed authorities above.
+2. **`docs/CURRENT_BASELINE.json`** — machine-readable snapshot date, assessed branch/PR, active governance gate, next acceptance gate, and next feature gate. Current documents must agree with this metadata.
+3. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — present-tense implemented, partial, planned, deferred, and evidence truth.
+4. **`docs/product/ACTIVE_ENGINEERING_PLAN.md`** — current ordered gate, entry conditions, preserved invariants, exit proof, and exclusions.
+5. **`docs/architecture/FINAL_RUNTIME_COMPOSITION.md`** — official launcher, installer order, shell/panel composition, and current consolidation debt.
+6. **`docs/architecture/REGRESSION_AND_DRIFT_PREVENTION.md`** — change packets, invariant rules, proof fidelity, causal records, and merge gates.
+7. **`AGENTS.md`** — compact operating rules for coding agents, subordinate to the detailed authorities above.
 
 ### Tier 3 — Evidence and detailed architecture
 
-7. **`docs/PROGRESS_LEDGER.md`** — concise dated evidence, sequencing decisions, and causal learning.
-8. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project data, locking, recovery, and index hierarchy.
-9. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, diagnostic, approval, component, assembly, and export artifacts.
-10. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, and blocking rules.
-11. **`docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`** — detailed design possibilities and dependencies for asset generation and Construct, interpreted through the current Master Plan and Active Engineering Plan.
-12. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed authority.
+8. **`docs/PROGRESS_LEDGER.md`** — concise dated evidence, sequencing decisions, and causal learning.
+9. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project data, locking, recovery, and index hierarchy.
+10. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, diagnostic, approval, component, assembly, and export artifacts.
+11. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, and blocking rules.
+12. **`docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`** — detailed design possibilities and dependencies for asset generation and Construct, interpreted through the current Master Plan and Active Engineering Plan.
+13. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed authority.
 
 ### Tier 4 — Historical evidence and deferred vision
 
@@ -74,6 +75,7 @@ When documents conflict:
 Examples:
 
 - Finished product question → Master Build Plan.
+- What baseline metadata applies → Current Baseline JSON.
 - What exists now → Current Capability Boundary.
 - What happens next → Active Engineering Plan.
 - Which class actually runs → Final Runtime Composition.
@@ -157,6 +159,7 @@ Documentation verification must protect current authority structure and status d
 Good checks verify:
 
 - required current documents exist;
+- `docs/CURRENT_BASELINE.json` is valid and current documents agree with it;
 - each document performs its assigned role;
 - the Master Plan does not contain current branch or PR history;
 - the Capability Boundary and Progress Ledger share the current assessed baseline;
@@ -195,7 +198,7 @@ To reduce drift and maintenance cost:
 1. run focused verification;
 2. run complete Source Truth where required;
 3. perform live, restart, interruption, downstream, or release acceptance as applicable;
-4. update current capability, active sequence, runtime map, and ledger where materially affected;
+4. update baseline metadata, current capability, active sequence, runtime map, and ledger where materially affected;
 5. report remaining risk truthfully;
 6. open a reviewable PR;
 7. do not treat silence or passing automation as merge approval.
