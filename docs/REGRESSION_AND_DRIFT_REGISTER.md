@@ -111,10 +111,10 @@ Statuses: `OPEN`, `MITIGATED`, `CLOSED`, `SUPERSEDED`.
 **Incorrect assumption:** checking exact historical phrases guaranteed current truth.  
 **Architectural condition:** documentation tests encoded snapshots instead of authority relationships, recency and capability evidence.  
 **Verification gap:** no rule compared current merged baseline with the documented baseline or required reconciliation after capability PRs.  
-**Correction:** refresh current capability and replace frozen assertions with relationship-based checks.  
-**Prevention rule:** current-state documents must declare a baseline that is not older than the latest capability-changing merged PR; historical detail belongs in the Progress Ledger and Git history.  
-**Closing evidence:** governance-reset PR refreshes documents; verifier correction remains an immediate follow-up.  
-**Status:** OPEN.
+**Correction:** refresh Current Capability, Progress Ledger and README; replace frozen assertions with authority, relationship and monotonic-baseline checks.  
+**Prevention rule:** Current Capability and Progress Ledger must declare the same merged runtime baseline; historical detail belongs in the Progress Ledger and Git history.  
+**Closing evidence:** PR #81 contains the governing-document refresh and verifier repair; closure requires the complete Source Truth check to pass and the PR to merge.  
+**Status:** MITIGATED.
 
 ## RD-008 — Manual verifier inventory allowed omission
 
