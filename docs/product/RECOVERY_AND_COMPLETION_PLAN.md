@@ -59,13 +59,16 @@ Deliverables:
 - this Recovery and Completion Plan;
 - `REGRESSION_AND_DRIFT_REGISTER.md`;
 - refreshed Current Capability Boundary through the latest merged baseline;
-- removal of stale documentation-verifier assumptions.
+- removal of stale documentation-verifier assumptions;
+- refreshed Progress Ledger and README public boundary.
 
 Exit evidence:
 
 - documents agree on product horizon, present capability and immediate sequence;
-- no current-state verifier requires obsolete dates, PR numbers or phrases;
-- no planned capability is described as implemented.
+- no current-state verifier requires obsolete dates, PR numbers or branch phrases;
+- Current Capability and Progress Ledger declare the same merged runtime baseline;
+- no planned capability is described as implemented;
+- complete Source Truth passes.
 
 ### Phase R1 — Final-runtime map
 
@@ -226,11 +229,12 @@ Feature count is not the success measure. Completed, recoverable and reusable cr
 
 The authorised immediate order is:
 
-1. merge the governance reset after review;
-2. update the stale documentation verifier so it checks relationships and recency rather than frozen phrases;
-3. produce the final-runtime and state-authority map;
-4. convert PR #66–#80 regression lessons into final-runtime contracts;
-5. run the complete Source Truth suite and T1700 interaction acceptance;
-6. begin the Stage One editable-path and manual-trace foundation only after the interaction baseline is stable.
+1. complete the PR #81 governance reset and documentation-verifier repair;
+2. run the complete Source Truth suite against the corrected hierarchy;
+3. review and merge PR #81 only after all required checks pass;
+4. produce the final-runtime and state-authority map;
+5. convert PR #66–#80 regression lessons into final-runtime contracts;
+6. complete applicable T1700 interaction acceptance and confirm save, close and reopen stability;
+7. begin the Stage One editable-path and manual-trace foundation only after the interaction baseline is stable.
 
-No new broad feature family should begin before steps 1–5 are complete.
+No new broad feature family should begin before steps 1–6 are complete.
