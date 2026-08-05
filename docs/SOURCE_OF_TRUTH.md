@@ -1,176 +1,227 @@
 # MXZTAR Forge v2.0 — Source of Truth Policy
 
-## 1. Leading software-project authority
+## 1. Repository authority
 
-This Git repository and its history are the leading source of truth for the MXZTAR Forge v2.0 software project.
+This Git repository and its reviewed history are the leading software-project authority for MXZTAR Forge v2.0.
 
 Priority order:
 
-1. committed Git repository history;
+1. committed repository history;
 2. current reviewed branch or pull-request state;
 3. current local working tree;
-4. dated VX12 safety backups;
-5. terminal scrollback.
+4. dated safety backups;
+5. terminal scrollback or chat recollection.
 
-Terminal scrollback is not project truth. Important decisions, verification evidence, contracts, and results must be saved to durable files or GitHub records.
+Terminal output and conversation history are useful evidence, but important decisions, accepted behaviour, verification, and current product truth must be promoted into durable repository records.
 
----
+## 2. User-project authority
 
-## 2. User creative-work authority
+For a Forge user project, validated durable files inside the project directory are authoritative.
 
-For a user’s Forge project, validated durable files inside the project directory are authoritative.
+SQLite, caches, thumbnails, selectors, queues, settings, previews, autosave, and in-memory objects may accelerate, recover, or display state. They do not silently override canonical project files.
 
-SQLite, cached UI state, previews, queues, and in-memory objects may accelerate or display project state, but they must remain rebuildable and cannot silently override validated project files.
-
-The detailed project authority hierarchy is defined in:
+The detailed project hierarchy and recovery rules live in:
 
 - `docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`;
 - `docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`.
 
----
+## 3. Current document hierarchy
 
-## 3. Product-document authority
+Each current document has one responsibility.
 
-The active documentation hierarchy is:
+### Tier 1 — Stable product authority
 
-1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished-product boundary, product principles, 18 workflow families, architecture, acceptance criteria, and milestone framework.
-2. **`docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`** — founder-authorised active sequencing addendum for editable extraction, shipped starter assets, component generation, selectable surfaces and areas, modular placement, groups, assemblies, effect stacks, and explicit connection operations. Where its nearer engineering sequence conflicts with an older immediate-sequence list, this addendum wins until the next full Master Build Plan reconciliation.
-3. **`docs/product/EDITOR_COMMAND_STRIP_CORRECTION.md`** — founder-directed live-interaction correction superseding earlier current-state claims that required an always-open Editor action tree. It preserves Project Trash and wheel routing while requiring a compact temporary-dropdown command row.
-4. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, blocking, and next-action rules.
-5. **`docs/PROGRESS_LEDGER.md`** — dated verified, merged, partial, planned, blocked, and deferred implementation state.
-6. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — concise present-tense audit of what works now, what is partial, and what remains planned.
-7. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project truth, recovery, and index hierarchy.
-8. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, approval, diagnostic, object-scene, component, assembly, and export artifact requirements.
-9. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed product contracts.
-10. **`docs/product/FIRST_RENTABLE_RELEASE.md`** — historical planning notice only; it is not current scope authority.
-11. **Future-vision documents** — deferred concepts only and never current implementation instructions without a separate founder-approved source-of-truth revision.
+1. **`docs/product/MASTER_BUILD_PLAN.md`** — finished Stage One–Two product boundary, principles, workflow families, authority model, milestone dependencies, and release acceptance.
 
-When two documents appear to conflict, the higher applicable authority wins. The conflict must then be corrected in a dedicated documentation change rather than allowed to persist indefinitely.
+The Master Build Plan changes only when the intended finished product changes. It does not track current PRs or the immediate queue.
 
-### Planning versus current-state rule
+### Tier 2 — Present execution authority
 
-The Master Build Plan and its active sequencing addendum may describe the finished product and permitted engineering order. The Current Capability Boundary and Progress Ledger must identify whether each relevant capability is implemented, partial, planned, blocked, or deferred.
+2. **`docs/product/CURRENT_CAPABILITY_BOUNDARY.md`** — present-tense implemented, partial, planned, deferred, and evidence truth.
+3. **`docs/product/ACTIVE_ENGINEERING_PLAN.md`** — current ordered gate, entry conditions, preserved invariants, exit proof, and exclusions.
+4. **`docs/architecture/FINAL_RUNTIME_COMPOSITION.md`** — official launcher, installer order, shell/panel composition, and current consolidation debt.
+5. **`docs/architecture/REGRESSION_AND_DRIFT_PREVENTION.md`** — change packets, invariant rules, proof fidelity, causal records, and merge gates.
+6. **`AGENTS.md`** — compact operating rules for coding agents, subordinate to the detailed authorities above.
 
-Planned capability must never be described in the README or interface as current capability.
+### Tier 3 — Evidence and detailed architecture
 
----
+7. **`docs/PROGRESS_LEDGER.md`** — concise dated evidence, sequencing decisions, and causal learning.
+8. **`docs/architecture/PROJECT_STATE_AND_DATA_AUTHORITY.md`** — project data, locking, recovery, and index hierarchy.
+9. **`docs/product/OUTPUT_ARTIFACT_CONTRACTS.md`** — durable workflow, diagnostic, approval, component, assembly, and export artifacts.
+10. **`docs/product/WORKFLOW_COMPATIBILITY_MATRIX.md`** — workflow readiness, input, output, failure, and blocking rules.
+11. **`docs/product/ASSET_GENERATION_AND_CONSTRUCT_ARCHITECTURE.md`** — detailed design possibilities and dependencies for asset generation and Construct, interpreted through the current Master Plan and Active Engineering Plan.
+12. **`README.md`** — public product explanation and repository orientation. It must remain accurate but does not override detailed authority.
 
-## 4. Active product horizon
+### Tier 4 — Historical evidence and deferred vision
 
-The current product horizon is:
+- correction documents tied to a specific PR or live defect;
+- `docs/product/FIRST_RENTABLE_RELEASE.md`;
+- older roadmap snapshots;
+- future Construct, World, and Level Four vision documents.
+
+These preserve useful history and design lore. They are **not current engineering instructions** unless explicitly promoted into Tier 1 or Tier 2 by a reviewed source-of-truth change.
+
+## 4. Conflict resolution
+
+When documents conflict:
+
+1. apply the highest relevant tier;
+2. prefer the document whose assigned responsibility matches the question;
+3. treat present runtime claims from historical correction documents as stale evidence;
+4. correct the conflict in a dedicated documentation change;
+5. do not allow several documents to remain competing authorities.
+
+Examples:
+
+- Finished product question → Master Build Plan.
+- What exists now → Current Capability Boundary.
+- What happens next → Active Engineering Plan.
+- Which class actually runs → Final Runtime Composition.
+- Why a regression occurred and how to prevent it → Regression and Drift Prevention.
+- What happened and what evidence exists → Progress Ledger and Git history.
+
+## 5. Active product horizon
+
+The active horizon is:
 
 - **Stage One — Forge Editor and portable 2D assets**;
 - **Stage Two — Construct and portable 3D blockouts**.
 
-Stage One and Stage Two together define the planned finished MXZTAR Forge v2.0 product.
+Stages One and Two together define MXZTAR Forge v2.0.
 
-The active Stage One–Two architecture now brings forward:
+Product Levels Three and Four remain deferred and do not authorise runtime work, public capability claims, delivery dates, or dead UI.
 
-- freeform editable paths and extraction authority;
-- a versioned shipped starter source-asset pack;
-- reviewed reusable shapes and reversible component generation;
-- stable object, area, surface, pivot, anchor, group, and assembly records;
-- reversible targetable effect stacks;
-- explicit separation of placement, snapping, grouping, assembly contact, visual seams, mesh stitch or weld, join, boolean, separate, and bake.
+## 6. Planning versus implementation
 
-Future Product Levels Three and Four remain deferred. Their documents preserve lore and long-term direction but do not authorise runtime work, delivery dates, public claims, or dead UI controls.
+Planning documents may describe intended capability and permitted sequence. They do not prove that controls, schemas, assets, operations, effects, or exports exist.
 
----
+The Current Capability Boundary must label meaningful capability as:
 
-## 5. Runtime evidence rule
+- live verified;
+- deterministically verified;
+- merged foundation;
+- partial;
+- planned;
+- deferred.
+
+The README must not present planned capability as current capability.
+
+## 7. Runtime evidence classes
 
 A merged PR is not sufficient evidence by itself.
 
-Runtime capability claims must identify the applicable evidence class:
+Applicable evidence classes include:
 
-- deterministic contract;
-- Source Truth verification;
-- T1700 live interaction;
-- recovery or interruption test;
-- downstream import or continuation test;
-- release installation test.
+1. documentation, syntax, and compile checks;
+2. schema, command-replay, and pure state contracts;
+3. transaction, interruption, rollback, and restart tests;
+4. focused real-Qt verification against the official final runtime;
+5. complete Source Truth verification;
+6. T1700 live interaction acceptance;
+7. downstream continuation or round-trip evidence;
+8. release installation and recovery evidence.
 
-A capability may be described as deterministically verified while still requiring visual, downstream, or release acceptance.
+Layout, pointer behaviour, focus, visibility, event propagation, timing, comprehension, and hardware-sensitive work normally require live acceptance before merge.
 
-Architecture and sequencing documents may authorise future work, but they do not prove that the described controls, schemas, effects, assets, or operations exist.
+## 8. Final-runtime rule
 
----
+Runtime interaction claims must target the official composition documented in `FINAL_RUNTIME_COMPOSITION.md`.
 
-## 6. Change rule
+Testing an intermediate class, uninstalled panel, direct event handler, retained alias, or different import order does not prove the official application.
 
-Every meaningful change should record:
+When installer order, shell inheritance, panel replacement, or patched methods change, update the runtime map and final-runtime verifier in the same PR.
 
-- what changed;
-- why it changed;
-- affected workflow family or product stage;
-- affected authoritative artifacts;
-- reversible and irreversible boundaries where applicable;
-- affected files;
-- verification command;
-- verification result;
-- live acceptance status where required;
-- backup status when relevant.
+## 9. Controlled-change rule
 
-No verification pass may be claimed without evidence from the environment that actually ran it.
+Every meaningful change records:
 
----
+- user outcome;
+- final runtime target;
+- authority owners;
+- allowed change;
+- preserved invariants;
+- failure and rollback result;
+- changed files;
+- verification performed and result;
+- live acceptance status;
+- documentation impact;
+- remaining risk;
+- next permitted gate.
 
-## 7. Drift prevention
+A narrow file diff is not automatically a narrow user-impact change.
 
-Before working:
+## 10. Drift-prevention rule
 
-1. check the current branch;
-2. check Git status;
-3. pull or fetch the latest remote state;
-4. confirm the intended product stage and workflow family;
-5. inspect the Master Build Plan, active sequencing addendum, Progress Ledger, and Current Capability Boundary;
-6. verify the application still compiles, imports, or launches at the relevant gate.
+Documentation verification must protect current authority structure and status distinctions without fossilising one historical PR era.
 
-After working:
+Good checks verify:
 
-1. compile changed code files where applicable;
-2. run the targeted verifier;
-3. run Source Truth and whitespace checks;
-4. perform required live acceptance;
-5. update the Progress Ledger and Current Capability Boundary truthfully;
-6. update README claims when public capability materially changes;
-7. commit and review known-good state through a pull request;
-8. create a dated VX12 backup only when a stable stage warrants it.
+- required current documents exist;
+- each document performs its assigned role;
+- the Master Plan does not contain current branch or PR history;
+- the Capability Boundary and Progress Ledger share the current assessed baseline;
+- the Active Engineering Plan names one ordered active gate;
+- the runtime map matches the official launcher composition;
+- planned capability remains labelled planned;
+- historical correction documents are not promoted accidentally;
+- README claims remain within current capability.
 
----
+Bad checks require an indefinitely frozen date, old PR range, rejected control wording, or exact paragraph merely because it was once current.
 
-## 8. Documentation drift contract
+## 11. Omission and archival rule
 
-Source Truth must fail when core documents revert to known stale claims.
+To reduce drift and maintenance cost:
 
-At minimum, automated documentation checks protect:
+- keep exhaustive implementation detail in Git and PR discussions;
+- keep only concise evidence and causal learning in the Progress Ledger;
+- remove temporary branch state from the Master Plan;
+- keep the immediate queue only in the Active Engineering Plan;
+- de-authorise superseded correction documents rather than stacking them indefinitely;
+- archive or delete obsolete documents only through a reviewed change that preserves any unique useful evidence;
+- do not duplicate the same status table across several current documents.
 
-- the presence of the Current Capability Boundary;
-- the presence and authority of the Asset Generation and Construct Architecture addendum;
-- the authority of the Editor Command Strip live correction over the rejected always-open tree;
-- merged PR coverage in the Progress Ledger;
-- editable-path authority as the next runtime foundation after the current interaction gate;
-- the brought-forward shipped starter source-asset contract;
-- the distinction between Ollama assessment and editable extraction;
-- the implemented five-primitive 2D-to-3D foundation;
-- the separation of object groups, recoverable assemblies, visual seams, mesh stitch or weld, join mesh, booleans, separate, and bake;
-- the absence of current claims for approved Shape Library insertion, selectable persistent surface subsets, effect stacks, and advanced merge operations;
-- README linkage to current capability authority.
+## 12. Before work
 
-The check does not prove every sentence is correct. It prevents known high-impact contradictions from silently returning.
+1. confirm repository and branch;
+2. inspect Git status and latest remote state;
+3. read the current authority documents;
+4. identify the active gate and workflow family;
+5. resolve the official final runtime;
+6. identify state owners and preserved invariants;
+7. run the lowest useful baseline check before editing.
 
----
+## 13. After work
 
-## 9. Public-claim rule
+1. run focused verification;
+2. run complete Source Truth where required;
+3. perform live, restart, interruption, downstream, or release acceptance as applicable;
+4. update current capability, active sequence, runtime map, and ledger where materially affected;
+5. report remaining risk truthfully;
+6. open a reviewable PR;
+7. do not treat silence or passing automation as merge approval.
 
-The README and repository metadata are product-discovery surfaces. They should clearly state:
+## 14. Public-claim rule
+
+Public documentation should clearly state:
 
 - the user problem;
-- the intended users;
-- the value Forge adds to existing workflows;
-- the current Stage One–Two boundary;
-- the actual implementation state;
-- the local-first and human-governed model;
-- limitations and deferred scope.
+- intended users;
+- durable value;
+- Stage One–Two boundary;
+- actual current foundation;
+- limitations and deferred scope;
+- local-first and human-governed model.
 
-Discoverability language must remain natural and accurate. Keyword stuffing, unsupported compatibility claims, invented release status, and calling public source “open source” before a recognised `LICENSE` is selected are prohibited.
+Unsupported compatibility, invented release status, engineering certainty, open-source licensing, pricing, tax, or manufacturing claims are prohibited.
+
+## 15. Recovery doctrine
+
+The current recovery method is:
+
+```text
+Recoup accepted decisions, evidence, and working behaviour
+→ Regroup authority, runtime composition, and priorities
+→ Proceed with one complete verified user-value slice
+```
+
+This policy exists to make engineering progress compound rather than repeatedly consume founder time repairing unintentional damage.
